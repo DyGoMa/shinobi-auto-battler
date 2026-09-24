@@ -57,6 +57,7 @@ export function render(game, ui) {
       row(`Version ${GAME_VERSION}`, 'See what changed in each version.', btn("✨ What's new", () => ui.openWiki('guide/whats-new'), 'small')),
       h('p.tiny.dim', { style: { marginTop: '10px' } }, `Save format ${SAVE_VERSION} · Firebase SDK ${FIREBASE_SDK_VERSION}${game.debug ? ' · balance debug panel on' : ''}`),
       h('p.tiny.dim', 'Fan-made, non-commercial. Naruto © Masashi Kishimoto / Shueisha / Studio Pierrot. Names follow the English dub; no official artwork is used.'),
+      h('p.build-stamp.about-stamp', { title: 'Build: the deployed commit and its UTC build time ("dev" on a local copy)' }, game.build?.label || 'dev'),
     ),
   );
 }

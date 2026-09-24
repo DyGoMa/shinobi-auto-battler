@@ -13,6 +13,7 @@ import { checkAchievements, recordDayPlayed } from './core/Achievements.js';
 import { h } from './ui/dom.js';
 import { playIntro, prefersReducedMotion } from './ui/Intro.js';
 import { introPlan, introSeen, setIntroSeen } from './core/StartFlow.js';
+import { loadBuildInfo, formatBuild } from './core/Version.js';
 
 async function boot() {
   // The intro starts first, so the splash is up while the game loads behind it.
@@ -61,6 +62,10 @@ async function boot() {
   };
   audio.setMuted(!!save.state.settings.muted);
 
+  // The build stamp on the menu and in Settings: version.json is written by the Pages
+  // deploy; a local checkout has none and shows "dev".
+  game.build = formatBuild(null);
+  loadBuildInfo().then((b) => { game.build = b; if (['start', 'settings'].includes(ui.current) && !ui.battle) ui.refresh(); });
   ui = new UIManager(game);
   game.ui = ui;
   ui.init();

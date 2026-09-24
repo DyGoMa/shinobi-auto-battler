@@ -648,3 +648,6 @@ body.start-mode #screen { padding: 0; grid-area: auto; }
   .start-foot { grid-area: foot; }
   .start-foot p { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 }
+
+/* The build stamp in Settings › About sits bottom-right of its card. */
+.about-stamp { display: block; text-align: right; margin: 8px 0 0; }

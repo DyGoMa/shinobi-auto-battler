@@ -4,3 +4,5 @@ Thumbs.db
 *.log
 .playwright/
 test-results/
+# Written by the Pages deploy (.github/workflows/pages.yml); never committed.
+version.json

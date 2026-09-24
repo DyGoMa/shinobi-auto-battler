@@ -1,0 +1,39 @@
+# Deploys the game to GitHub Pages on every push to main, with a version.json
+# ({ sha, shortSha, builtAt }) written at build time for the in-game build stamp
+# (js/core/Version.js). version.json is never committed (.gitignore).
+# Needs the repository's Pages source set to "GitHub Actions"
+# (Settings → Pages → Build and deployment → Source).
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write version.json
+        run: |
+          printf '{"sha":"%s","shortSha":"%s","builtAt":"%s"}\n' "$GITHUB_SHA" "${GITHUB_SHA::7}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > version.json
+          cat version.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

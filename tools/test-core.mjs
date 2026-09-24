@@ -11,6 +11,7 @@ import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, 
 import { BattleSim } from '../js/core/BattleSim.js';
 import { INTRO, introPlan, introSeen, setIntroSeen, menuModel } from '../js/core/StartFlow.js';
 import { FirebaseBackend } from '../js/save/FirebaseBackend.js';
+import { formatBuild, loadBuildInfo, DEV_LABEL } from '../js/core/Version.js';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -402,6 +403,20 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(menuModel({ kind: 'connecting' }).busy && !menuModel({ kind: 'connecting' }).primary, 'while the session is being checked the menu waits');
   ok(menuModel({ kind: 'signedOut' }, { redirectError: 'nope' }).message === 'nope', 'a failed Google redirect is reported on the menu');
   delete globalThis.localStorage;
+}
+
+// ---- Session 5: the build stamp ---------------------------------------------------
+{
+  ok(formatBuild(null).label === DEV_LABEL && formatBuild({}).dev && formatBuild({ shortSha: 'abc1234' }).dev, 'no version.json (or an unusable one) shows "dev"');
+  const b = formatBuild({ sha: '1234567890abcdef', shortSha: '1234567', builtAt: '2026-09-24T14:03:09Z' });
+  ok(b.label === 'v1234567 · 2026-09-24 14:03 UTC' && !b.dev && b.sha === '1234567890abcdef', 'a deploy shows "v<short sha> · <UTC build date>"');
+  ok(formatBuild({ sha: 'fedcba9876543210', builtAt: '2026-01-02T03:04:05Z' }).label === 'vfedcba9 · 2026-01-02 03:04 UTC', 'the short sha is cut from the full one when missing');
+  ok((await loadBuildInfo({ fetchImpl: async () => ({ ok: false, status: 404 }) })).label === DEV_LABEL, 'a 404 for version.json (local dev) falls back to "dev"');
+  ok((await loadBuildInfo({ fetchImpl: async () => { throw new TypeError('Failed to fetch'); } })).label === DEV_LABEL, 'a failed fetch (file://, offline) falls back to "dev"');
+  ok((await loadBuildInfo({ fetchImpl: undefined })).label === DEV_LABEL, 'no fetch at all falls back to "dev"');
+  let askedUrl = '';
+  const live = await loadBuildInfo({ fetchImpl: async (u) => { askedUrl = u; return { ok: true, json: async () => ({ sha: 'abcdef0123456789', shortSha: 'abcdef0', builtAt: '2026-09-24T09:30:00Z' }) }; } });
+  ok(live.label === 'vabcdef0 · 2026-09-24 09:30 UTC' && /^version\.json\?t=\d+$/.test(askedUrl), 'version.json is fetched with a cache-buster and shown');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);
