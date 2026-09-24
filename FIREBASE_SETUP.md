@@ -44,23 +44,11 @@ You need a Google account and about 10 minutes. The game side is already built. 
 
 ### 4. Paste the security rules
 1. Still in **Firestore Database**, open the **Rules** tab.
-2. Delete everything in the editor and paste the whole contents of **`firestore.rules`** from this repository:
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /users/{uid}/save/{docId} {
-         allow read, write: if request.auth != null && request.auth.uid == uid;
-       }
-       match /{document=**} {
-         allow read, write: if false;
-       }
-     }
-   }
-   ```
+2. Delete everything in the editor and paste the whole contents of **`firestore.rules`** from this repository (GitHub → Raw → select all). Don't retype it; the file is the source of truth.
 3. Click **Publish**.
 4. ✅ **You should see:** a "Rules published" message or a new timestamp at the top of the editor.
    * These rules mean each player can only read and write their own save (`users/{their id}/save/main`). Everything else is locked.
+   * **Already had the older rules published?** Paste the new file over them and Publish again. Existing saves keep working — the game has always written the four fields the new rules check.
 
 ### 5. Turn on Anonymous and Google sign-in
 1. Direct link: **https://console.firebase.google.com/project/_/authentication/providers**. Or in the left menu: **Build → Authentication**, then **Get started**.
@@ -109,11 +97,20 @@ You need a Google account and about 10 minutes. The game side is already built. 
 
 ---
 
-## Why the API key is safe in a public repo
-A Firebase **web** API key isn't a password. It only tells Google *which project* the game talks to, so every Firebase web app ships it to every visitor's browser.
-* **Who can read or write data** is decided by **Authentication** plus **`firestore.rules`**. With the rules above, a player can only touch their own save.
-* **Limit abuse further** (optional): in the Google Cloud console, under **APIs & Services → Credentials**, open the browser key and restrict it to HTTP referrers `https://dygoma.github.io/*` and `http://localhost:*`.
-* **What must never be committed:** service-account JSON files and private keys. This project doesn't use any.
+## Security
+
+**Why the web API key is public.** A Firebase **web** API key isn't a password — it only identifies *which project* the game talks to, so every visitor's browser gets it. GitHub secret scanning flags it because it looks like a Google key, but no rotation is needed. The real secrets are service-account JSON files, and this project has none.
+
+**What `firestore.rules` enforces.** One document per player, at `users/{uid}/save/main`, owner-only via `request.auth.uid` (anonymous and Google-linked accounts share a uid, so linking is safe). Writes must have exactly the fields `payload`, `saveVersion`, `updatedAt`, `serverUpdatedAt` — with matching types and a 500,000-character cap on `payload`. Delete is allowed for the owner only.
+
+**Checklist: restrict the browser key in Google Cloud Console**
+1. Open **https://console.cloud.google.com/apis/credentials** for project `inbox-zero-480418`.
+2. Open **"Browser key (auto created by Firebase)"**.
+3. **Application restrictions → Websites:** add `dygoma.github.io/*`, `localhost/*` (add `localhost:*/*` too if local testing breaks), and `inbox-zero-480418.firebaseapp.com/*` (**required** — the Google sign-in popup runs from the authDomain).
+4. **API restrictions → Restrict key** to only: **Identity Toolkit API**, **Token Service API**, **Cloud Firestore API**. Storage/Analytics/Realtime DB/Functions/Messaging are unused (the `storageBucket` in the config is unused too).
+5. Save, wait a few minutes, then test **anonymous connect** and **Link Google account**.
+
+**Optional:** turn on Firebase App Check to curb quota abuse, and keep anonymous **Auto clean-up** off (see the warning in step 5 above).
 
 ## Troubleshooting
 | Message in Settings / browser console | Fix |

@@ -1,14 +1,38 @@
 rules_version = '2';
 
-// Shinobi Auto-Battler — each signed-in player (anonymous or Google) can read
-// and write ONLY their own save at users/{uid}/save/{docId}. Everything else
-// is denied.
+// Shinobi Auto-Battler — Firestore Security Rules
+// One document per player: users/{uid}/save/main, written by
+// js/save/FirebaseBackend.js with fields payload (string), saveVersion (int),
+// updatedAt (number), serverUpdatedAt (serverTimestamp()).
+// Anonymous and Google-linked accounts share the same uid, so linking is safe.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/save/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function signedInAs(uid) {
+      return request.auth != null && request.auth.uid == uid;
     }
-    // Deny everything else.
+
+    function validSave() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['payload', 'saveVersion', 'updatedAt', 'serverUpdatedAt'])
+          && d.keys().hasAll(['payload', 'saveVersion', 'updatedAt', 'serverUpdatedAt'])
+          && d.payload is string
+          && d.payload.size() > 1
+          && d.payload.size() <= 500000
+          && d.saveVersion is int
+          && d.saveVersion >= 0
+          && d.saveVersion <= 10000
+          && d.updatedAt is number
+          && d.updatedAt > 0
+          && d.serverUpdatedAt == request.time;
+    }
+
+    match /users/{uid}/save/main {
+      allow read:           if signedInAs(uid);
+      allow create, update: if signedInAs(uid) && validSave();
+      allow delete:         if signedInAs(uid);
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
