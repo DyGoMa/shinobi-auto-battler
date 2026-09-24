@@ -47,10 +47,10 @@ function card(game, ui, d) {
   const avail = isCharacterAvailable(state, d, C);
   if (!own) {
     return h('div.char-card.locked', { onclick: () => openDetail(game, ui, d) },
-      avatar(d, { unknown: !avail }),
-      h('div.name', avail ? d.name : '???'),
+      avatar(d, { unknown: !avail && !d.unlock?.achievement }),
+      h('div.name', avail || d.unlock?.achievement ? d.name : '???'),
       h('div.meta', tierTag(d.tier)),
-      h('div.tiny.dim', avail ? 'Not recruited — summon to unlock' : `Joins after ${C.arc[d.unlock.arcCleared || d.unlock.arcReached]?.name}`),
+      h('div.tiny.dim', d.unlock?.achievement ? `🏆 Earn “${C.achievement[d.unlock.achievement].name}” to recruit` : avail ? 'Not recruited — summon to unlock' : `Joins after ${C.arc[d.unlock.arcCleared || d.unlock.arcReached]?.name}`),
     );
   }
   const s = characterStats(d, own.level, own.stars, B);

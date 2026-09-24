@@ -29,6 +29,7 @@ export function unlockSatisfied(state, unlock, C) {
   if (!unlock) return true;
   if (unlock.arcCleared) return isArcCleared(state, C.arc[unlock.arcCleared]);
   if (unlock.arcReached) return isArcReached(state, C.arc[unlock.arcReached], C);
+  if (unlock.achievement) return !!state.achievements?.claimed?.[unlock.achievement]; // exclusive forms
   return false;
 }
 

@@ -3,7 +3,8 @@
 import { C, B } from './common.mjs';
 import { migrate, defaultState, encodeSave, decodeSave, SAVE_VERSION, BATTLE_TIP_IDS } from '../js/core/SaveManager.js';
 import { startTutorial, completeLesson, skipTutorial } from '../js/core/Tutorial.js';
-import { pull } from '../js/core/GachaSystem.js';
+import { pull, ticketPull, bannerPool } from '../js/core/GachaSystem.js';
+import { checkAchievements, claimAchievement, recordBattle, recordDayPlayed } from '../js/core/Achievements.js';
 import { makeRng, curve, enemyLevelForNode } from '../js/core/formulas.js';
 import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner } from '../js/core/Progression.js';
 import { BattleSim } from '../js/core/BattleSim.js';
@@ -182,6 +183,55 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     }
     const c3 = nodeBattleConfig(defaultState(C, B), C.tutorial.nodes[2], C, B, { seed: 1 });
     ok(c3.player.every(p => p.startChakraOverride === B.tutorial.clashLessonStartChakra), 'Lesson 3 starts the team with full chakra');
+  }
+  // ---- Session 4: achievements, tickets and the exclusive form ----
+  {
+    const s = defaultState(C, B);
+    ok(checkAchievements(s, C, B).length === 0, 'a fresh save has no achievements unlocked');
+    s.currencies.scrolls = 1e6;
+    pull(s, 'standard', 1, C, makeRng(3), B);
+    const fresh = checkAchievements(s, C, B).map(a => a.id);
+    ok(fresh.includes('ach_first_summon'), 'the first summon unlocks "First Summon"');
+    const before = s.currencies.tickets;
+    const c1 = claimAchievement(s, 'ach_first_summon', C, B);
+    ok(c1.ok && s.currencies.tickets === before + B.achievements.list.ach_first_summon.reward.tickets, 'claiming pays the reward from balance.js');
+    ok(!claimAchievement(s, 'ach_first_summon', C, B).ok && s.currencies.tickets === before + B.achievements.list.ach_first_summon.reward.tickets, 'a reward is paid only once');
+    ok(!claimAchievement(s, 'ach_part1', C, B).ok, 'a locked achievement cannot be claimed');
+    const pulls0 = s.gacha.totalPulls, sc0 = s.currencies.scrolls;
+    const tp = ticketPull(s, 'standard', 'tickets', C, makeRng(4), B);
+    ok(tp.ok && s.currencies.tickets === before && s.gacha.totalPulls === pulls0 + 1 && s.currencies.scrolls === sc0, 'a summon ticket is one free summon');
+    ok(!ticketPull(s, 'standard', 'tickets', C, makeRng(4), B).ok, 'no ticket, no ticket summon');
+    const r = defaultState(C, B); r.currencies.rareTickets = 400;
+    const rng = makeRng(9); let low = 0;
+    for (let i = 0; i < 400; i++) for (const x of ticketPull(r, 'standard', 'rareTickets', C, rng, B).results) if (x.tier === 'genin') low++;
+    ok(low === 0 && r.currencies.rareTickets === 0, `Rare+ tickets never give below ${B.achievements.rareTicketMinTier} (${low} Genin in 400)`);
+    // retroactive: an old save that already cleared Part I and owns 10 ninja
+    const done = Object.fromEntries(C.nodes.filter(n => n.part === 1).map(n => [n.id, { clears: 1, best: null }]));
+    const roster = Object.fromEntries(C.roster.filter(c => !c.notPullable).slice(0, 10).map(c => [c.id, { level: 30, stars: 1 }]));
+    const old = migrate({ saveVersion: 1, currencies: { scrolls: 0, ryo: 0 }, roster, progress: { cleared: done } }, C, B);
+    const retro = checkAchievements(old, C, B).map(a => a.id);
+    ok(retro.includes('ach_part1') && retro.includes('ach_own_10') && !retro.includes('ach_story'), 'existing saves unlock what they already qualify for');
+    // the achievement-exclusive form
+    const ex = C.roster.filter(c => c.notPullable);
+    ok(ex.length >= 1 && ex.every(c => C.achievements.some(a => a.rewardCharacter === c.id)), 'every non-summonable ninja is an achievement reward');
+    const all = defaultState(C, B); for (const n of C.nodes) all.progress.cleared[n.id] = { clears: 1, best: null };
+    ok(C.banners.every(b => Object.values(bannerPool(b, all, C).byTier).every(ids => ex.every(c => !ids.includes(c.id)))), 'the exclusive form is in no banner pool, even at the end of the story');
+    all.roster.naruto_sage = { level: 77, stars: 2 };
+    checkAchievements(all, C, B);
+    const got = claimAchievement(all, 'ach_story', C, B);
+    ok(got.ok && got.character === 'naruto_chakramode' && all.roster.naruto_chakramode.level === 77 && all.roster.naruto_chakramode.stars === 1, 'completing Part I and Part II gives the exclusive form at the best Naruto form\'s level');
+    // combat records
+    const fake = (alive, bossLvl, teamLvl, overpower) => ({ stats: { clashes: { overpower } }, units: [
+      ...[0, 1, 2].map(i => ({ side: 'player', protected: false, alive: alive || i > 0, level: teamLvl })),
+      { side: 'enemy', isBoss: true, alive: false, level: bossLvl }] });
+    const cs = defaultState(C, B);
+    recordBattle(cs, { won: true, mode: 'story', sim: fake(true, 20, 20, 3), matchup: { label: 'Neutral' } }, B);
+    ok(cs.stats.flawlessWins === 1 && cs.stats.clashWins === 3 && cs.stats.counteredWins === 0 && cs.stats.underdogBossWins === 0, 'a flawless win is recorded, with its Overpowers');
+    recordBattle(cs, { won: true, mode: 'story', sim: fake(false, 20, 20 - B.achievements.underdogLevels, 0), matchup: { label: 'Poor' } }, B);
+    ok(cs.stats.flawlessWins === 1 && cs.stats.counteredWins === 1 && cs.stats.underdogBossWins === 1, 'countered and under-levelled boss wins are recorded');
+    recordBattle(cs, { won: true, mode: 'tutorial', sim: fake(true, 20, 1, 5), matchup: { label: 'Bad' } }, B);
+    ok(cs.stats.clashWins === 3 && cs.stats.counteredWins === 1, 'tutorial battles never count toward achievements');
+    ok(recordDayPlayed(cs, '2026-01-01') && !recordDayPlayed(cs, '2026-01-01') && recordDayPlayed(cs, '2026-01-02') && cs.stats.daysPlayed === 2, 'days played count each calendar day once');
   }
   // curves
   ok(curve({ type: 'step', base: 1, table: [[10, 2], [20, 3]] }, 15) === 2, 'step curve');

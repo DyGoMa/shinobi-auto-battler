@@ -18,20 +18,26 @@ export function defaultState(C, B = BALANCE) {
     saveVersion: SAVE_VERSION,
     createdAt: Date.now(),
     updatedAt: 0,
-    currencies: { scrolls: B.economy.start.scrolls, ryo: B.economy.start.ryo },
+    // tickets: free single summons; rareTickets: summons guaranteed Rare or better (achievement rewards)
+    currencies: { scrolls: B.economy.start.scrolls, ryo: B.economy.start.ryo, tickets: 0, rareTickets: 0 },
     roster,
     team: { members: starters.filter(c => c !== leader).map(c => c.id).slice(0, 3), leader: leader ? leader.id : null },
-    progress: { cleared: {} },
+    progress: { cleared: {}, hard: {} },   // hard: Hard mode clears, same shape as cleared
     gacha: { pity: 0, totalPulls: 0, history: [] },
     bossRush: { highestRound: 0, runs: 0 },
     // autoUltMode: 'smart' = clash-aware (fires counter-nature ninja into wind-ups, holds
     // any that would be Overwhelmed); 'asap' = fire when ready. tips: one-time screen tips.
     settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true },
-    stats: { battles: 0, wins: 0, losses: 0 },
+    // Combat and day records behind the achievements (js/core/Achievements.js).
+    stats: { battles: 0, wins: 0, losses: 0, clashWins: 0, flawlessWins: 0, counteredWins: 0, underdogBossWins: 0, daysPlayed: 0, lastDay: '' },
     // status: 'new' (never started) | 'active' (lesson = next lesson index) | 'done'.
     // completed = every lesson won at least once; rewarded = the one-time reward is paid.
     tutorial: { status: 'new', lesson: 0, completed: false, rewarded: false },
     tips: { seen: {} },
+    achievements: { unlocked: {}, claimed: {} },   // id -> timestamp
+    account: { googleLinked: false },
+    // The Daily challenge: today's date key, attempts used, cleared today, lifetime clears.
+    daily: { date: '', attempts: 0, cleared: false, totalCleared: 0 },
   };
 }
 
@@ -82,7 +88,7 @@ function fillDefaults(target, defaults) {
   for (const [k, v] of Object.entries(defaults)) {
     if (target[k] === undefined || target[k] === null || (isObj(v) && !isObj(target[k])) || (Array.isArray(v) && !Array.isArray(target[k]))) {
       target[k] = structuredClone(v);
-    } else if (isObj(v) && isObj(target[k]) && k !== 'roster' && k !== 'cleared') {
+    } else if (isObj(v) && isObj(target[k]) && !['roster', 'cleared', 'hard', 'seen', 'unlocked', 'claimed'].includes(k)) {
       fillDefaults(target[k], v);
     }
   }
@@ -104,7 +110,7 @@ export function migrate(raw, C, B = BALANCE) {
     }
     s = fillDefaults(s, fresh);
     // Sanitize numbers
-    for (const k of ['scrolls', 'ryo']) { const n = Number(s.currencies[k]); s.currencies[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : fresh.currencies[k]; }
+    for (const k of ['scrolls', 'ryo', 'tickets', 'rareTickets']) { const n = Number(s.currencies[k]); s.currencies[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : fresh.currencies[k]; }
     for (const [id, o] of Object.entries(s.roster)) {
       if (!isObj(o)) { delete s.roster[id]; continue; }
       o.level = Math.max(1, Math.min(B.stats.levelCap, Math.floor(Number(o.level) || 1)));
@@ -118,6 +124,8 @@ export function migrate(raw, C, B = BALANCE) {
     if (s.team.leader && !known(s.team.leader)) s.team.leader = null;
     if (!s.team.members.length) s.team = structuredClone(fresh.team);
     if (!isObj(s.progress.cleared)) s.progress.cleared = {};
+    if (!isObj(s.progress.hard)) s.progress.hard = {};
+    for (const k of ['unlocked', 'claimed']) if (!isObj(s.achievements[k])) s.achievements[k] = {};
     const T = s.tutorial;
     if (!['new', 'active', 'done'].includes(T.status)) T.status = 'new';
     T.lesson = Math.max(0, Math.min((C.tutorial?.nodes?.length || 1) - 1, Math.floor(Number(T.lesson) || 0)));

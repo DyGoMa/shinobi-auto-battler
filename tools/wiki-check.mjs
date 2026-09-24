@@ -42,6 +42,7 @@ export const GUARDED = [
   { path: 'leader.scopedMult', fmt: 'x' }, { path: 'leader.tierMult.kage', fmt: 'x' },
   { path: 'bossRush.loopMult', fmt: 'x' },
   { path: 'tutorial.rewards.scrolls', ctx: /scroll|tutorial/i }, { path: 'tutorial.rewards.ryo', ctx: /ryo|tutorial/i },
+  { path: 'achievements.underdogLevels', ctx: /below|under|boss/i },
 ];
 
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -62,7 +63,7 @@ function prose(raw) {
   return raw.replace(/<!--[\s\S]*?-->/g, ' ').replace(/\{\{[^}]*\}\}/g, ' ').replace(/\]\([^)]*\)/g, '] ').replace(/`[^`]*`/g, ' ');
 }
 
-export function checkWiki({ achievements = [] } = {}) {
+export function checkWiki({ achievements = C.achievements || [] } = {}) {
   const errors = [];
   const index = buildWikiIndex(C, B, { achievements });
   // ---- 1. every content entry has its generated page

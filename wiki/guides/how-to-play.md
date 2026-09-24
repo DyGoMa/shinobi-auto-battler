@@ -13,6 +13,7 @@ Your ninja fight on their own. **You** choose who fights, read the enemy's natur
 - **Summon**: spend scrolls to recruit ninja. See [Summoning and pity](wiki:guide/summoning).
 - **Wiki**: this reference. Every screen has a **?** button that opens its page here.
 - **Settings**: sound, battle options, tips and your cloud save.
+- **🏆 Achievements** (top of the screen): goals across the whole game, and their rewards.
 
 ## A battle, step by step
 

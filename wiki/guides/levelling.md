@@ -19,6 +19,7 @@ Two currencies run the game: **📜 scrolls** summon ninja, and **🪙 Ryo** lev
 | Boss Rush rounds | Scrolls and Ryo for every round cleared, every run |
 | The tutorial | {{num:tutorial.rewards.scrolls}} scrolls and {{num:tutorial.rewards.ryo}} Ryo, once |
 | Duplicates past {{num:stats.starCap}}★ | Ryo |
+| [Achievements](wiki:guide/achievements) | Ryo, summon tickets and Rare+ summon tickets |
 
 Rewards grow as the story goes on, so later battles pay more.
 

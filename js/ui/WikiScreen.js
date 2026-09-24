@@ -11,6 +11,9 @@ import { ultEffectText, enemyJutsuText, ROLE_TEXT, RANGE_TEXT } from '../wiki/te
 import { characterStats, powerRating, leaderBuffText } from '../core/Ninja.js';
 import { TIERS, TIER_LABEL, RARITY_LABEL, beatsNature, beatenBy, natureRelation, nodeRewards, arcClearRewards, bossRushRewards } from '../core/formulas.js';
 import { bossRushRound, nodeEnemyLevel } from '../core/Progression.js';
+import { ACHIEVEMENT_CATEGORIES } from '../content/achievements.js';
+import { achievementProgress, achievementConfig, achievementText, isUnlocked, isClaimed } from '../core/Achievements.js';
+import { rewardChips } from './AchievementsScreen.js';
 
 let INDEX = null;
 let JUTSU = null;
@@ -25,7 +28,7 @@ const TITLE_OF = { home: 'Home', story: 'Story', team: 'Team', roster: 'Roster',
 
 function ensureIndex(game) {
   if (!INDEX) {
-    INDEX = buildWikiIndex(game.C, game.B, { achievements: game.achievements || [] });
+    INDEX = buildWikiIndex(game.C, game.B);
     JUTSU = new Map(jutsuCatalog(game.C).map(j => [j.slug, j]));
     APPEAR = enemyAppearances(game.C);
   }
@@ -82,6 +85,8 @@ function renderPage(game, ui, id, go, params) {
     case 'banners': return bannersPage(game, go);
     case 'banner': return bannerPage(game, game.C.banner[key], go);
     case 'boss-rush': return bossRushPage(game, go);
+    case 'achievements': return achievementsPage(game, ui, go);
+    case 'achievement': return achievementPage(game, ui, game.C.achievement[key], go);
     default: return h('div.card', h('p', 'Page not found.'));
   }
 }
@@ -249,7 +254,7 @@ function characterPage(game, ui, d, go) {
   const strong = d.taijutsu ? [] : [...new Set(d.natures.map(n => beatsNature(n, B)))];
   const how = [];
   if (ob.starter) how.push('Starter: you have them from the beginning.');
-  if (ob.achievement) how.push(h('span', '🏆 Achievement reward only: never in any banner. Earn it by completing ', link(go, `achievement/${ob.achievement}`, 'this achievement'), '.'));
+  if (ob.achievement) how.push(h('span', '🏆 Achievement reward only: never in any banner. Earn it with ', link(go, `achievement/${ob.achievement}`, `“${C.achievement[ob.achievement].name}”`), `: ${C.achievement[ob.achievement].description}`));
   if (ob.pullable && !ob.starter) how.push(ob.unlockArc ? `Joins the summon pools after you ${ob.unlockKind === 'cleared' ? 'clear' : 'reach'} ${arcName(game, ob.unlockArc)}.` : 'In the summon pools from the start.');
   if (ob.pullable && ob.starter) how.push('Duplicates can also be summoned for stars.');
   const own = state.roster[d.id];
@@ -557,5 +562,58 @@ function bossRushPage(game, go) {
           special ? h('div.tiny.muted', `Special: ${special.name}${special.nature ? ` (${special.nature} Style)` : ''}`) : null,
           h('div.tiny', `Reward 📜 ${fmt(rw.scrolls)} 🪙 ${fmt(rw.ryo)}`)), h('span.muted', '›'));
     })),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Achievements
+// ---------------------------------------------------------------------------
+const ACH_HOW = {
+  tutorial: 'Win all three lessons. You can replay the tutorial from the Wiki home or Settings.',
+  partClear: 'Clear every battle of the part on the Story map.',
+  hardClears: 'Hard mode opens for each part once you clear it.',
+  hardPartClear: 'Hard mode opens for each part once you clear it; clear every battle again on Hard.',
+  ownCount: 'Summon new ninja: first clears pay the scrolls, and villains join the pools as you clear their arcs.',
+  natures: 'Summon until you have a ninja whose main (first) nature is each of the five.',
+  forms: 'Alternate forms join the pools as the story goes on. Their arc banners feature them.',
+  levelMax: 'Level one ninja all the way on the Roster.',
+  stat: 'Counts battles from now on.',
+  rushRound: 'The Boss Rush opens on Home once you clear the Sasuke Retrieval Squad.',
+  summons: 'Open the Summon screen.',
+  googleLinked: 'Open Settings and link a Google account.',
+  dailies: 'A new Daily challenge appears on Home every day.',
+};
+
+function achievementsPage(game, ui, go) {
+  const { C, B, state } = game;
+  return h('div',
+    h('p', `${C.achievements.length} achievements. They unlock by themselves as you play, including for things you did before they existed, and you claim their rewards on the Achievements screen.`),
+    btn('🏆 Open the Achievements screen', () => ui.go('achievements'), 'primary'),
+    ...ACHIEVEMENT_CATEGORIES.map(cat => h('section.wsec', h('h2', `${cat.icon} ${cat.name}`),
+      h('div.wlist', ...C.achievements.filter(a => a.category === cat.id).map(a => rowCard(() => go(`achievement/${a.id}`),
+        h('div.grow', h('b', (isClaimed(state, a.id) ? '✓ ' : isUnlocked(state, a.id) ? '🏆 ' : '') + a.name), h('div.tiny.muted', achievementText(a, B))),
+        h('span.muted', '›')))))),
+  );
+}
+
+function achievementPage(game, ui, a, go) {
+  const { C, B, state } = game;
+  if (!a) return h('p', 'Unknown achievement.');
+  const p = achievementProgress(a, state, C, B);
+  const reward = achievementConfig(a, B).reward;
+  const how = a.type === 'stat' ? ({ flawlessWins: 'Any story or Hard mode battle counts, as long as every ninja who started it is still standing.', counteredWins: 'The nature matchup on the Team screen must say Poor or Bad when the battle starts.', clashWins: 'Fire an Ultimate into an enemy ⚠ wind-up with a ninja whose nature beats the jutsu.', underdogBossWins: "Compare your team's average level with the boss's level on the Story map.", daysPlayed: 'Open the game on different days.' })[a.stat] : ACH_HOW[a.type];
+  return h('div',
+    h('div.row', h('span.pill', ACHIEVEMENT_CATEGORIES.find(c => c.id === a.category)?.name || a.category),
+      isClaimed(state, a.id) ? h('span.pill.good', '✓ Claimed') : isUnlocked(state, a.id) ? h('span.pill.accent', '🏆 Unlocked: claim it on the Achievements screen') : null),
+    section('Goal', h('p', achievementText(a, B))),
+    section('Reward', h('div.row.tight', ...rewardChips(reward, a, C)),
+      a.rewardCharacter ? h('p.small', link(go, `character/${a.rewardCharacter}`, C.char[a.rewardCharacter].name), ' is exclusive to this achievement: it never appears in any banner.') : null,
+      reward?.tickets ? h('p.small.muted', 'A summon ticket is one free summon on any open banner.') : null,
+      reward?.rareTickets ? h('p.small.muted', `A Rare+ summon ticket is one summon that is guaranteed to be ${TIER_LABEL[B.achievements.rareTicketMinTier]} or better.`) : null),
+    section('Your progress',
+      h('div.bar', { role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(p.target), 'aria-valuenow': String(p.value) }, h('i', { style: { width: `${(p.value / p.target) * 100}%` } })),
+      h('p.small', `${fmt(p.value)} / ${fmt(p.target)}`)),
+    how ? section('How to get it', h('p', how)) : null,
+    h('p.small', link(go, 'guide/achievements', 'Read the Achievements guide ›')),
   );
 }

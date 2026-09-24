@@ -7,12 +7,15 @@ import { PART1_ARCS } from './arcs/part1.js';
 import { SHIPPUDEN_ARCS } from './arcs/shippuden.js';
 import { BANNERS } from './banners.js';
 import { TUTORIAL_ARC } from './tutorial.js';
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES } from './achievements.js';
 import { NATURES, TIERS, ROLES } from '../core/formulas.js';
 
 const ARC_FILES = [PART1_ARCS, SHIPPUDEN_ARCS];
 
 export const OBJECTIVE_TYPES = ['defeatAll', 'survive', 'protect', 'defeatBoss'];
 export const LESSON_TYPES = ['team', 'nature', 'clash'];
+export const ACHIEVEMENT_TYPES = ['tutorial', 'partClear', 'hardClears', 'hardPartClear', 'ownCount', 'natures', 'forms', 'levelMax', 'stat', 'rushRound', 'summons', 'googleLinked', 'dailies'];
+export const ACHIEVEMENT_STATS = ['flawlessWins', 'counteredWins', 'clashWins', 'underdogBossWins', 'daysPlayed'];
 export const MECHANIC_TYPES = ['telegraphAoE', 'summonAdds', 'shieldPhase', 'enrage', 'elementSwap', 'reflect', 'lifesteal', 'reviveOnce', 'regen', 'rally'];
 export const ULT_TYPES = ['single', 'aoe', 'taunt', 'heal', 'buff'];
 export const LEADER_STATS = ['atk', 'hp', 'def', 'speed', 'crit', 'chakra', 'startChakra', 'nature'];
@@ -20,7 +23,7 @@ export const ENEMY_ROLES = [...ROLES, 'Civilian'];
 export const TARGET_MODES = ['all', 'front', 'back', 'random'];
 export const TARGETING = ['nearest', 'backline', 'protected'];
 
-export function buildContent({ roster, enemies, arcs, banners, bossRush, tutorial = null, tags = TAGS }) {
+export function buildContent({ roster, enemies, arcs, banners, bossRush, tutorial = null, achievements = [], tags = TAGS }) {
   for (const c of roster) if (c.leader?.scope?.tag && !c.leader.scope.tagLabel) c.leader.scope.tagLabel = tags[c.leader.scope.tag] || c.leader.scope.tag;
   const sortedArcs = arcs.slice().sort((a, b) => (a.part - b.part) || (a.order - b.order));
   let g = 0;
@@ -44,8 +47,8 @@ export function buildContent({ roster, enemies, arcs, banners, bossRush, tutoria
   }
   const byId = (arr) => Object.fromEntries(arr.map(x => [x.id, x]));
   return {
-    roster, enemies, arcs: sortedArcs, banners, bossRush, nodes, tutorial,
-    char: byId(roster), enemy: byId(enemies), arc: byId(sortedArcs), node: byId(nodes), banner: byId(banners),
+    roster, enemies, arcs: sortedArcs, banners, bossRush, nodes, tutorial, achievements,
+    char: byId(roster), enemy: byId(enemies), arc: byId(sortedArcs), node: byId(nodes), banner: byId(banners), achievement: byId(achievements),
   };
 }
 
@@ -78,7 +81,8 @@ export function validateContent(C) {
   const checkUnlock = (where, u) => {
     if (u == null) return;
     const key = Object.keys(u)[0];
-    if (!['arcCleared', 'arcReached'].includes(key)) err(where, `unlock must be {arcCleared|arcReached: arcId}`);
+    if (key === 'achievement') { if (!C.achievement?.[u.achievement]) err(where, `unlock references unknown achievement "${u.achievement}"`); return; }
+    if (!['arcCleared', 'arcReached'].includes(key)) err(where, `unlock must be {arcCleared|arcReached: arcId} or {achievement: id}`);
     else if (!arcIds.has(u[key])) err(where, `unlock references unknown arc "${u[key]}"`);
   };
 
@@ -211,6 +215,27 @@ export function validateContent(C) {
   }
   if (!C.banners.some(b => b.type === 'standard')) err('banners', 'need one standard banner');
 
+  // Achievements (numbers live in balance.achievements.list; validate.mjs checks those)
+  const cats = ACHIEVEMENT_CATEGORIES.map(c => c.id);
+  for (const a of C.achievements || []) {
+    const w = `achievement ${a.id}`;
+    uniq(a.id, 'achievement');
+    for (const f of ['name', 'category', 'type', 'description']) if (!a[f]) err(w, `missing required field "${f}"`);
+    if (a.category && !cats.includes(a.category)) err(w, `invalid category "${a.category}" (${cats.join(', ')})`);
+    if (a.type && !ACHIEVEMENT_TYPES.includes(a.type)) err(w, `invalid type "${a.type}"`);
+    if (a.type === 'stat' && !ACHIEVEMENT_STATS.includes(a.stat)) err(w, `stat must be one of ${ACHIEVEMENT_STATS.join(', ')}`);
+    if (['partClear', 'hardPartClear'].includes(a.type) && !(Array.isArray(a.parts) && a.parts.length && a.parts.every(p => C.arcs.some(x => x.part === p)))) err(w, 'parts must list story parts that have arcs');
+    if (a.rewardCharacter) {
+      const d = C.char[a.rewardCharacter];
+      if (!d) err(w, `rewardCharacter "${a.rewardCharacter}" not found`);
+      else {
+        if (!d.notPullable) err(w, `rewardCharacter ${d.id} must be notPullable (achievement-exclusive)`);
+        if (d.unlock?.achievement !== a.id) err(w, `rewardCharacter ${d.id} must have unlock: { achievement: '${a.id}' }`);
+      }
+    }
+  }
+  for (const c of C.roster) if (c.notPullable) for (const b of C.banners) if ((b.featured || []).includes(c.id)) err(`banner ${b.id}`, `features ${c.id}, which is achievement-exclusive and never in a banner`);
+
   // Boss rush
   const R = C.bossRush;
   if (!R) err('bossRush', 'missing BOSS_RUSH');
@@ -227,7 +252,7 @@ export function validateContent(C) {
 
 export const CONTENT = buildContent({
   roster: ROSTER, enemies: ENEMIES,
-  arcs: ARC_FILES.flat(), banners: BANNERS, bossRush: BOSS_RUSH, tutorial: TUTORIAL_ARC,
+  arcs: ARC_FILES.flat(), banners: BANNERS, bossRush: BOSS_RUSH, tutorial: TUTORIAL_ARC, achievements: ACHIEVEMENTS,
 });
 
 export default CONTENT;

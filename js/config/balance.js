@@ -371,6 +371,45 @@ export const BALANCE = {
   },
 
   // ---------------------------------------------------------------------------
+  // ACHIEVEMENTS — targets and rewards for js/content/achievements.js (claimed on
+  // the Achievements screen). Reward keys: ryo, scrolls, tickets (one free summon
+  // each), rareTickets (one summon that is guaranteed rareTicketMinTier or better).
+  // Kept small next to the story's income: `npm run campaign` claims them all and
+  // reports the end-of-part levels and Ryo (BALANCE.md §4).
+  // ---------------------------------------------------------------------------
+  achievements: {
+    // A Rare+ ticket's summon is at least this tier ('chunin' = Rare).
+    rareTicketMinTier: 'chunin',
+    // "Giant Killer": the team's average level must be at least this far below the boss's. 2–10
+    underdogLevels: 5,
+    // The achievement-exclusive form joins at the level of your best-levelled form
+    // of the same ninja (never below 1), so it is usable the day you earn it.
+    exclusiveJoinsAtBestFormLevel: true,
+    list: {
+      ach_tutorial:     { reward: { tickets: 1 } },
+      ach_part1:        { reward: { rareTickets: 1 } },
+      ach_story:        { reward: { rareTickets: 1 } },          // + the exclusive Naruto form
+      ach_hard_first:   { target: 1, reward: { tickets: 2 } },
+      ach_hard_part1:   { reward: { rareTickets: 1 } },
+      ach_own_10:       { target: 10, reward: { tickets: 1 } },
+      ach_own_25:       { target: 25, reward: { tickets: 3 } },
+      ach_own_45:       { target: 45, reward: { rareTickets: 1 } },
+      ach_natures:      { reward: { ryo: 1500 } },
+      ach_forms:        { reward: { tickets: 3 } },
+      ach_level_max:    { reward: { tickets: 3 } },
+      ach_flawless:     { target: 1, reward: { ryo: 800 } },
+      ach_countered:    { target: 1, reward: { ryo: 1500 } },
+      ach_clash:        { target: 10, reward: { tickets: 2 } },
+      ach_underdog:     { target: 1, reward: { ryo: 2500 } },
+      ach_rush:         { target: 7, reward: { tickets: 3 } },
+      ach_first_summon: { target: 1, reward: { tickets: 1 } },
+      ach_google:       { reward: { tickets: 2 } },
+      ach_days:         { target: 7, reward: { tickets: 3 } },
+      ach_dailies:      { target: 5, reward: { rareTickets: 1 } },
+    },
+  },
+
+  // ---------------------------------------------------------------------------
   // BALANCE TARGETS — checked by `npm run sim` and `npm run campaign`.
   // ---------------------------------------------------------------------------
   targets: {

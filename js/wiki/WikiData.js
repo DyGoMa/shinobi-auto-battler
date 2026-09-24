@@ -21,6 +21,7 @@ export const GUIDES = [
   { slug: 'jutsu-clash', title: 'Jutsu Clash explained', icon: '⚡', blurb: 'Meet an enemy jutsu head-on: Overpower, Standoff and Overwhelmed.' },
   { slug: 'summoning', title: 'Summoning and pity', icon: '📜', blurb: 'Rates, banners, the Kage guarantee and duplicates.' },
   { slug: 'levelling', title: 'Levelling and economy', icon: '🪙', blurb: 'Where Ryo and scrolls come from, and how to spend them.' },
+  { slug: 'achievements', title: 'Achievements', icon: '🏆', blurb: 'Goals across the whole game, their rewards, and an exclusive Naruto.' },
   { slug: 'whats-new', title: "What's new", icon: '✨', blurb: 'What changed in each version of the game.' },
 ].map(g => ({ ...g, id: `guide/${g.slug}`, file: `wiki/guides/${g.slug}.md` }));
 
@@ -39,7 +40,7 @@ export const REFERENCE = [
 export const HELP_PAGES = {
   home: 'guide/how-to-play', story: 'arcs', team: 'guide/team-composition', roster: 'guide/levelling',
   summon: 'guide/summoning', rush: 'boss-rush', settings: 'guide/how-to-play', tutorial: 'guide/how-to-play',
-  wiki: 'guide/how-to-play', battle: 'guide/jutsu-clash',
+  wiki: 'guide/how-to-play', battle: 'guide/jutsu-clash', achievements: 'guide/achievements',
 };
 
 /** Link targets a guide may use besides wiki pages (handled by the Wiki screen). */
@@ -106,7 +107,7 @@ const ENEMY_KIND = (e) => e.role === 'Civilian' ? 'Escort' : 'Enemy';
 
 /** The full page index. `extras.achievements` = achievement definitions (optional). */
 export function buildWikiIndex(C, B, extras = {}) {
-  const achievements = extras.achievements || [];
+  const achievements = extras.achievements ?? C.achievements ?? [];
   const pages = [];
   const add = (p) => pages.push({ keywords: [], ...p });
   add({ id: 'home', kind: 'home', title: 'Wiki' });

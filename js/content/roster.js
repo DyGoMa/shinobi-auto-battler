@@ -612,6 +612,23 @@ export const ROSTER = [
     tags: ['team7', 'leaf'], unlock: { arcCleared: 'arc_birth' },
     color: '#fdba74', initials: 'NU', emoji: '☀️',
   },
+
+  // ============ ACHIEVEMENT-EXCLUSIVE FORM (never in any banner) ===============
+  // The reward for "Believe It!" (complete Part I and Part II; achievements.js).
+  // notPullable keeps it out of every summon pool, and validate checks no banner
+  // features it. Tuned inside the existing Naruto forms: a Ranged Kage with weights
+  // like Pain's or Obito's, so it hits softer than Six Paths Sage Mode (a Striker).
+  // Nine-Tails Chakra Mode lets Naruto share chakra, hence the whole-team startChakra
+  // Leader buff. Natures: Wind (Wind Style: Rasen Shuriken on screen).
+  {
+    id: 'naruto_chakramode', formOf: 'naruto', name: 'Naruto Uzumaki (Nine-Tails Chakra Mode)', short: 'Chakra Mode',
+    tier: 'kage', role: 'Ranged', natures: ['Wind'],
+    stats: { hp: 1.05, atk: 1.06, def: 1.0 },
+    ult: { name: 'Planet Rasengan', type: 'aoe', nature: 'Wind' },
+    leader: { stat: 'startChakra' },
+    tags: ['team7', 'leaf'], unlock: { achievement: 'ach_story' }, notPullable: true,
+    color: '#facc15', initials: 'NU', emoji: '🌟',
+  },
 ];
 
 export default ROSTER;

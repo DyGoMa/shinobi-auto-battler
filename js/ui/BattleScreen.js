@@ -14,6 +14,8 @@ import { completeLesson, tutorialLessons } from '../core/Tutorial.js';
 import { tipsEnabled, tipSeen, markTipSeen } from './tips.js';
 import { LESSON_TITLE } from './TutorialScreen.js';
 import { guideBody, whenGuideReady } from './WikiScreen.js';
+import { recordBattle } from '../core/Achievements.js';
+import { nodeEnemyNatures, teamMatchupRating } from '../core/TeamPicker.js';
 
 const CLASH_LABEL = { overpower: '▲ OVERPOWER', standoff: '= STANDOFF', overwhelmed: '▼ WEAK' };
 
@@ -105,6 +107,8 @@ export class BattleScreen {
       cfg = { player, enemies: [{ spec: R.spec }], enemyFactory: R.enemyFactory, objective: { type: 'defeatBoss' }, seed: this._seed() + this.round, balance: B };
     } else {
       cfg = nodeBattleConfig(state, this.node, C, B, { seed: this._seed() });
+      // The team's nature matchup at the start ("Against the Odds" counts Poor or Bad).
+      this.matchup = teamMatchupRating(cfg.team.members.map(id => C.char[id]), nodeEnemyNatures(this.node, C), B);
     }
     this.sim = new BattleSim(cfg);
     this.renderer.vis.clear();
@@ -400,6 +404,7 @@ export class BattleScreen {
     if (this.isRush) {
       if (won) {
         const rw = completeBossRushRound(state, this.round, B);
+        recordBattle(state, { won: true, mode: 'rush', sim: this.sim }, B);
         this.rushRewards.scrolls += rw.scrolls; this.rushRewards.ryo += rw.ryo;
         game.commit('bossrush');
         game.audio.victory();
@@ -408,6 +413,7 @@ export class BattleScreen {
       }
       this.ended = true;
       state.bossRush.runs = (state.bossRush.runs || 0) + 1;
+      recordBattle(state, { won: false, mode: 'rush', sim: this.sim }, B);
       game.commit('bossrush');
       game.audio.defeat();
       setTimeout(() => this._rushResults(), 700);
@@ -424,6 +430,7 @@ export class BattleScreen {
       return;
     }
     const result = completeNode(state, this.node, won, C, B, { time: this.sim.time });
+    recordBattle(state, { won, mode: 'story', sim: this.sim, matchup: this.matchup }, B);
     game.commit('battle');
     won ? game.audio.victory() : game.audio.defeat();
     setTimeout(() => this._results(won, result), 650);

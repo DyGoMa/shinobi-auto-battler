@@ -9,10 +9,12 @@ import * as Rush from './BossRushScreen.js';
 import * as Settings from './SettingsScreen.js';
 import * as Tutorial from './TutorialScreen.js';
 import * as Wiki from './WikiScreen.js';
+import * as Achievements from './AchievementsScreen.js';
 import { BattleScreen } from './BattleScreen.js';
 import { canAfford } from '../core/GachaSystem.js';
 import { isBossRushUnlocked } from '../core/Progression.js';
 import { tutorialPending, skipTutorial, startTutorial, nextLessonIndex } from '../core/Tutorial.js';
+import { claimableAchievements } from '../core/Achievements.js';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: '🏯', mod: Home },
@@ -28,6 +30,7 @@ const SCREENS = {
   ...Object.fromEntries(TABS.map(t => [t.id, { mod: t.mod, tab: t.id }])),
   tutorial: { mod: Tutorial, tab: 'home' },
   rush: { mod: Rush, tab: 'home' },
+  achievements: { mod: Achievements, tab: 'home' },
 };
 
 export class UIManager {
@@ -49,6 +52,7 @@ export class UIManager {
       this.tabbar.appendChild(b);
     }
     document.getElementById('brand').addEventListener('click', () => this.go('home'));
+    document.getElementById('ach-btn').addEventListener('click', () => { this.game.audio.click(); this.go('achievements'); });
     const mute = document.getElementById('mute-btn');
     mute.addEventListener('click', () => {
       const s = this.game.state.settings; s.muted = !s.muted;
@@ -109,6 +113,12 @@ export class UIManager {
     const mute = document.getElementById('mute-btn');
     mute.textContent = s.settings.muted ? '🔇' : '🔊';
     mute.setAttribute('aria-label', s.settings.muted ? 'Sound is off — turn it on' : 'Sound is on — mute');
+    const ach = document.getElementById('ach-btn');
+    const ready = claimableAchievements(s, this.game.C).length;
+    ach.querySelector('.dot')?.remove();
+    if (ready) ach.appendChild(h('span.dot', { 'aria-hidden': 'true' }));
+    ach.setAttribute('aria-label', ready ? `Achievements: ${ready} reward${ready === 1 ? '' : 's'} to claim` : 'Achievements');
+    ach.classList.toggle('active', this.current === 'achievements');
     for (const b of this.tabbar.children) {
       b.querySelector('.dot')?.remove();
       const id = b.dataset.tab;
@@ -206,8 +216,18 @@ export class UIManager {
     });
   }
 
-  toast(text, kind = '') {
-    const t = h('div.toast' + (kind ? '.' + kind : ''), { role: 'status' }, text);
+  /** Toast newly unlocked achievements (one line each, or a summary when there are many). */
+  achievementsUnlocked(list, { summary = false } = {}) {
+    if (!list.length) return;
+    this.game.audio.achievement?.();
+    const open = () => this.go('achievements');
+    if (summary || list.length > 2) this.toast(`🏆 ${list.length} achievement${list.length === 1 ? '' : 's'} unlocked. Tap to claim the rewards.`, 'good', open);
+    else for (const a of list) this.toast(`🏆 Achievement unlocked: ${a.name}. Tap to claim.`, 'good', open);
+  }
+
+  toast(text, kind = '', onclick = null) {
+    const t = h(onclick ? 'button.toast' : 'div.toast', { role: 'status', type: onclick ? 'button' : null, onclick: onclick ? () => { t.remove(); onclick(); } : null }, text);
+    if (kind) t.classList.add(kind);
     this.toastRoot.appendChild(t);
     setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 320); }, 3200);
     while (this.toastRoot.children.length > 4) this.toastRoot.firstChild.remove();

@@ -170,3 +170,9 @@ export function bossRushRewards(round, B = BALANCE) {
 }
 
 export function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+/** The player's local calendar date as "YYYY-MM-DD" (days played, the Daily challenge). */
+export function localDateKey(date = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+}

@@ -71,6 +71,27 @@ export function pull(state, bannerId, count, C, rng, B = BALANCE) {
   if (!isBannerUnlocked(state, banner, C)) return { ok: false, error: 'Banner locked' };
   const cost = pullCost(count, B);
   if (state.currencies.scrolls < cost) return { ok: false, error: `Not enough scrolls (${cost} needed)` };
+  state.currencies.scrolls -= cost;
+  return { ok: true, results: doPulls(state, banner, count, C, rng, B) };
+}
+
+/**
+ * One summon paid with a ticket instead of scrolls (achievement rewards).
+ * kind 'tickets' = a normal summon; 'rareTickets' = guaranteed
+ * balance.achievements.rareTicketMinTier or better. Pity counts as usual.
+ */
+export function ticketPull(state, bannerId, kind, C, rng, B = BALANCE) {
+  const banner = C.banner[bannerId];
+  if (!banner) return { ok: false, error: 'Unknown banner' };
+  if (!isBannerUnlocked(state, banner, C)) return { ok: false, error: 'Banner locked' };
+  if (!['tickets', 'rareTickets'].includes(kind)) return { ok: false, error: 'Unknown ticket' };
+  if (!(state.currencies[kind] > 0)) return { ok: false, error: 'No tickets left' };
+  state.currencies[kind]--;
+  const minTier = kind === 'rareTickets' ? B.achievements.rareTicketMinTier : 'genin';
+  return { ok: true, results: doPulls(state, banner, 1, C, rng, B, { minTier }) };
+}
+
+function doPulls(state, banner, count, C, rng, B, { minTier = 'genin' } = {}) {
   const pool = bannerPool(banner, state, C);
   const G = B.gacha;
   const picks = [];
@@ -78,7 +99,7 @@ export function pull(state, bannerId, count, C, rng, B = BALANCE) {
     let tier;
     const pityHit = state.gacha.pity + 1 >= G.pity;
     if (pityHit) tier = G.pityTier;
-    else tier = rollTier(rng, B);
+    else tier = rollTier(rng, B, minTier);
     // 10-pull guarantee on the last pull
     if (count >= 10 && i === count - 1 && !picks.some(p => TIER_RANK[p.tier] >= TIER_RANK[G.tenPullGuaranteeTier]) && TIER_RANK[tier] < TIER_RANK[G.tenPullGuaranteeTier]) {
       tier = rollTier(rng, B, G.tenPullGuaranteeTier);
@@ -88,11 +109,10 @@ export function pull(state, bannerId, count, C, rng, B = BALANCE) {
     if (pick.tier === G.pityTier) state.gacha.pity = 0; else state.gacha.pity++;
     picks.push({ ...pick, pityHit });
   }
-  state.currencies.scrolls -= cost;
   state.gacha.totalPulls += picks.length;
   const results = picks.map(p => ({ ...p, ...grantCharacter(state, p.id, C, B) }));
   state.gacha.history = [...results.map(r => ({ id: r.id, tier: r.tier, t: Date.now() })), ...(state.gacha.history || [])].slice(0, 60);
-  return { ok: true, results };
+  return results;
 }
 
 /** Add a character (or a star / a refund for duplicates). */

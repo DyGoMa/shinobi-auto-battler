@@ -14,9 +14,10 @@
 // Runs CAMPAIGN_PLAYERS (default 10) seeds; prints the first in detail.
 import { C, B, runNode, teamForNode, median, seedFor, SIM_PARTS, PART_LABEL, DEFAULT_BOT } from './common.mjs';
 import { defaultState } from '../js/core/SaveManager.js';
-import { pull, canAfford } from '../js/core/GachaSystem.js';
+import { pull, canAfford, ticketPull } from '../js/core/GachaSystem.js';
 import { completeNode, canLevelUp, levelUp, isBannerUnlocked, ownedOrLoaner, nodeBattleConfig, resolveTeam } from '../js/core/Progression.js';
-import { autoPickTeam } from '../js/core/TeamPicker.js';
+import { autoPickTeam, teamMatchupRating, nodeEnemyNatures } from '../js/core/TeamPicker.js';
+import { checkAchievements, claimAll, recordBattle } from '../js/core/Achievements.js';
 import { makeRng, enemyLevelForNode } from '../js/core/formulas.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 import { startTutorial, completeLesson, skipTutorial, tutorialLessons } from '../js/core/Tutorial.js';
@@ -27,6 +28,9 @@ const HARD_CAP = 12; // give up on a node after this many replays (reported as F
 // The "new player" run plays the Academy tutorial first (CAMPAIGN_TUTORIAL=0 to leave
 // it out). Its lessons never count toward the difficulty stats below.
 const TUTORIAL = process.env.CAMPAIGN_TUTORIAL !== '0';
+// Achievements are unlocked and claimed as the bot plays (CAMPAIGN_ACHIEVEMENTS=0 to leave
+// them out and compare): Ryo is spent on levels, tickets on summons.
+const ACHIEVEMENTS = process.env.CAMPAIGN_ACHIEVEMENTS !== '0';
 
 /** The three tutorial lessons with the starter team, through the game's own battle
  *  config (nodeBattleConfig). A lesson lost three times is skipped: same reward. */
@@ -51,9 +55,15 @@ function playCampaign(playerSeed, verbose) {
   const state = defaultState(C, B);
   const rng = makeRng(playerSeed);
   const nodes = C.nodes.filter(n => SIM_PARTS.includes(n.part));
-  const log = { arcs: [], stuck: [], fails: [], timeline: [], battles: 0, replays: 0, tutorial: null };
+  const log = { arcs: [], stuck: [], fails: [], timeline: [], battles: 0, replays: 0, tutorial: null, ach: { claimed: [], ryo: 0, tickets: 0, rareTickets: 0 } };
   let battleSeed = playerSeed * 7919;
   if (TUTORIAL) log.tutorial = playTutorial(state, battleSeed + 500000);
+  const claimReady = () => {
+    if (!ACHIEVEMENTS) return;
+    checkAchievements(state, C, B);
+    for (const r of claimAll(state, C, B)) { log.ach.claimed.push(r.id); for (const k of ['ryo', 'tickets', 'rareTickets']) log.ach[k] += r.reward?.[k] || 0; }
+  };
+  claimReady();
 
   const spendScrolls = (node) => {
     const arcBanner = C.banners.find(b => b.type === 'arc' && b.arc === node.arcId && isBannerUnlocked(state, b, C));
@@ -61,6 +71,8 @@ function playCampaign(playerSeed, verbose) {
     let guard = 0;
     while (guard++ < 50 && canAfford(state, 10, B)) pull(state, banner.id, 10, C, rng, B);
     while (guard++ < 100 && canAfford(state, 1, B)) pull(state, banner.id, 1, C, rng, B);
+    for (const kind of ['rareTickets', 'tickets']) while (guard++ < 200 && state.currencies[kind] > 0) ticketPull(state, banner.id, kind, C, rng, B);
+    claimReady();
   };
   // counterMode (after a loss): judge the bench as if it were levelled up to the
   // current team's level — the bot then spends its farmed Ryo (with the catch-up
@@ -86,7 +98,12 @@ function playCampaign(playerSeed, verbose) {
     }
   };
   const ownedMap = (team, node) => Object.fromEntries(team.members.map(id => [id, ownedOrLoaner(state, id, node, B)]));
-  const battle = (node, team) => { log.battles++; return runNode(node, team, ownedMap(team, node), battleSeed++); };
+  const battle = (node, team) => {
+    log.battles++;
+    const r = runNode(node, team, ownedMap(team, node), battleSeed++);
+    if (ACHIEVEMENTS) recordBattle(state, { won: r.state === 'won', mode: 'story', sim: r.sim, matchup: teamMatchupRating(team.members.map(id => C.char[id]), nodeEnemyNatures(node, C), B) }, B);
+    return r;
+  };
   const teamLevel = (team) => {
     const owned = team.members.filter(id => state.roster[id]);
     return owned.length ? owned.reduce((s, id) => s + state.roster[id].level, 0) / owned.length : 0;
@@ -103,6 +120,7 @@ function playCampaign(playerSeed, verbose) {
       const r = battle(node, team);
       if (r.state === 'won') {
         completeNode(state, node, true, C, B, { time: r.time });
+        claimReady();
         cleared = true; lastCleared = node;
         log.timeline.push({ node: node.id, level: teamLevel(team), enemy: enemyLevelForNode(node.globalIndex, B), scrolls: state.currencies.scrolls, ryo: state.currencies.ryo, attempts, replays, pulls: state.gacha.totalPulls, team: team.members });
         break;
@@ -119,7 +137,7 @@ function playCampaign(playerSeed, verbose) {
       const farmTeam = pickTeam(farmNode);
       levelTeam(farmTeam);
       const fr = battle(farmNode, farmTeam);
-      if (fr.state === 'won') completeNode(state, farmNode, true, C, B, { time: fr.time });
+      if (fr.state === 'won') { completeNode(state, farmNode, true, C, B, { time: fr.time }); claimReady(); }
       replays++; log.replays++;
     }
     if (replays > 0) log.stuck.push({ node: node.id, replays, attempts });
@@ -129,7 +147,8 @@ function playCampaign(playerSeed, verbose) {
       const last = log.timeline[log.timeline.length - 1];
       const tiers = { genin: 0, chunin: 0, jonin: 0, kage: 0 };
       for (const id of Object.keys(state.roster)) tiers[C.char[id].tier]++;
-      log.arcs.push({ arc: arc.name, part: arc.part, teamLevel: last?.level ?? 0, enemyLevel: enemyLevelForNode(node.globalIndex, B), pulls: state.gacha.totalPulls, scrolls: state.currencies.scrolls, ryo: state.currencies.ryo, owned: Object.keys(state.roster).length, tiers, team: last?.team || [] });
+      if (ACHIEVEMENTS) claimReady();
+      log.arcs.push({ arc: arc.name, part: arc.part, teamLevel: last?.level ?? 0, enemyLevel: enemyLevelForNode(node.globalIndex, B), pulls: state.gacha.totalPulls, scrolls: state.currencies.scrolls, ryo: state.currencies.ryo, owned: Object.keys(state.roster).length, tiers, team: last?.team || [], achievements: log.ach.claimed.length });
     }
   }
   if (verbose) print(log, state);
@@ -149,9 +168,10 @@ function print(log, state) {
   for (let i = 0; i < line.length; i += 118) console.log('  ' + line.slice(i, i + 118));
   console.log(`\nStuck points (needed replays): ${log.stuck.length ? log.stuck.map(s => `${s.node} (${s.replays} replay${s.replays > 1 ? 's' : ''})`).join(', ') : 'none'}`);
   console.log(`Total pulls: ${state.gacha.totalPulls}   battles: ${log.battles}   farm replays: ${log.replays}`);
+  if (ACHIEVEMENTS) console.log(`Achievements claimed (player #1): ${log.ach.claimed.length}/${C.achievements.length} — ${log.ach.claimed.join(', ')}; paid 🪙 ${log.ach.ryo}, 🎟️ ${log.ach.tickets}, 🎫 ${log.ach.rareTickets}`);
 }
 
-console.log(`Shinobi Auto-Battler — free-to-play campaign sim, ${PART_LABEL()} (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node${TUTORIAL ? ', new players play the tutorial first' : ', no tutorial'})`);
+console.log(`Shinobi Auto-Battler — free-to-play campaign sim, ${PART_LABEL()} (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node${TUTORIAL ? ', new players play the tutorial first' : ', no tutorial'}${ACHIEVEMENTS ? ', achievements claimed' : ', no achievements'})`);
 const logs = [];
 const VERBOSE = Number(process.env.CAMPAIGN_VERBOSE || 1);
 for (let p = 0; p < PLAYERS; p++) logs.push(playCampaign(seedFor('campaign', p + 1), p + 1 === VERBOSE));
@@ -172,7 +192,7 @@ console.log(`Median final team level: ${median(logs.map(l => l.arcs[l.arcs.lengt
 for (const part of SIM_PARTS) {
   const ends = logs.map(l => l.arcs.filter(a => a.part === part).slice(-1)[0]).filter(Boolean);
   if (!ends.length) continue;
-  console.log(`End of ${PART_LABEL([part])}: median team Lv ${median(ends.map(a => a.teamLevel)).toFixed(1)} vs enemy Lv ${ends[0].enemyLevel}, median Ryo ${median(ends.map(a => a.ryo))} (range ${Math.min(...ends.map(a => a.ryo))}–${Math.max(...ends.map(a => a.ryo))})`);
+  console.log(`End of ${PART_LABEL([part])}: median team Lv ${median(ends.map(a => a.teamLevel)).toFixed(1)} vs enemy Lv ${ends[0].enemyLevel}, median Ryo ${median(ends.map(a => a.ryo))} (range ${Math.min(...ends.map(a => a.ryo))}–${Math.max(...ends.map(a => a.ryo))})${ACHIEVEMENTS ? `, median achievements claimed ${median(ends.map(a => a.achievements))}` : ''}`);
 }
 console.log(`\n${failed ? 'FAIL' : 'PASS'} — ${PLAYERS - failed}/${PLAYERS} free-to-play players cleared ${PART_LABEL()} with no node needing more than ${MAX_REPLAYS} replays.`);
 process.exit(failed ? 1 : 0);

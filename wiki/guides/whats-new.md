@@ -6,6 +6,8 @@ Everything is in place except the final art, music and effects.
 
 - **The Academy tutorial.** Three short lessons before the Survival Test teach team building, the Nature Wheel and Jutsu Clash. You can skip it any time and still get its reward.
 - **The Wiki.** Every ninja, jutsu, enemy, battle and banner, built from the game itself, plus guides like this one. Every screen has a **?** button that opens its page.
+- **Achievements:** goals across story, collection, combat and your account, with Ryo, summon tickets and Rare+ summons as rewards. They unlock retroactively for everything you've already done.
+- **An exclusive ninja:** complete Part I and Part II to earn Naruto Uzumaki (Nine-Tails Chakra Mode), who never appears in any banner.
 - **Screen tips** the first time you open each screen. Switch them back on in Settings.
 - **Challenges** on the Home screen, starting with the Boss Rush.
 - **Divers** in protect missions no longer freeze your team: your ninja turn around and chase them.

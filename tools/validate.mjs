@@ -48,6 +48,22 @@ for (const n of CONTENT.tutorial?.nodes || []) {
 }
 if (!(B.tutorial?.enemyLevel >= 1)) errors.push('balance.tutorial.enemyLevel must be at least 1');
 
+// ---- achievements (numbers in balance.achievements) ---------------------------
+const NEEDS_TARGET = ['hardClears', 'ownCount', 'stat', 'rushRound', 'summons', 'dailies'];
+for (const a of CONTENT.achievements || []) {
+  const cfg = B.achievements?.list?.[a.id];
+  if (!cfg) { errors.push(`balance.achievements.list.${a.id} is missing (every achievement needs its target and reward there)`); continue; }
+  if (NEEDS_TARGET.includes(a.type) && !(Number.isInteger(cfg.target) && cfg.target > 0)) errors.push(`balance.achievements.list.${a.id}.target must be a positive whole number`);
+  const r = cfg.reward || {};
+  if (!Object.keys(r).length && !a.rewardCharacter) errors.push(`balance.achievements.list.${a.id} has no reward`);
+  for (const [k, v] of Object.entries(r)) {
+    if (!['ryo', 'scrolls', 'tickets', 'rareTickets'].includes(k)) errors.push(`balance.achievements.list.${a.id}.reward.${k} is not a reward type (ryo, scrolls, tickets, rareTickets)`);
+    else if (!(Number.isInteger(v) && v > 0)) errors.push(`balance.achievements.list.${a.id}.reward.${k} must be a positive whole number`);
+  }
+}
+for (const id of Object.keys(B.achievements?.list || {})) if (!CONTENT.achievement[id]) errors.push(`balance.achievements.list.${id} has no achievement in js/content/achievements.js`);
+if (!TIERS.includes(B.achievements?.rareTicketMinTier)) errors.push('balance.achievements.rareTicketMinTier must be a tier');
+
 // ---- version ----------------------------------------------------------------
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 if (pkg.version !== GAME_VERSION) errors.push(`package.json version ${pkg.version} does not match js/config/version.js GAME_VERSION ${GAME_VERSION}`);
@@ -61,6 +77,7 @@ const C = CONTENT;
 const byTier = Object.fromEntries(TIERS.map(t => [t, C.roster.filter(c => c.tier === t).length]));
 console.log('Shinobi Auto-Battler — content validation');
 console.log(`  characters: ${C.roster.length} (${TIERS.map(t => `${t} ${byTier[t]}`).join(', ')}), forms: ${C.roster.filter(c => c.formOf).length}`);
+console.log(`  achievements: ${C.achievements.length}   tutorial lessons: ${C.tutorial?.nodes.length || 0}`);
 console.log(`  enemies: ${C.enemies.length}   arcs: ${C.arcs.filter(a => !a.placeholder).length} (+${C.arcs.filter(a => a.placeholder).length} placeholders)   nodes: ${C.nodes.length}   banners: ${C.banners.length}`);
 console.log(`  balance curves checked: ${curveSpecs.length}   last node enemy level: ${lastLevel} / cap ${B.stats.levelCap} (node 90 → ${headroom})`);
 const unsourced = missingNames();

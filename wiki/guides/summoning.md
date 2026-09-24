@@ -33,6 +33,15 @@ If you go {{num:gacha.pity}} summons without a Kage, the next one is guaranteed 
 - Villains join the pools only after you clear their arc. Until then, banners list them as "joins after …".
 - The exact rates of every banner are on [Banners and rates](wiki:banners).
 
+## Summon tickets
+
+Achievements pay two kinds of ticket, used from the ticket buttons under the summon buttons:
+
+- a **🎟️ summon ticket** is one free summon on any open banner;
+- a **🎫 Rare+ summon ticket** is one summon guaranteed to be {{tier:achievements.rareTicketMinTier}} or better.
+
+Ticket summons count toward the Kage guarantee. See [Achievements](wiki:guide/achievements).
+
 ## Duplicates and stars
 
 - Summoning a ninja you already own adds a **star**: {{plus:stats.starBonus}} to all their stats, up to {{num:stats.starCap}}★.

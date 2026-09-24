@@ -1,6 +1,6 @@
 // SummonScreen.js — banners, rates, pity counter, and the pull animation.
 import { h, btn, fmt, avatar, tierTag } from './dom.js';
-import { pull, pullCost, canAfford, bannerRates } from '../core/GachaSystem.js';
+import { pull, pullCost, canAfford, bannerRates, ticketPull } from '../core/GachaSystem.js';
 import { isBannerUnlocked, isCharacterAvailable } from '../core/Progression.js';
 import { TIER_LABEL, RARITY_LABEL } from '../core/formulas.js';
 import { TIER_COLORS } from '../render/Renderer.js';
@@ -64,6 +64,13 @@ export function render(game, ui, params) {
     game.commit('pull');
     playAnimation(game, ui, res.results);
   };
+  const doTicket = (kind) => {
+    const res = ticketPull(state, banner.id, kind, C, game.rng, B);
+    if (!res.ok) { ui.toast(res.error, 'bad'); return; }
+    game.commit('pull');
+    playAnimation(game, ui, res.results);
+  };
+  const tickets = state.currencies.tickets || 0, rare = state.currencies.rareTickets || 0;
   const single = pullCost(1, B), ten = pullCost(10, B);
   const hero = h('div.banner-hero',
     h('div.row.between', h('div', h('div.tiny.muted', banner.type === 'standard' ? 'Always available' : `Arc banner · ${C.arc[banner.arc].name}`), h('h2', banner.name)), banner.type === 'arc' ? h('span.pill.accent', `Rate-up ×${Math.round(B.gacha.rateUpShare * 100)}% of tier`) : null),
@@ -74,6 +81,9 @@ export function render(game, ui, params) {
     h('div.pull-buttons',
       pullBtn('Summon ×1', single, state, () => doPull(1)),
       pullBtn('Summon ×10', ten, state, () => doPull(10), true)),
+    tickets || rare ? h('div.pull-buttons.tickets',
+      tickets ? h('button.btn', { type: 'button', onclick: () => doTicket('tickets') }, h('span', `🎟️ Use a summon ticket`), h('span.sub', `${tickets} left`)) : null,
+      rare ? h('button.btn.primary', { type: 'button', onclick: () => doTicket('rareTickets') }, h('span', `🎫 Rare+ summon`), h('span.sub', `${rare} left · ${TIER_LABEL[B.achievements.rareTicketMinTier]} or better`)) : null) : null,
     !canAfford(state, 1, B) ? h('p.small', { style: { marginTop: '10px', color: 'var(--warn)' } }, `You need ${fmt(single - state.currencies.scrolls)} more scrolls for a summon. Clear story battles (first clears pay the most) and Boss Rush rounds to earn more.`) : null,
   );
 

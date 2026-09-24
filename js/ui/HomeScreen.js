@@ -5,6 +5,7 @@ import { currentNode, isBossRushUnlocked, isArcCleared, resolveTeam, unitPower }
 import { tutorialPending, nextLessonIndex, tutorialLessons } from '../core/Tutorial.js';
 import { LESSON_TITLE } from './TutorialScreen.js';
 import { helpButton } from './chrome.js';
+import { isUnlocked, claimableAchievements } from '../core/Achievements.js';
 
 export function render(game, ui) {
   const { C, B, state } = game;
@@ -46,6 +47,7 @@ export function render(game, ui) {
       tile('Ninja recruited', `${owned} / ${C.roster.length}`, `${fmt(state.gacha.totalPulls)} summons`),
       tile('Kage pity', `${Math.max(0, B.gacha.pity - state.gacha.pity)}`, 'summons to a guaranteed Kage'),
       tile('Boss Rush', rush ? `Round ${state.bossRush.highestRound || 0}` : '🔒', rush ? 'highest round reached' : `clear ${C.arc[C.bossRush.unlockArc].name}`),
+      tile('Achievements', `${C.achievements.filter(a => isUnlocked(state, a.id)).length} / ${C.achievements.length}`, claimableAchievements(state, C).length ? `🎁 ${claimableAchievements(state, C).length} to claim` : 'tap to see them all', () => ui.go('achievements')),
     ),
     h('div.section-title', h('h2', 'Challenges')),
     h('div.grid.two',
@@ -72,5 +74,7 @@ function challengeCard(icon, title, text, onclick, locked = false, fresh = false
     h('div.row.between', h('h3', { style: { margin: 0 } }, `${icon} ${title}`), locked ? h('span.pill', '🔒') : fresh ? h('span.pill.bad', 'NEW') : h('span.muted', '›')),
     h('p.small', { style: { margin: '6px 0 0' } }, text));
 }
-function tile(k, v, sub) { return h('div.tile', h('div.k', k), h('div.v', v), h('div.tiny.dim', sub)); }
+function tile(k, v, sub, onclick = null) {
+  return onclick ? h('button.tile.hover', { type: 'button', onclick }, h('div.k', k), h('div.v', v), h('div.tiny.dim', sub)) : h('div.tile', h('div.k', k), h('div.v', v), h('div.tiny.dim', sub));
+}
 function how(icon, title, text) { return h('div.card', h('h3', `${icon} ${title}`), h('p.small', text)); }

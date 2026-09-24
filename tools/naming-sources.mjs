@@ -348,6 +348,8 @@ set('Enter: Naruto Uzumaki!', 'Enter: Naruto Uzumaki!', 'V', 'Dub title of ep 1 
 set('Transformation Jutsu', 'Transformation Technique', 'V', 'Narutopedia "English TV" (dub) field. Tutorial lesson 2: Mizuki transforms into Iruka in ep 1.');
 set('Multi Shadow Clone Jutsu', 'Multiple Shadow Clone Technique', 'V', 'Narutopedia "English TV" (dub) field; debut ep 1. Tutorial lesson 3.');
 set('Scroll of Sealing', 'Scroll of Seals', 'V', 'Narutopedia "English TV" (dub) field of the Scroll of Seals (ep 1). Used in the tutorial blurb.');
+set('Naruto Uzumaki (Nine-Tails Chakra Mode)', 'Nine-Tails Chakra Mode', 'V', 'Achievement-exclusive form (Session 4). The article has no separate English TV field, so the dub keeps "Nine-Tails Chakra Mode" (other names: Kurama Chakra Mode, Tailed Beast Chakra Mode). Debut anime ep 247 (Shippuden).');
+set('Planet Rasengan', 'Planetary Rasengan', 'V', 'Narutopedia "English TV" (dub) field of the Planetary Rasengan; Naruto is the only user (debut Shippuden ep 300, in Nine-Tails Chakra Mode).');
 
 export const NAME_SOURCES = S;
 export const wikiUrl = (t) => `https://naruto.fandom.com/wiki/${encodeURI(t.replace(/ /g, '_'))}`;

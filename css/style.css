@@ -529,3 +529,20 @@ textarea { min-height: 90px; resize: vertical; font-family: ui-monospace, Consol
 .wiki .screen-head h1 { font-size: clamp(1.3rem, 5vw, 2.1rem); min-width: 0; overflow-wrap: anywhere; flex: 1 1 auto; align-self: center; }
 .wiki .screen-head .grow { display: none; }
 .wheel-label { font-weight: 800; font-family: system-ui, sans-serif; fill: #0d1117; }
+
+/* ---------------- Achievements (Session 4) ---------------- */
+#ach-btn { position: relative; }
+#ach-btn .dot, .icon-btn .dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 2px #111820; }
+#ach-btn.active { border-color: var(--accent); }
+.ach-summary { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ach-summary .big-num { font-size: 1.5rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.ach-summary .grow { min-width: 120px; }
+.ach-list { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.ach { padding: 14px; }
+.ach p { margin: 6px 0 8px; }
+.ach.ready { border-color: var(--r-kage); box-shadow: 0 0 0 1px rgba(255,197,61,.4) inset; }
+.ach.claimed { opacity: .72; }
+.pull-buttons.tickets { margin-top: 10px; }
+button.tile { text-align: left; color: var(--text); cursor: pointer; width: 100%; font: inherit; }
+button.tile:hover { border-color: var(--surface3); }
+button.toast { font: inherit; cursor: pointer; }

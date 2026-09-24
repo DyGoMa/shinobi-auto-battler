@@ -9,6 +9,7 @@ import { AudioManager } from './audio/AudioManager.js';
 import { UIManager } from './ui/UIManager.js';
 import { DebugPanel } from './ui/DebugPanel.js';
 import { makeRng } from './core/formulas.js';
+import { checkAchievements, recordDayPlayed } from './core/Achievements.js';
 import { h } from './ui/dom.js';
 
 async function boot() {
@@ -40,7 +41,16 @@ async function boot() {
   await save.init();
   game.save = save;
   Object.defineProperty(game, 'state', { get: () => save.state });
-  game.commit = (reason) => { save.save(reason); if (ui) ui.refreshTop(); };
+  // Achievements unlock by themselves: on load (so existing saves unlock what they already
+  // qualify for) and after every change. Claiming happens on the Achievements screen.
+  const unlockNow = (s) => { recordDayPlayed(s); return checkAchievements(s, CONTENT, BALANCE); };
+  const retro = unlockNow(save.state);
+  if (retro.length) save.save('achievements');
+  game.commit = (reason) => {
+    const fresh = unlockNow(save.state);
+    save.save(reason);
+    if (ui) { ui.refreshTop(); if (fresh.length) ui.achievementsUnlocked(fresh); }
+  };
   audio.setMuted(!!save.state.settings.muted);
 
   ui = new UIManager(game);
@@ -49,14 +59,25 @@ async function boot() {
 
   let lastState = save.state;
   save.onChange((s) => {
-    if (s !== lastState) { lastState = s; audio.setMuted(!!s.settings.muted); ui.onStateReplaced(); }
+    if (s !== lastState) {
+      lastState = s; audio.setMuted(!!s.settings.muted);
+      const fresh = unlockNow(s);
+      if (fresh.length) save.save('achievements');
+      ui.onStateReplaced();
+      if (fresh.length) ui.achievementsUnlocked(fresh, { summary: true });
+    }
     ui.refreshTop();
   });
 
+  if (retro.length) ui.achievementsUnlocked(retro, { summary: true });
   if (debug) new DebugPanel(game, ui).mount();
 
   // Cloud save connects in the background; never blocks or crashes the game.
-  save.initCloud().then(() => { if (ui.current === 'settings' && !ui.battle) ui.refresh(); }).catch((e) => console.warn('[cloud]', e));
+  save.initCloud().then(() => {
+    // A Google account (linked now or on another device) counts for "Linked Up".
+    if (cloud.ready && !cloud.isAnonymous && !game.state.account.googleLinked) { game.state.account.googleLinked = true; game.commit('account'); }
+    if (ui.current === 'settings' && !ui.battle) ui.refresh();
+  }).catch((e) => console.warn('[cloud]', e));
 
   window.__game = game; // handy for debugging in the console
 }

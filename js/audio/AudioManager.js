@@ -96,4 +96,5 @@ export class AudioManager {
   defeat() { [392, 330, 262, 196].forEach((f, i) => this._tone({ freq: f, type: 'sine', dur: 0.3, vol: 0.14, delay: i * 0.16 })); }
   click() { if (this._throttle('click', 40)) this._tone({ freq: 700, type: 'sine', dur: 0.04, vol: 0.05 }); }
   levelUp() { this._tone({ freq: 660, to: 990, type: 'triangle', dur: 0.14, vol: 0.12 }); }
+  achievement() { [784, 988, 1175, 1568].forEach((f, i) => this._tone({ freq: f, type: 'triangle', dur: 0.16, vol: 0.12, delay: i * 0.08 })); }
 }

@@ -33,6 +33,10 @@ export const SCREEN_TIPS = {
     icon: '📚', title: 'The Wiki',
     text: () => 'Search any ninja, jutsu, enemy or battle. Every screen has a ? button that opens its page here, and the guides explain each system step by step.',
   },
+  achievements: {
+    icon: '🏆', title: 'Achievements',
+    text: () => 'Achievements unlock by themselves as you play, including everything you had already done. Claim their rewards here: Ryo, summon tickets and Rare+ summons.',
+  },
   settings: {
     icon: '⚙️', title: 'Settings',
     text: () => 'Link a Google account to keep your save on every device. Tips like this one can be switched back on here.',
