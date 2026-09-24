@@ -689,13 +689,13 @@ export const ENEMIES = [
     color: '#78716c', initials: 'SB', emoji: '🦏',
   },
   {
-    id: 'e_pain_animal', name: 'Pain (Chikushodo)', basedOn: 'pain', role: 'Ranged', natures: ['Water'],
+    id: 'e_pain_animal', name: 'Pain (Chikushodo)', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.3, atk: 0.8, def: 1.0 },
     mechanics: [{ type: 'summonAdds', name: 'Summoning Jutsu', enemy: 'e_summoned_beast', count: 2, interval: 1.2 }],
     color: '#fb923c', initials: 'PA', emoji: '🐕',
   },
   {
-    id: 'e_pain_sixpaths', name: 'Pain', basedOn: 'pain', role: 'Ranged', natures: ['Water'],
+    id: 'e_pain_sixpaths', name: 'Pain', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Universal Pull', type: 'single' },
     mechanics: [
@@ -778,32 +778,32 @@ export const ENEMIES = [
 
   // ============================== Pain's Assault =============================
   {
-    id: 'e_pain_asura', name: 'Pain (Shurado)', basedOn: 'pain', role: 'Striker', natures: ['Water'],
+    id: 'e_pain_asura', name: 'Pain (Shurado)', basedOn: 'pain', role: 'Striker', natures: ['Water', 'Wind'],
     stats: { hp: 1.2, atk: 0.95, def: 1.1 },
     jutsu: { name: 'Asura Attack', type: 'aoe' },
     color: '#ea580c', initials: 'PA', emoji: '🦾',
   },
   {
-    id: 'e_pain_deva', name: 'Pain (Tendo)', basedOn: 'pain', role: 'Ranged', natures: ['Water'],
+    id: 'e_pain_deva', name: 'Pain (Tendo)', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.1, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Universal Pull', type: 'single' },
     mechanics: [{ type: 'telegraphAoE', name: 'Almighty Push', nature: null, target: 'all', stun: true, power: 0.9 }],
     color: '#fb923c', initials: 'PA', emoji: '🌀',
   },
   {
-    id: 'e_pain_naraka', name: 'Pain (Jigokudo)', basedOn: 'pain', role: 'Support', natures: ['Water'],
+    id: 'e_pain_naraka', name: 'Pain (Jigokudo)', basedOn: 'pain', role: 'Support', natures: ['Water', 'Wind'],
     stats: { hp: 1.5, atk: 0.8, def: 1.0 },
     mechanics: [{ type: 'regen', name: 'King of Hell', power: 1.6 }],
     color: '#c2410c', initials: 'PA', emoji: '👹',
   },
   {
-    id: 'e_pain_preta', name: 'Pain (Gakido)', basedOn: 'pain', role: 'Tank', natures: ['Water'],
+    id: 'e_pain_preta', name: 'Pain (Gakido)', basedOn: 'pain', role: 'Tank', natures: ['Water', 'Wind'],
     stats: { hp: 1.2, atk: 0.85, def: 1.1 },
     mechanics: [{ type: 'lifesteal', name: 'Chakra absorption', power: 1.2 }],
     color: '#9a3412', initials: 'PA', emoji: '🫗',
   },
   {
-    id: 'e_pain_boss', name: 'Pain (Tendo)', basedOn: 'pain', role: 'Ranged', natures: ['Water'],
+    id: 'e_pain_boss', name: 'Pain (Tendo)', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.05, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Universal Pull', type: 'single' },
     mechanics: [
@@ -928,7 +928,7 @@ export const ENEMIES = [
     color: '#0f766e', initials: 'AS', emoji: '🚬',
   },
   {
-    id: 'e_nagato_boss', name: 'Nagato (Reanimated)', basedOn: 'pain', role: 'Ranged', natures: ['Water'],
+    id: 'e_nagato_boss', name: 'Nagato (Reanimated)', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Universal Pull', type: 'single' },
     mechanics: [
@@ -1066,17 +1066,18 @@ export const ENEMIES = [
   },
 
   // ========================= Kaguya Otsutsuki Strikes ========================
-  // Kaguya's natures stand for her dimensions (lava, ice, desert): a design
-  // mapping, not canon natures (NAMING.md).
+  // Kaguya's nature follows the rule (no Release jutsu on screen -> first listed:
+  // Fire). Her lava, ice and desert dimensions are the Amenominaka elementSwap
+  // sequence: a design mapping, not canon natures (NAMING.md).
   {
-    id: 'e_kaguya', name: 'Kaguya Otsutsuki', role: 'Ranged', natures: ['Fire', 'Water', 'Earth'],
+    id: 'e_kaguya', name: 'Kaguya Otsutsuki', role: 'Ranged', natures: ['Fire'],
     stats: { hp: 3.2, atk: 0.75, def: 1.2 },
     jutsu: { name: 'All-Killing Ash Bones', type: 'single' },
     mechanics: [{ type: 'elementSwap', name: 'Amenominaka', sequence: ['Fire', 'Water', 'Earth'] }],
     color: '#e9d5ff', initials: 'KO', emoji: '🐇',
   },
   {
-    id: 'e_kaguya_boss', name: 'Kaguya Otsutsuki', role: 'Ranged', natures: ['Fire', 'Water', 'Earth'],
+    id: 'e_kaguya_boss', name: 'Kaguya Otsutsuki', role: 'Ranged', natures: ['Fire'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Eighty Gods Vacuum Attack', type: 'single' },
     mechanics: [

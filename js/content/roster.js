@@ -490,7 +490,7 @@ export const ROSTER = [
     color: '#7f1d1d', initials: 'IU', emoji: '🌙',
   },
   {
-    id: 'pain', name: 'Pain', short: 'Pain', tier: 'kage', role: 'Ranged', natures: ['Water'],
+    id: 'pain', name: 'Pain', short: 'Pain', tier: 'kage', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.05, atk: 1.05, def: 1.0 },
     ult: { name: 'Almighty Push', type: 'aoe', stun: true },
     leader: { stat: 'atk', scope: { tag: 'akatsuki' } },

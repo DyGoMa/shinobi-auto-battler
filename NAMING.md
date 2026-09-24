@@ -91,7 +91,7 @@ Rule: a Part 1 character uses **the natures they used on screen in Part 1**. If 
 | Character | Used in game | Basis |
 |---|---|---|
 | Sai, Karin, Konan | Earth · Earth · Wind | none used on screen → first listed |
-| Konohamaru, Minato | Fire | none used on screen (Rasengan, Flying Raijin) → first listed |
+| Konohamaru, Minato | Fire | none used on screen (Rasengan, Flying Raijin) → first listed. **Session 3 review: kept** (see below) |
 | Jugo | Wind | first listed |
 | Suigetsu, Chojuro, Kisame, Nurari | Water | used on screen |
 | Omoi, Killer Bee, Ay | Lightning | used on screen |
@@ -103,20 +103,32 @@ Rule: a Part 1 character uses **the natures they used on screen in Part 1**. If 
 | Deidara | Earth, Lightning | Explosion Style components (as Part I) |
 | Kakuzu | all five | all used on screen (as Part I) |
 | Itachi | Fire, Water, Wind | used on screen (as Part I) |
-| Pain / Nagato (all six paths) | Water | Water Style: Raging Waves on screen (ep 128 flashback); the paths themselves use no nature |
+| Pain / Nagato (all six paths) | Water, Wind | **Session 3: Wind added.** Water Style: Raging Waves and Wind Style: Gale Palm, both on screen in the ep 128 flashback; Wind Release: Air Bullets as reanimated Nagato (ep 253). The paths themselves use no nature |
 | Madara, Obito | Fire, Earth, Water | Fire Style + Wood Style components |
 | Danzo | Wind, Earth, Water | Wind Style + Wood Style components |
 | Gaara (Fifth Kazekage) | Wind, Earth | Part II adds Earth (first two listed; Magnet is novel-only) |
 | Naruto (Six Paths Sage Mode) | Wind, Earth, Fire, Water | the natures of his Sage Art: Super Tailed Beast Rasen-Shuriken (Magnet, Fire, Water, Lava, Boil, Wind → components) |
 | Chiyo, Sasori, Hidan, Kinkaku, Ginkaku, Gotta, Shiranami, Eight-Tails | none | none listed |
 | Fuka, Kigiri | Fire | first listed / used |
-| Fudo, Guren | Earth | used (Guren: Crystal Style, Earth "presumed" on Narutopedia) |
+| Fudo, Guren | Earth | used (Guren: Crystal Style, Earth "presumed" on Narutopedia). **Session 3 review: kept** (see below) |
 | Sora, Kazuma | Wind · Wind, Earth | used on screen |
 | Three-Tails | Water | listed |
 | Four-Tails | Fire, Earth | Lava Style (Roshi's) components |
 | Nine-Tails | Fire, Wind | listed (anime-only) |
-| Kaguya | Fire, Water, Earth | **Design mapping, not canon natures:** her lava, ice and desert dimensions (Amenominaka) |
+| Kaguya | Fire (base); swaps Fire → Water → Earth | **Session 3: base nature now follows the rule** (no Release jutsu on screen → first listed, Fire). The lava, ice and desert dimensions stay as the Amenominaka element swap: a **design mapping, not canon natures** |
 | Generic "Rain Ninja", "Mist Tracker Ninja" | Water | **Design choice, not canon** (generic units) |
+
+**Session 3 nature review.** The four natures flagged in Session 2 were re-checked against the rule (on-screen use in the anime, else the infobox's marked affinity, else the first listed; kekkei genkai → components). A nature changes only where the rule was misapplied. Sources: Narutopedia character infoboxes and the jutsu articles' "Debut" and "Users" fields (checked 2026-09-24).
+
+| Character | Session 2 | Verdict | Why |
+|---|---|---|---|
+| Pain / Nagato | Water | **Changed → Water, Wind** (misapplied) | Wild Water Wave (dub "Water Style: Raging Waves") and Wind Release: Gale Palm both debut in the anime in Shippuden ep 128, the Jiraiya training flashback, and both list Nagato as a canon user. Wind Release: Air Bullets (anime, ep 253) is reanimated Nagato's. Session 2 counted only the Water jutsu from that episode. Earth-Style Wall is listed as "Nagato (Anime only)" with no episode given, so Earth was **not** added (open). Enemy Pains attack and defend with their active (first) nature, so the boss fights don't change; the pullable Pain now also hits with Wind. |
+| Minato | Fire | **Kept** (rule applied correctly) | Infobox: Fire, Wind, Lightning, Yin, Yang, with no affinity marked. His on-screen techniques (Rasengan, Flying Raijin, Eight Trigrams Sealing Style) have no nature. So he gets the first listed, Fire. |
+| Konohamaru | Fire | **Kept** (rule applied correctly) | Infobox: Fire, Wind, Lightning (anime only), Earth (anime only), Yang, with no affinity marked. His Part II on-screen technique is the Rasengan (no nature). His Release jutsu are Boruto-era, anime-only, or debut in other characters' episodes. Fire Release: Great Flame Technique (anime ep 363) lists only him as a user, but the article gives no Part II scene, so it isn't counted. Either way the result is Fire. |
+| Guren | Earth | **Kept** (rule applied correctly; partly verified) | Infobox: Crystal Release, Earth Release **(Presumed)**. Crystal Release has no canon components, so the rule falls back to the listed nature. Earth is Narutopedia's own presumption, not a confirmed canon nature. |
+| Kaguya | Fire, Water, Earth (design mapping) | **Changed → Fire** base nature (the rule wasn't applied) | Infobox: all five natures plus Yin, Yang and Yin–Yang, with no affinity marked. On screen she uses no Release jutsu (All-Killing Ash Bones, Expansive Truth-Seeking Ball, Amenominaka), so the rule gives the first listed, Fire. The lava/ice/desert mapping stays only as the Amenominaka `elementSwap` sequence, which is a mechanic, not a nature claim. She starts in Fire either way, so the fight is unchanged. |
+
+Also noted (not changed): the Part I Boss Rush Pain (`e_br_pain`) keeps "all five" from Session 1's enemy table, which reads the infobox list rather than on-screen use. That's a Session 1 design choice for a non-story boss; it's left for a later review.
 
 ## Places and terms
 
@@ -144,7 +156,7 @@ Rule: a Part 1 character uses **the natures they used on screen in Part 1**. If 
 _Generated by `node tools/naming.mjs --write` from the content files — 478 distinct names._
 
 **Not verified:** none.  
-**Partly verified:** Destruction of the Hidden Leaf Village.
+**Partly verified:** none.
 
 ### Characters, enemies and protect targets
 
@@ -523,7 +535,7 @@ _Generated by `node tools/naming.mjs --write` from the content files — 478 dis
 | Deadlock! Sannin Showdown! | Node | [Deadlock! Sannin Showdown!](https://naruto.fandom.com/wiki/Deadlock!_Sannin_Showdown!) | Verified | RE-CHECKED (Session 2): confirmed. Dub title of ep 96 (Wikipedia, Naruto season 4) matches the Narutopedia episode article. |
 | Despair | Node | [Despair](https://naruto.fandom.com/wiki/Despair) | Verified | Dub title of ep 69 (Wikipedia, Naruto: Shippuden season 3). |
 | Destruction of the Hidden Leaf | Banner | [Zero Hour! The Konoha Crush Begins!](https://naruto.fandom.com/wiki/Zero_Hour!_The_Konoha_Crush_Begins!) | Verified | Short form of the arc name. |
-| Destruction of the Hidden Leaf Village | Arc | [Zero Hour! The Konoha Crush Begins!](https://naruto.fandom.com/wiki/Zero_Hour!_The_Konoha_Crush_Begins!) | Partly verified | Dub-derived arc name (Narutopedia/Viz: "Konoha Crush"). Session 1 recorded the ep 68 dub title as "Zero Hour! The Destruction of the Hidden Leaf Village Begins!"; Wikipedia's Naruto season 3 list gives "Zero Hour! The Destruction of Leaf Begins!". Both use "Destruction … Leaf"; the exact wording is left for Session 3. |
+| Destruction of the Hidden Leaf Village | Arc | [Zero Hour! The Konoha Crush Begins!](https://naruto.fandom.com/wiki/Zero_Hour!_The_Konoha_Crush_Begins!) | Verified | RESOLVED (Session 3): the ep 68 dub title is "Zero Hour! The Destruction of the Hidden Leaf Village Begins!", as Session 1 recorded. Sources: Narutopedia episode article, "Other names" field; Tubi's listing of the English-dubbed episode (S02:E68, which misspells "Destuction"). Wikipedia's Naruto season 2 list gives the shorter "Zero Hour! The Destruction of Leaf Begins!" and is the outlier. The arc name is that title's wording; "Konoha Crush" is the Viz/official name. |
 | Explode! Sage Mode | Node | [Explode! Sage Mode](https://naruto.fandom.com/wiki/Explode!_Sage_Mode) | Verified | Dub title of ep 163 (Wikipedia, Naruto: Shippuden season 8). |
 | Fated Battle Between Brothers | Arc | [Fated Battle Between Brothers](https://naruto.fandom.com/wiki/Fated_Battle_Between_Brothers) | Verified |  |
 | Final Valley | Node | [Valley of the End](https://naruto.fandom.com/wiki/Valley_of_the_End) | Verified | English TV name of the Valley of the End. |
