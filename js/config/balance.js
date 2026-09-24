@@ -46,7 +46,7 @@ export const BALANCE = {
     // Stat multiplier by level. x = level − 1. Linear keeps "a few levels behind"
     // forgiving at any point of the campaign. growth 0.04–0.12.
     levelMult: { type: 'linear', base: 1, growth: 0.07 },
-    // Highest level a ninja can reach. Part 1 ends near level 33 (~1/3 of the cap);
+    // Highest level a ninja can reach. Part 1 (32 nodes) ends at enemy level 30 (~1/3 of the cap);
     // leaves room for ~90 story nodes. Range 60–150.
     levelCap: 100,
     // Flat bonus to all stats per star above 1★ (0.10 = +10% per star). Range 0.05–0.2.
@@ -210,7 +210,7 @@ export const BALANCE = {
   // ---------------------------------------------------------------------------
   enemyScaling: {
     // Enemy level by GLOBAL node index (0-based across the whole campaign, Part 1
-    // then Part II...). ~35 Part 1 nodes end near level 33; 90 nodes near 86.
+    // then Part II...). Part 1's 32 nodes end at level 30; node 90 is level 86.
     levelByNode: { type: 'linear', base: 1, growth: 0.95, round: true },
     // Enemy stat multipliers on top of the level curve (applies to every enemy).
     statMult: { hp: 3.2, atk: 2.5, def: 1.0 },
@@ -229,7 +229,7 @@ export const BALANCE = {
     groupMult: { type: 'poly', base: 1.25, growth: -0.75 },
     // Per-node difficulty fine-tuning: { nodeId: { hp, atk } } multiplies every
     // enemy in that node (1 = unchanged). Use it to nudge single fights without
-    // touching the global curves. 0.5–1.5
+    // touching the global curves. 0.3–1.6. Tuned with `npm run autotune -- --write`.
     nodeMult: {
       n_bell_1:    { hp: 0.85, atk: 0.85 },
       n_bell_3:    { hp: 1.54, atk: 1.54 },

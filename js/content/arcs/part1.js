@@ -180,7 +180,7 @@ export const PART1_ARCS = [
   // ---------------------------------------------------------------------------
   {
     id: 'arc_tsunade', part: 1, order: 5, name: 'Search for Tsunade', episodes: '81–100',
-    blurb: 'Itachi and Kisame hunt Naruto while Jiraiya searches for the Legendary Sucker in Tanzaku Town.',
+    blurb: 'Itachi and Kisame hunt Naruto while Jiraiya and Naruto search for Tsunade, all the way to Tanzaku Town.',
     banner: 'banner_tsunade',
     theme: { sky: ['#7c7aa8', '#d7d3ee'], ground: '#5b5877', far: '#3f3c58', accent: '#a78bfa' },
     nodes: [

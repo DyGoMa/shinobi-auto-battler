@@ -234,22 +234,29 @@ export class BattleScreen {
 
   // ---------------------------------------------------------------- onboarding
   _tip(id) {
-    if (this.tips.shown.has(id) || this.game.state.settings.onboardingDone || !this.node?.onboarding) return;
+    if (this.tips.shown.has(id) || this.game.state.settings.onboardingDone || !this.node?.onboarding || this.ended) return;
     this.tips.shown.add(id);
-    const node = this.node;
+    // One tip at a time: queue the rest until "Got it".
+    if (this.tipPause) { (this.tips.queue ||= []).push(id); return; }
+    this._showTip(id);
+  }
+  _showTip(id) {
     const text = {
       start: [h('b', 'Welcome to the Bell Test!'), ' Your ninja walk and fight on their own. ', h('b', 'Survive 45 seconds'), ' — or defeat Kakashi outright.'],
-      ult: [h('b', 'Chakra full!'), ' A glowing portrait means that ninja\'s ', h('b', 'Ultimate'), ' is ready — tap it to fire. (Keys 1–4 work too.)'],
+      ult: [h('b', 'Chakra full!'), ' A glowing portrait (below the battlefield) means that ninja\'s ', h('b', 'Ultimate'), ' is ready — tap it to fire. (Keys 1–4 work too.)'],
       clash: [h('b', 'Kakashi is winding up a jutsu'), ' (see the ⚠ bar). Fire an Ultimate ', h('b', 'now'), ' to ', h('b', 'JUTSU CLASH'), '. The badge on each portrait predicts it: ▲ your nature beats his (Lightning beats Earth), = standoff, ▼ weak.'],
     }[id];
-    if (!text) return;
+    if (!text || this.ended) return;
     this.tipPause = true;
-    const box = h('div.onboard', ...text, h('div.row', btn('Got it', () => { box.remove(); this.tipPause = false; this.last = performance.now(); })));
+    const box = h('div.onboard', ...text, h('div.row', btn('Got it', () => {
+      box.remove(); this.tipPause = false; this.last = performance.now();
+      const next = this.tips.queue?.shift(); if (next) this._showTip(next);
+    })));
     Object.assign(box.style, { left: '0', right: '0', margin: '0 auto', width: 'min(360px, 86vw)' });
     box.style.top = id === 'start' ? '12%' : '6%';
     this.stage.appendChild(box);
-    void node;
   }
+  _clearTips() { this.stage.querySelectorAll('.onboard').forEach(el => el.remove()); this.tipPause = false; if (this.tips.queue) this.tips.queue.length = 0; }
   _tipsFromEvents(events) {
     if (!this.node?.onboarding || this.game.state.settings.onboardingDone) return;
     for (const e of events) {
@@ -262,6 +269,7 @@ export class BattleScreen {
   _onEnd() {
     const won = this.sim.state === 'won';
     const { game } = this; const { C, B, state } = game;
+    this._clearTips();
     if (this.isRush) {
       if (won) {
         const rw = completeBossRushRound(state, this.round, B);

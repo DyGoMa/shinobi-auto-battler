@@ -1,0 +1,119 @@
+# FIREBASE_SETUP.md — turn on cloud saves (about 10 minutes)
+
+> **⚠️ Stay on the free Spark plan. Never upgrade to Blaze.**
+> Nothing in this game needs a paid plan. If Firebase ever asks you to "Upgrade", "Modify plan" or add a billing account, say no. The free Spark plan cannot charge you. Blaze (pay-as-you-go) can.
+
+**Without these steps the game still works:** saves stay in your browser, and Settings shows "Cloud save: not configured".
+**With them:**
+* Your save is also stored in Firebase, under your own anonymous account.
+* You can link a Google account to carry the save between devices.
+
+You need a Google account and about 10 minutes. The game side is already built. You only create the Firebase project and paste 6 values.
+
+---
+
+### 1. Create the Firebase project
+1. Go to **https://console.firebase.google.com** and sign in with your Google account.
+2. Click **Create a project** (or **Add project**).
+3. Project name: `shinobi-auto-battler` (anything works). Click **Continue**.
+4. On the Google Analytics step, switch **Enable Google Analytics** *off* (not needed). Click **Create project**.
+5. ✅ **You should see:** "Your new project is ready". Click **Continue**, and you land on the project's **Project Overview** page.
+   * The bottom-left corner shows **Spark** (no-cost). Leave it that way.
+
+### 2. Register a web app and copy its config
+1. On **Project Overview**, click the **web icon `</>`** under "Get started by adding Firebase to your app". If you don't see it, click **+ Add app**, then **Web**.
+2. App nickname: `Shinobi web`. **Leave "Also set up Firebase Hosting" unticked** (the game is hosted on GitHub Pages). Click **Register app**.
+3. ✅ **You should see:** a code box containing `const firebaseConfig = { apiKey: "…", authDomain: "…", projectId: "…", storageBucket: "…", messagingSenderId: "…", appId: "…" };`
+4. Copy those six values into a note. You'll paste them in step 7. You can find them again later under ⚙️ **Project settings** → **General** → **Your apps** → **SDK setup and configuration** → **Config**.
+5. Click **Continue to console**.
+
+### 3. Turn on Firestore (the database)
+1. Direct link: **https://console.firebase.google.com/project/_/firestore**. Pick your project if asked. Or in the left menu: **Build → Firestore Database**.
+2. Click **Create database**.
+3. Choose a **location** close to you (for example `nam5 (United States)` or `eur3 (Europe)`). This can't be changed later. Click **Next**.
+4. Choose **Start in production mode**. Click **Create**.
+5. ✅ **You should see:** the Firestore **Data** tab with an empty database ("Start collection").
+
+### 4. Paste the security rules
+1. Still in **Firestore Database**, open the **Rules** tab.
+2. Delete everything in the editor and paste the whole contents of **`firestore.rules`** from this repository:
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{uid}/save/{docId} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
+       }
+       match /{document=**} {
+         allow read, write: if false;
+       }
+     }
+   }
+   ```
+3. Click **Publish**.
+4. ✅ **You should see:** a "Rules published" message or a new timestamp at the top of the editor.
+   * These rules mean each player can only read and write their own save (`users/{their id}/save/main`). Everything else is locked.
+
+### 5. Turn on Anonymous and Google sign-in
+1. Direct link: **https://console.firebase.google.com/project/_/authentication/providers**. Or in the left menu: **Build → Authentication**, then **Get started**.
+2. On the **Sign-in method** tab, click **Anonymous**, switch **Enable** on, and click **Save**.
+3. Click **Add new provider → Google**. Switch **Enable** on, choose your email as the **Project support email**, and click **Save**.
+4. ✅ **You should see:** both **Anonymous** and **Google** listed with status **Enabled**.
+
+### 6. Allow your GitHub Pages site to sign in
+1. In **Authentication**, open the **Settings** tab, then **Authorized domains**.
+2. Click **Add domain**, type **`dygoma.github.io`** (your GitHub username in lower case, followed by `.github.io`), and click **Add**.
+3. ✅ **You should see:** `dygoma.github.io` in the list. `localhost` is already there for local testing.
+
+### 7. Paste the config into the game and publish
+1. Open **`js/save/firebase-config.js`** in this repository.
+2. Replace each `PASTE_…` placeholder with your value from step 2. Keep the quotes. For example:
+   ```js
+   export const firebaseConfig = {
+     apiKey: "AIzaSy...your key...",
+     authDomain: "shinobi-auto-battler.firebaseapp.com",
+     projectId: "shinobi-auto-battler",
+     storageBucket: "shinobi-auto-battler.firebasestorage.app",
+     messagingSenderId: "123456789012",
+     appId: "1:123456789012:web:abc123def456",
+   };
+   ```
+3. Commit and push. You can edit the file directly on github.com with the ✏️ button and click **Commit changes**, or from a terminal:
+   ```bash
+   git add js/save/firebase-config.js
+   ```
+   ```bash
+   git commit -m "Configure Firebase cloud saves"
+   ```
+   ```bash
+   git push
+   ```
+4. Wait 1–2 minutes for GitHub Pages to update, then open the game and go to **Settings**.
+5. ✅ **You should see:** "Cloud save: connected — Guest (anonymous)", and after your next battle, pull or level-up, "synced". In the Firebase console under **Firestore → Data**, a `users` collection appears with your save at `users/<id>/save/main`.
+
+### 8. (Optional) Carry your save to another device
+1. In the game, open **Settings → Link Google account**. A Google popup opens; choose your account.
+2. ✅ **You should see:** "Google account linked — your save now follows you."
+3. On the other device, open the game, then **Settings → Link Google account** with the same Google account.
+4. ✅ **You should see:** the game asks **"Cloud save is newer — load it?"**. Choose **Load cloud save**.
+
+---
+
+## Why the API key is safe in a public repo
+A Firebase **web** API key isn't a password. It only tells Google *which project* the game talks to, so every Firebase web app ships it to every visitor's browser.
+* **Who can read or write data** is decided by **Authentication** plus **`firestore.rules`**. With the rules above, a player can only touch their own save.
+* **Limit abuse further** (optional): in the Google Cloud console, under **APIs & Services → Credentials**, open the browser key and restrict it to HTTP referrers `https://dygoma.github.io/*` and `http://localhost:*`.
+* **What must never be committed:** service-account JSON files and private keys. This project doesn't use any.
+
+## Troubleshooting
+| Message in Settings / browser console | Fix |
+|---|---|
+| `auth/unauthorized-domain` | Step 6: add your `…github.io` domain. |
+| `auth/operation-not-allowed` | Step 5: enable Anonymous (and Google for linking). |
+| `permission-denied` / `Missing or insufficient permissions` | Step 4: publish the rules exactly as shown. |
+| Google popup closes immediately | Allow pop-ups for the site, then try again. |
+| Still "not configured" | Step 7: every `PASTE_…` placeholder must be replaced, and the page reloaded after GitHub Pages updates. |
+
+**Free-tier limits (Spark):**
+* Firestore: 50,000 reads and 20,000 writes per day.
+* The game writes at most once every few seconds while you play, and only after changes, so a single player stays far below these limits.

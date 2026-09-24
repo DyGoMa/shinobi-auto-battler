@@ -5,6 +5,7 @@
 import { CONTENT, validateContent } from '../js/content/index.js';
 import { BALANCE } from '../js/config/balance.js';
 import { curve, TIERS } from '../js/core/formulas.js';
+import { missingNames } from './naming.mjs';
 
 const errors = validateContent(CONTENT);
 
@@ -45,6 +46,9 @@ console.log('Shinobi Auto-Battler — content validation');
 console.log(`  characters: ${C.roster.length} (${TIERS.map(t => `${t} ${byTier[t]}`).join(', ')}), forms: ${C.roster.filter(c => c.formOf).length}`);
 console.log(`  enemies: ${C.enemies.length}   arcs: ${C.arcs.filter(a => !a.placeholder).length} (+${C.arcs.filter(a => a.placeholder).length} placeholders)   nodes: ${C.nodes.length}   banners: ${C.banners.length}`);
 console.log(`  balance curves checked: ${curveSpecs.length}   last node enemy level: ${lastLevel} / cap ${B.stats.levelCap} (node 90 → ${headroom})`);
+const unsourced = missingNames();
+if (unsourced.length) console.log(`  ⚠ ${unsourced.length} name(s) have no source in tools/naming-sources.mjs (NAMING.md): ${unsourced.join(', ')}`);
+else console.log('  names: every in-game name has a recorded source (NAMING.md)');
 if (errors.length) {
   console.log(`\nFAIL — ${errors.length} problem(s):`);
   for (const e of errors) console.log('  ✗ ' + e);
