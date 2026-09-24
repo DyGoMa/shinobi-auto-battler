@@ -39,6 +39,8 @@ export const ACHIEVEMENTS = [
     description: 'Clear a battle on Hard mode.' },
   { id: 'ach_hard_part1', category: 'story', name: 'Part I on Hard', type: 'hardPartClear', parts: [1],
     description: 'Clear every Part I battle on Hard mode.' },
+  { id: 'ach_hard_part2', category: 'story', name: 'Part II on Hard', type: 'hardPartClear', parts: [2],
+    description: 'Clear every Part II battle on Hard mode.' },
 
   // ------------------------------------------------------------- Collection
   { id: 'ach_own_10', category: 'collection', name: 'Growing Squad', type: 'ownCount',

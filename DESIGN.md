@@ -251,8 +251,8 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
 
 ## 11. Achievements
 
-* 20 achievements in four groups (`js/content/achievements.js`; targets and rewards in `balance.achievements`):
-  * **Story:** Academy Graduate, Part I Complete, Believe It! (Part I and Part II), No Holding Back (a Hard clear), Part I on Hard.
+* 21 achievements in four groups (`js/content/achievements.js`; targets and rewards in `balance.achievements`):
+  * **Story:** Academy Graduate, Part I Complete, Believe It! (Part I and Part II), No Holding Back (a Hard clear), Part I on Hard, Part II on Hard.
   * **Collection:** Growing Squad, Village Roster, A Village of Legends (own 10 / 25 / 45 ninja), Five Natures, Every Form, Peak Condition.
   * **Combat:** Not a Scratch (a win with nobody down), Against the Odds (a win with a Poor or Bad matchup), Clash Master, Giant Killer (a boss 5+ levels above you), Akatsuki Hunter (Boss Rush round 7).
   * **Account:** First Summon, Linked Up (Google), Daily Training (7 days played), Challenger (5 Daily clears).

@@ -5,7 +5,7 @@ A fan-made, Naruto-universe **2D lane auto-battler** for the web.
 * Build a team of 3 plus a Leader, read the **Nature Wheel**, and time your Ultimates.
 * Fire an Ultimate into an enemy's wind-up to trigger a **Jutsu Clash**.
 * Part I and Part II (Shippuden) are complete: 25 arcs in anime order (99 battles, from the Survival Test to the final battle at the Valley of the End), 69 summonable ninja and alternate forms, and an achievement-exclusive Naruto.
-* A skippable **Academy tutorial**, an in-game **Wiki**, 20 **achievements**, **Hard mode**, a **Daily challenge** and an Akatsuki **Boss Rush**.
+* A skippable **Academy tutorial**, an in-game **Wiki**, 21 **achievements**, **Hard mode**, a **Daily challenge** and an Akatsuki **Boss Rush**.
 
 The game is complete except for art, music and visual effects: characters are coloured tokens with initials and emoji, and sound is a small synth. HANDOFF.md lists every placeholder for that pass.
 

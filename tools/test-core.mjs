@@ -212,6 +212,12 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     const old = migrate({ saveVersion: 1, currencies: { scrolls: 0, ryo: 0 }, roster, progress: { cleared: done } }, C, B);
     const retro = checkAchievements(old, C, B).map(a => a.id);
     ok(retro.includes('ach_part1') && retro.includes('ach_own_10') && !retro.includes('ach_story'), 'existing saves unlock what they already qualify for');
+    // retroactive: a current save from before "Part II on Hard" existed, with Part II cleared on Hard
+    const h2 = defaultState(C, B);
+    for (const n of C.nodes) h2.progress.cleared[n.id] = { clears: 1, best: null };
+    for (const n of C.nodes.filter(n => n.part === 2)) h2.progress.hard[n.id] = { clears: 1, best: null };
+    const h2retro = checkAchievements(migrate(JSON.parse(JSON.stringify(h2)), C, B), C, B).map(a => a.id);
+    ok(h2retro.includes('ach_hard_part2') && !h2retro.includes('ach_hard_part1'), 'a save with Part II cleared on Hard unlocks "Part II on Hard" on load (and not Part I on Hard)');
     // the achievement-exclusive form
     const ex = C.roster.filter(c => c.notPullable);
     ok(ex.length >= 1 && ex.every(c => C.achievements.some(a => a.rewardCharacter === c.id)), 'every non-summonable ninja is an achievement reward');

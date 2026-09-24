@@ -12,6 +12,7 @@ Everything is in place except the final art, music and effects.
 - **Settings** reworked: choose the Auto-ult mode (clash-aware or fire when ready), sign in and out of Google, see your cloud save's status, and confirm a reset by typing it.
 - **Hard mode:** clear a part and play its battles again with enemies {{num:hardMode.levelOffset}} levels higher and tougher bosses, for more scrolls. Switch to **💀 Hard** on the Story map. See [Hard mode and Daily challenge](wiki:guide/endgame).
 - **The Daily challenge:** a new fight every day, a boss you've already beaten with a twist (a locked nature, no Ultimates, a boss gauntlet, or enemies that counter your team). {{num:daily.attemptsPerDay}} attempts a day, with a reward on your first clear.
+- **Part II on Hard:** a Story achievement for clearing every Part II battle on Hard mode. Saves that already have it unlock it on load.
 - **Challenges** on the Home screen: the Daily challenge, Hard mode and the Boss Rush.
 - **Divers** in protect missions no longer freeze your team: your ninja turn around and chase them.
 - **Easier on phones:** bigger buttons, chips and switches everywhere, a side menu when you hold your phone sideways, and a summon reveal that scrolls when it doesn't fit.

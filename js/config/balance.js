@@ -489,6 +489,7 @@ export const BALANCE = {
       ach_story:        { reward: { rareTickets: 1 } },          // + the exclusive Naruto form
       ach_hard_first:   { target: 1, reward: { tickets: 2 } },
       ach_hard_part1:   { reward: { rareTickets: 1 } },
+      ach_hard_part2:   { reward: { rareTickets: 1 } },
       ach_own_10:       { target: 10, reward: { tickets: 1 } },
       ach_own_25:       { target: 25, reward: { tickets: 3 } },
       ach_own_45:       { target: 45, reward: { rareTickets: 1 } },
