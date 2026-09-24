@@ -66,6 +66,7 @@ export function lineupScore(lineup, B = BALANCE) {
  * Pick 4 characters (+ leader) for a node.
  * candidates: [{ id, level, stars }] — what the player owns (or a hypothetical pool)
  * opts.tierMix: ['jonin','chunin',...] pick the best per tier slot (sims)
+ * opts.matchupWeight: how much Nature Wheel matchup counts vs raw power (default 0.32; 0 = ignore)
  * Returns { members: [ids], leader }.
  */
 export function autoPickTeam(candidates, node, C, B = BALANCE, opts = {}) {
@@ -80,7 +81,8 @@ export function autoPickTeam(candidates, node, C, B = BALANCE, opts = {}) {
       const power = powerRating(characterStats(def, c.level, c.stars, B));
       const match = characterMatchup(def, enemyNatures, B);
       const rec = (t.recommended || []).includes(c.id) ? 1.03 : 1;
-      return { ...c, def, power, match, score: power * (1 + 0.32 * match) * rec };
+      const mw = opts.matchupWeight ?? 0.32;
+      return { ...c, def, power, match, score: power * (1 + mw * match) * rec };
     })
     .sort((a, b) => b.score - a.score);
 

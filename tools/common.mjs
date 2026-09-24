@@ -43,12 +43,14 @@ export function runNode(node, team, owned, seed, { ultMode = 'asap', ultsEnabled
   return { state, time: sim.time, sim };
 }
 
-/** On-curve team for a node: best nature matchup per tier slot among characters available by then. */
+/** On-curve team for a node: level = node enemy level (+offset), stars by tier, and the
+ *  strongest lineup per tier slot among characters available by then. Nature-NEUTRAL
+ *  (matchup ignored) so bosses are tuned for a typical team; counters then add an edge. */
 export function onCurveTeam(node, { levelOffset = B.targets.onCurve.levelOffset, stars = B.targets.onCurve.stars, tierMix = B.targets.onCurve.tierMix } = {}) {
   const level = enemyLevelForNode(node.globalIndex, B) + levelOffset;
   const avail = availableBeforeArc(node.arcIndex);
   const cands = avail.map(c => ({ id: c.id, level, stars: typeof stars === 'number' ? stars : (stars[c.tier] ?? 1) }));
-  const pick = autoPickTeam(cands, node, C, B, { tierMix });
+  const pick = autoPickTeam(cands, node, C, B, { tierMix, matchupWeight: 0 });
   const team = teamForNode(node, pick);
   const owned = Object.fromEntries(cands.map(c => [c.id, { level: c.level, stars: c.stars }]));
   for (const id of team.members) if (!owned[id]) owned[id] = { level, stars: 1 };

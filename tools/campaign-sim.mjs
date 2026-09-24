@@ -3,6 +3,8 @@
 //   * pulls whenever it can afford it (10-pulls first) on the current arc banner
 //     (or Standard), exactly like a player would;
 //   * picks its team for each node by power + Nature Wheel matchup (TeamPicker);
+//     after a loss it weighs matchup harder and rotates in counters from its bench
+//     (up to 12 levels behind), raising them with the catch-up discount;
 //   * spends all Ryo levelling that team (lowest level first);
 //   * fires ults as soon as they're ready;
 //   * when it loses, it REPLAYS the most recent cleared node for Ryo (max
@@ -35,9 +37,16 @@ function playCampaign(playerSeed, verbose) {
     while (guard++ < 50 && canAfford(state, 10, B)) pull(state, banner.id, 10, C, rng, B);
     while (guard++ < 100 && canAfford(state, 1, B)) pull(state, banner.id, 1, C, rng, B);
   };
-  const pickTeam = (node) => {
-    const cands = Object.entries(state.roster).map(([id, o]) => ({ id, level: o.level, stars: o.stars }));
-    const pick = autoPickTeam(cands, node, C, B);
+  // counterMode (after a loss): judge the bench as if it were levelled up to the
+  // current team's level — the bot then spends its farmed Ryo (with the catch-up
+  // discount) raising the counters it picked, like a player swapping in answers
+  // to the boss's nature.
+  const pickTeam = (node, counterMode = false) => {
+    const levels = Object.values(state.roster).map(o => o.level).sort((a, b) => b - a);
+    const top4 = levels.slice(0, 4);
+    const teamLvl = top4.reduce((s, l) => s + l, 0) / Math.max(1, top4.length);
+    const cands = Object.entries(state.roster).map(([id, o]) => ({ id, level: counterMode && o.level >= teamLvl - 12 ? Math.max(o.level, Math.floor(teamLvl) - 2) : o.level, stars: o.stars }));
+    const pick = autoPickTeam(cands, node, C, B, { matchupWeight: counterMode ? 0.8 : 0.32 });
     return teamForNode(node, pick);
   };
   const levelTeam = (team) => {
@@ -63,7 +72,7 @@ function playCampaign(playerSeed, verbose) {
     let replays = 0, attempts = 0, cleared = false;
     while (!cleared) {
       spendScrolls(node);
-      const team = pickTeam(node);
+      const team = pickTeam(node, attempts > 0);
       levelTeam(team);
       attempts++;
       const r = battle(node, team);

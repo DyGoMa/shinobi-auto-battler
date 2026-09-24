@@ -68,16 +68,21 @@ export const BALANCE = {
     // Ryo cost to go from level x to x+1. Sum of this curve sets how fast teams
     // level. base 20–200, growth 5–60 (linear).
     levelUpCost: { type: 'linear', base: 60, growth: 34 },
+    // Catch-up discount: levelling a ninja that is at least `gap` levels below
+    // your highest-level ninja costs (1 − discount) of the normal price, so
+    // swapping in a nature counter mid-campaign is affordable.
+    // gap 3–15, discount 0–0.8
+    catchUp: { gap: 5, discount: 0.6 },
     // Rewards for the FIRST clear of a story node. x = global node index (0-based,
     // across Part 1 and later parts). scrolls base 50–300; ryo base 100–1000.
     nodeFirstClear: {
       scrolls: { type: 'linear', base: 160, growth: 3, round: true },
-      ryo:     { type: 'linear', base: 450, growth: 95, round: true },
+      ryo:     { type: 'linear', base: 520, growth: 110, round: true },
     },
     // Rewards for replaying an already-cleared node (farming). x = global node index.
     nodeReplay: {
       scrolls: { type: 'linear', base: 15, growth: 0.5, round: true },
-      ryo:     { type: 'linear', base: 420, growth: 95, round: true },
+      ryo:     { type: 'linear', base: 600, growth: 130, round: true },
     },
     // Multiplier on first-clear rewards for boss nodes. Range 1–3.
     bossNodeBonusMult: 1.5,
@@ -213,8 +218,8 @@ export const BALANCE = {
     partMult: { 1: 1.0, 2: 1.0, 3: 1.0 },
     // Extra multipliers for units flagged as the node's boss. x = global node index.
     bossMult: {
-      hp:  { type: 'linear', base: 2.9, growth: 0 },
-      atk: { type: 'linear', base: 1.25, growth: 0 },
+      hp:  { type: 'linear', base: 2.4, growth: 0 },
+      atk: { type: 'linear', base: 1.45, growth: 0 },
       def: { type: 'linear', base: 1.15, growth: 0 },
     },
     // Group scaling: every NON-boss enemy in a node gets HP and ATK × this curve,
@@ -227,16 +232,16 @@ export const BALANCE = {
     // touching the global curves. 0.5–1.5
     nodeMult: {
       n_bell_1:    { hp: 0.85, atk: 0.85 },
-      n_bell_3:    { hp: 1.55, atk: 1.55 },
-      n_waves_5:   { hp: 0.95, atk: 0.95 },
-      n_chunin_5:  { hp: 1.00, atk: 1.00 },
-      n_crush_3:   { hp: 0.32, atk: 0.32 },
-      n_crush_4:   { hp: 1.25, atk: 1.25 },
-      n_tsunade_4: { hp: 1.18, atk: 1.18 },
-      n_tea_3:     { hp: 1.42, atk: 1.42 },
-      n_sr_4:      { hp: 1.01, atk: 1.01 },
-      n_sr_5:      { hp: 1.00, atk: 1.00 },
-      n_kuro_3:    { hp: 1.15, atk: 1.15 },
+      n_bell_3:    { hp: 1.54, atk: 1.54 },
+      n_waves_5:   { hp: 0.98, atk: 0.98 },
+      n_chunin_5:  { hp: 1.05, atk: 1.05 },
+      n_crush_3:   { hp: 0.35, atk: 0.35 },
+      n_crush_4:   { hp: 0.88, atk: 0.88 },
+      n_tsunade_4: { hp: 1.04, atk: 1.04 },
+      n_tea_3:     { hp: 1.48, atk: 1.48 },
+      n_sr_4:      { hp: 1.00, atk: 1.00 },
+      n_sr_5:      { hp: 0.97, atk: 0.97 },
+      n_kuro_3:    { hp: 1.06, atk: 1.06 },
     },
     // Adds summoned by boss mechanics are this fraction of a normal enemy. 0.3–1
     addMult: 0.6,
@@ -275,7 +280,7 @@ export const BALANCE = {
     // Boss level by round (x = round, 1-based). Starts near the unlock point.
     levelByRound: { type: 'linear', base: 26, growth: 1.5, round: true },
     // Boss stat multiplier by round (x = round). Uses bossMult on top.
-    statMultByRound: { type: 'linear', base: 0.34, growth: 0.035 },
+    statMultByRound: { type: 'linear', base: 0.39, growth: 0.035 },
     // After Pain (round 7), the rotation loops; each loop multiplies stats by this. 1.1–2
     loopMult: 1.4,
     // Chakra kept between rounds (share). 0–1

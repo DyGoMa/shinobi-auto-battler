@@ -47,12 +47,26 @@ export function currentNode(state, C) { return C.nodes.find(n => !isNodeCleared(
 // ---------------------------------------------------------------------------
 // Levelling
 // ---------------------------------------------------------------------------
+/** Highest level among owned ninja (for the catch-up discount). */
+export function highestLevel(state) {
+  let m = 1; for (const o of Object.values(state.roster)) if (o.level > m) m = o.level; return m;
+}
+
+/** Ryo to go from the character's level to +1, including the catch-up discount. */
+export function levelCostFor(state, id, B = BALANCE) {
+  const o = state.roster[id]; if (!o) return Infinity;
+  const base = levelUpCost(o.level, B);
+  const cu = B.economy.catchUp;
+  const discounted = cu && o.level <= highestLevel(state) - cu.gap;
+  return { cost: Math.max(1, Math.round(base * (discounted ? 1 - cu.discount : 1))), discounted: !!discounted };
+}
+
 export function canLevelUp(state, id, B = BALANCE) {
   const o = state.roster[id]; if (!o) return { ok: false, reason: 'Not owned' };
   if (o.level >= B.stats.levelCap) return { ok: false, reason: 'Max level' };
-  const cost = levelUpCost(o.level, B);
-  if (state.currencies.ryo < cost) return { ok: false, reason: `Need ${cost} Ryo`, cost };
-  return { ok: true, cost };
+  const { cost, discounted } = levelCostFor(state, id, B);
+  if (state.currencies.ryo < cost) return { ok: false, reason: `Need ${cost} Ryo`, cost, discounted };
+  return { ok: true, cost, discounted };
 }
 export function levelUp(state, id, B = BALANCE) {
   const c = canLevelUp(state, id, B); if (!c.ok) return c;

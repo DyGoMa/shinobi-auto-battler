@@ -85,16 +85,18 @@ for (const arc of C.arcs.filter(a => !a.placeholder && a.part === 1)) {
   add('Nature check (Earth vs Fire team, Water boss)', `${pct(good / N)} vs ${pct(bad / N)}`, `gap >= ${pct(T.natureCheckMinGap)}`, gap >= T.natureCheckMinGap, `gap ${pct(gap)}`);
 }
 
-// ---------------------------------------------------------------- report
+// ---------------------------------------------------------------- 5. Fight length
 const ultInt = median(allUltIntervals);
 const fight = median(bossTimes);
+add('Boss fight length (median of wins)', fight.toFixed(1) + 's', T.fightLengthRange[0] + '–' + T.fightLengthRange[1] + 's', fight >= T.fightLengthRange[0] && fight <= T.fightLengthRange[1], 'all arc bosses');
+
+// ---------------------------------------------------------------- report
 console.log(`\nShinobi Auto-Battler — battle sims (${N} seeded battles per scenario, ult bot = fire when ready)\n`);
 const w1 = Math.max(...rows.map(r => r.name.length)) + 2;
 console.log('  ' + 'Scenario'.padEnd(w1) + 'Result'.padEnd(16) + 'Target'.padEnd(14) + 'Status  Notes');
 console.log('  ' + '-'.repeat(w1 + 16 + 14 + 14));
 for (const r of rows) console.log('  ' + r.name.padEnd(w1) + String(r.value).padEnd(16) + String(r.target).padEnd(14) + (r.pass ? 'PASS  ' : 'FAIL  ') + '  ' + r.note);
 console.log('\nInfo:');
-console.log(`  Median boss fight length (wins): ${fight.toFixed(1)}s   (target ${T.fightLengthRange[0]}–${T.fightLengthRange[1]}s)`);
 console.log(`  Median seconds between ults per unit: ${ultInt.toFixed(1)}s   (target ~10–15s)`);
 console.log('  Jutsu Clash — same teams, bot that clashes on purpose:');
 for (const l of info) console.log(l);
