@@ -13,6 +13,7 @@ const N = Number(process.env.SIM_N) || B.targets.battlesPerScenario;
 const T = B.targets;
 const rows = [];
 const info = [];
+const natureInfo = [];
 let allUltIntervals = [];
 let bossTimes = [];
 
@@ -83,6 +84,11 @@ for (const arc of C.arcs.filter(a => !a.placeholder && SIM_PARTS.includes(a.part
   }
   const gap = (good - bad) / N;
   add('Nature check (Earth vs Fire team, Water boss)', `${pct(good / N)} vs ${pct(bad / N)}`, `gap >= ${pct(T.natureCheckMinGap)}`, gap >= T.natureCheckMinGap, `gap ${pct(gap)}`);
+  // Info (BALANCE.md §6): the same check with a neutral re-type (Lightning) and with the
+  // clash-aware bot, which holds ults it would lose in a Jutsu Clash (like a player
+  // reading the ▼ badge).
+  const rate = (nat, ultMode) => { let w = 0; for (let i = 0; i < N; i++) if (runNode(node, team, owned, seedFor('nat', i), { specsOverride: retype(nat), ultMode }).state === 'won') w++; return pct(w / N); };
+  natureInfo.push(`  Nature check detail: neutral (Lightning) team ${rate('Lightning', 'asap')}; clash-aware bot counter ${rate('Earth', 'smart')} / countered ${rate('Fire', 'smart')}`);
 }
 
 // ---------------------------------------------------------------- 5. Fight length
@@ -98,6 +104,7 @@ console.log('  ' + '-'.repeat(w1 + 16 + 14 + 14));
 for (const r of rows) console.log('  ' + r.name.padEnd(w1) + String(r.value).padEnd(16) + String(r.target).padEnd(14) + (r.pass ? 'PASS  ' : 'FAIL  ') + '  ' + r.note);
 console.log('\nInfo:');
 console.log(`  Median seconds between ults per unit: ${ultInt.toFixed(1)}s   (target ~10–15s)`);
+for (const l of natureInfo) console.log(l);
 console.log('  Jutsu Clash — same teams, bot that clashes on purpose:');
 for (const l of info) console.log(l);
 const failed = rows.filter(r => !r.pass).length;

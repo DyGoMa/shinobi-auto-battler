@@ -123,3 +123,32 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
 ## 5. Safety rails
 * `npm run validate` fails if the gacha rates don't add up to 1, if any curve produces a non-number, or if enemy levels exceed `stats.levelCap` before node 90.
 * The debug panel's edits are **not saved**. Reload the page to go back to the file's values.
+
+## 6. Why a countered team can't win (Session 2 measurement, open for Session 3)
+
+**Goal that was tested:** at equal level and rarity, a fully countered team should win 25–30%, and the countering team should still clearly win most fights.
+
+**Result: no single value reaches that band without changing the Jutsu Clash rules, so nothing was changed.** `npm run sim` now prints the numbers under "Nature check detail" on every run.
+
+The nature check puts the same on-curve team, re-typed, against the Land of Waves boss (Water, level 8). 200 seeded battles per cell:
+
+| What was changed | Counter (Earth) | Neutral (Lightning) | Countered (Fire) |
+|---|---|---|---|
+| Nothing (wheel 1.3 / 0.8, Jutsu Clash on) | 98% | 34% | **0%** |
+| Wheel damage switched off (1 / 1) | 68% | 34% | 1% |
+| Jutsu Clash switched off | 97% | 23% | 0% |
+| Both off | 23% | 23% | 23% |
+| Wheel scaled to half (1.15 / 0.9) … a tenth (1.03 / 0.98) | 85% … 72% | 34% | 0% |
+| No damage penalty for the countered side, and Overwhelmed cancels the enemy jutsu (`overwhelmedJutsuMult` 0), clash-aware bot | 98% | 35% | **10%** (best that keeps the clash rules) |
+| Overwhelmed ults still land at 85–90% power, plus ~10–15% of the countered side's damage penalty | 98% | 34% | 24–33% |
+
+What drives it:
+* **Jutsu Clash, more than damage.** A neutral team's Ultimates cancel the boss's telegraphed Water jutsu (Standoff), and a countering team's stun the boss (Overpower). A countered team's are simply spent (Overwhelmed) while the jutsu still lands. The fire-when-ready bot, which is also what the in-game 🤖 Auto-ult button uses, keeps firing into the same wind-up, wasting ~5 Ultimates a fight.
+* **The win curve is steep.** The countered team needs about **+6 levels** to reach 17–33%, while a neutral team at +1 level already wins 54%.
+* The damage-only candidates (lower the multipliers, cap the wheel's share of damage, mixed-team bonus) leave the countered team at 0–5%. A mixed-team bonus can't help an all-countered team by definition.
+* The only setting that reached the band made an **Overwhelmed** Ultimate still hit at ~85% power. That erases the point of the Overwhelmed outcome (DESIGN.md §3) and only helps auto-fire play: a player reading the ▼ badge would still be at ~10%. So it was not applied.
+
+**Options for Session 3** (each needs a design decision, not just a number):
+1. Switch the in-game 🤖 Auto-ult to the existing clash-aware mode (`botUlts('smart')`), so auto players stop wasting Ultimates. It won't lift the countered team much on its own.
+2. Let an Overwhelmed clash still cancel the enemy jutsu (spend your ult to block theirs). That is a rule change in `BattleSim.fireUlt`.
+3. Accept a steep wheel, and measure "countered" against a mixed team instead of a mono-nature re-type.
