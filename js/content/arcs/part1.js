@@ -10,7 +10,8 @@
 //            | { type: 'protect', protect: civilianId, seconds? }
 //            | { type: 'defeatBoss' }                   (only units with boss:true matter)
 //   team?:     { forced: [ids], leader: id|'none', banned: [ids], recommended: [ids] }
-//              forced characters you don't own join as level-matched loaners.
+//              forced characters you don't own join as level-matched loaners (owned ones
+//              below the node's level are raised to it for that battle).
 //   onboarding?: true   shows the first-battle tooltips
 // }
 // The LAST node of every arc must contain a boss (validated).

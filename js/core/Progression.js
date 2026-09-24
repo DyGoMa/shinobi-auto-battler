@@ -111,11 +111,16 @@ export function completeBossRushRound(state, round, B = BALANCE) {
 // ---------------------------------------------------------------------------
 // Teams
 // ---------------------------------------------------------------------------
-/** Owned progress for a character, or a loaner for forced units. */
+/**
+ * Owned progress for a character, or a loaner for forced units. A forced ninja
+ * (or fixed Leader) never fights below the loaner level: owning an unlevelled
+ * copy must not be worse than not owning it. Stars stay the player's own.
+ */
 export function ownedOrLoaner(state, id, node, B = BALANCE) {
   const o = state.roster[id];
-  if (o) return { ...o, loaner: false };
   const lvl = node ? enemyLevelForNode(node.globalIndex, B) : 1;
+  const forced = !!node && ((node.team?.forced || []).includes(id) || node.team?.leader === id);
+  if (o) return forced && o.level < lvl ? { ...o, level: lvl, loaner: false, synced: true } : { ...o, loaner: false };
   return { level: lvl, stars: 1, loaner: true };
 }
 

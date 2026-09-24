@@ -3,8 +3,8 @@
 import { C, B } from './common.mjs';
 import { migrate, defaultState, encodeSave, decodeSave, SAVE_VERSION } from '../js/core/SaveManager.js';
 import { pull } from '../js/core/GachaSystem.js';
-import { makeRng, curve } from '../js/core/formulas.js';
-import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig } from '../js/core/Progression.js';
+import { makeRng, curve, enemyLevelForNode } from '../js/core/formulas.js';
+import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner } from '../js/core/Progression.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 
 let fails = 0, passes = 0;
@@ -84,6 +84,14 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   psim.units.find(u => u.protected).hp = 0;
   psim._tick(psim.tick);
   ok(psim.state === 'lost' && psim.endReason === 'protectFailed', 'protect objective fails when the escort falls');
+  // forced ninja never fight below the loaner level (owning one must not be worse)
+  {
+    const fs = defaultState(C, B); fs.roster.lee = { level: 3, stars: 4 };
+    const k3 = C.node.n_kaz_3, lvl = enemyLevelForNode(k3.globalIndex, B);
+    const lee = ownedOrLoaner(fs, 'lee', k3, B);
+    ok(lee.level === lvl && lee.stars === 4 && !lee.loaner, 'owned forced ninja below the node level fight at it, keeping stars');
+    ok(ownedOrLoaner(fs, 'naruto', k3, B).level === fs.roster.naruto.level, 'non-forced ninja keep their own level');
+  }
   // Jutsu Clash: an Overwhelmed ult deals no damage, the enemy jutsu still lands
   // (weakened), and part of the chakra comes back.
   {

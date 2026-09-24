@@ -147,7 +147,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 * `defeatBoss` (only `boss:true` units matter)
 
 **Team rules per node:**
-* `forced` (unowned forced ninja join as level-matched loaners)
+* `forced` (unowned forced ninja join as level-matched loaners; owned ones below the node's enemy level are raised to it for that battle, keeping their stars)
 * `leader` (`'none'` or a fixed Leader)
 * `banned`
 * `recommended` (small Auto-pick bonus)

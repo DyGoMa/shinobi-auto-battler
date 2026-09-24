@@ -180,7 +180,7 @@ A unit only becomes a *boss* (boss stat multiplier, crown, boss HP bar) when a n
 * `{ type: 'defeatBoss' }`: only `boss: true` units matter, and your team focuses the boss.
 
 **Team rules:**
-* `forced`: ninja who must fight. If the player doesn't own them, they join as level-matched loaners.
+* `forced`: ninja who must fight. If the player doesn't own them, they join as level-matched loaners. If the player owns them below the node's enemy level, they fight at that level (their stars are kept), so an unlevelled copy is never worse than a loaner.
 * `leader: 'none'`: no Leader buff. `leader: 'id'` fixes the Leader.
 * `banned`: these ninja sit out.
 * `recommended`: shown to the player and nudges the Auto picker.

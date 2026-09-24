@@ -2,6 +2,7 @@
 // matchup rating against the selected node and lane-reach warnings.
 import { h, btn, fmt, avatar, natureChips, natureChip, stars, roleTag, tierTag } from './dom.js';
 import { currentNode, resolveTeam, isNodeUnlocked, unitPower } from '../core/Progression.js';
+import { enemyLevelForNode } from '../core/formulas.js';
 import { nodeEnemyNatures, teamMatchupRating, characterMatchup, autoPickTeam } from '../core/TeamPicker.js';
 import { leaderBuffText } from '../core/Ninja.js';
 
@@ -72,6 +73,8 @@ export function render(game, ui, params) {
   else if (melee.length > 2) warnings.push(`Only the front fighter and one Striker right behind it can reach melee range — ${melee.slice(2).map(d => d.short).join(', ')} will mostly wait in line.`);
   if (!defs.some(d => d.role === 'Tank')) warnings.push('No Tank: your front line will take the boss\'s hits directly.');
   const unowned = (t.forced || []).filter(id => !state.roster[id]);
+  const syncLv = node ? enemyLevelForNode(node.globalIndex, B) : 1;
+  const synced = (t.forced || []).filter(id => state.roster[id] && state.roster[id].level < syncLv);
 
   const owned = Object.keys(state.roster).filter(id => C.char[id]);
   const roles = ['All', 'Tank', 'Striker', 'Ranged', 'Support'];
@@ -107,7 +110,7 @@ export function render(game, ui, params) {
     ),
     h('div.slots', { style: { marginTop: '12px' } }, slotEl(0), slotEl(1), slotEl(2), slotEl(3)),
     (t.forced?.length || t.leader || t.banned?.length) ? h('div.warnbox', { style: { marginTop: '10px' } },
-      t.forced?.length ? h('div', '🔒 This battle fields ', h('b', t.forced.map(id => C.char[id].short).join(', ')), unowned.length ? ` (${unowned.map(id => C.char[id].short).join(', ')} join as level-matched guests)` : '', '. They take slots first.') : null,
+      t.forced?.length ? h('div', '🔒 This battle fields ', h('b', t.forced.map(id => C.char[id].short).join(', ')), unowned.length ? ` (${unowned.map(id => C.char[id].short).join(', ')} join as level-matched guests)` : '', '. They take slots first.', synced.length ? ` ${synced.map(id => C.char[id].short).join(', ')} fight at Lv ${syncLv} here (forced ninja are raised to the battle's level).` : '') : null,
       t.leader === 'none' ? h('div', '★ No Leader buff in this battle.') : t.leader ? h('div', '★ Leader is fixed: ', h('b', C.char[t.leader].name)) : null,
       t.banned?.length ? h('div', '⛔ Sitting out: ', t.banned.map(id => C.char[id].short).join(', ')) : null,
       h('div.tiny', { style: { marginTop: '4px' } }, 'Fighting as: ', resolved.members.map(id => C.char[id].short + (id === resolved.leader ? '★' : '')).join(', ')),
