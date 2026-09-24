@@ -1,10 +1,12 @@
 // TeamBuilderScreen.js — pick 3 members + 1 Leader, with a live Nature Wheel
-// matchup rating against the selected node and lane-reach warnings.
+// matchup rating against the selected node (or today's Daily challenge) and
+// lane-reach warnings.
 import { h, btn, fmt, avatar, natureChips, natureChip, stars, roleTag } from './dom.js';
-import { currentNode, resolveTeam, isNodeUnlocked, unitPower, nodeEnemyLevel } from '../core/Progression.js';
+import { currentNode, resolveTeam, isNodeUnlocked, isHardNodeUnlocked, unitPower, nodeEnemyLevel } from '../core/Progression.js';
 import { nodeEnemyNatures, teamMatchupRating, characterMatchup, autoPickTeam } from '../core/TeamPicker.js';
 import { leaderBuffText } from '../core/Ninja.js';
 import { tutorialLessons } from '../core/Tutorial.js';
+import { dailyFor, dailyRecord, attemptsLeft, dailyContent, dailyTeamNode, TWIST_TEXT } from '../core/Daily.js';
 import { tipCard } from './tips.js';
 import { screenHead } from './chrome.js';
 
@@ -15,10 +17,13 @@ export function render(game, ui, params) {
   const { C, B, state } = game;
   // Tutorial lesson 1 builds the team here: params.tutorialLesson = lesson index.
   const lessonNode = params.tutorialLesson != null ? tutorialLessons(C)[params.tutorialLesson] : null;
-  const node = lessonNode || (params.nodeId && C.node[params.nodeId]) || currentNode(state, C) || C.nodes[C.nodes.length - 1];
-  const enemyN = nodeEnemyNatures(node, C);
+  // params.daily: build for today's Daily challenge (its twist can change the enemies' natures).
+  const daily = params.daily && !lessonNode ? dailyFor(state, C, B) : null;
+  const node = lessonNode || (daily && dailyTeamNode(daily)) || (params.nodeId && C.node[params.nodeId]) || currentNode(state, C) || C.nodes[C.nodes.length - 1];
   const t = node.team || {};
   const resolved = resolveTeam(state, node, C);
+  const EC = daily ? dailyContent(daily, resolved.members.map(id => C.char[id]), C, B) : C;
+  const enemyN = nodeEnemyNatures(node, EC);
   const baseOf = (id) => C.char[id]?.formOf || id;
 
   const slotIds = [state.team.members[0] || null, state.team.members[1] || null, state.team.members[2] || null, state.team.leader || null];
@@ -77,7 +82,8 @@ export function render(game, ui, params) {
   else if (melee.length > 2) warnings.push(`Only the front fighter and one Striker right behind it can reach melee range — ${melee.slice(2).map(d => d.short).join(', ')} will mostly wait in line.`);
   if (!defs.some(d => d.role === 'Tank')) warnings.push('No Tank: your front line will take the boss\'s hits directly.');
   const unowned = (t.forced || []).filter(id => !state.roster[id]);
-  const syncLv = nodeEnemyLevel(node, B);
+  const hard = !!params.hard && !lessonNode;
+  const syncLv = nodeEnemyLevel(node, B, { hard });
   const synced = (t.forced || []).filter(id => state.roster[id] && state.roster[id].level < syncLv);
 
   const owned = Object.keys(state.roster).filter(id => C.char[id]);
@@ -88,11 +94,13 @@ export function render(game, ui, params) {
     .map(x => ({ ...x, power: unitPower(x.def, x.own, B), match: characterMatchup(x.def, enemyN, B) }))
     .sort((a, b) => b.power * (1 + 0.3 * b.match) - a.power * (1 + 0.3 * a.match));
 
-  const unlocked = lessonNode ? true : isNodeUnlocked(state, node, C);
+  const dailyDone = daily && (dailyRecord(state, daily.dateKey).cleared || !attemptsLeft(state, B, daily.dateKey));
+  const unlocked = lessonNode ? true : daily ? !dailyDone : hard ? isHardNodeUnlocked(state, node, C) : isNodeUnlocked(state, node, C);
   const fight = () => {
     if (!resolved.members.length) { ui.toast('Add at least one ninja to your team first.', 'bad'); return; }
     if (lessonNode) ui.startBattle({ node, tutorial: { index: params.tutorialLesson, replay: !!params.replay } });
-    else if (unlocked) ui.startBattle({ node });
+    else if (daily) ui.startBattle({ daily });
+    else if (unlocked) ui.startBattle({ node, hard });
     else ui.toast('That battle is still locked: clear the one before it first.');
   };
   const coach = lessonNode ? h('div.coach',
@@ -101,22 +109,26 @@ export function render(game, ui, params) {
     h('p.small', 'When you\'re happy with your team, press ', h('b', '⚔️ Fight!'), '.')) : null;
 
   return h('div.screen',
-    screenHead(ui, { title: 'Team Builder', help: 'guide/team-composition', right: [
+    screenHead(ui, { title: 'Team Builder', help: 'guide/team-composition', back: daily ? { label: 'Daily', id: 'daily' } : null, right: [
         lessonNode ? null : btn('✨ Auto', () => {
           const cands = owned.map(id => ({ id, level: state.roster[id].level, stars: state.roster[id].stars }));
-          const pick = autoPickTeam(cands, node, C, B);
+          // Countered days re-type the enemies against whatever you pick: go by power.
+          const pick = autoPickTeam(cands, node, EC, B, daily?.twist.id === 'counteredOnly' ? { matchupWeight: 0 } : {});
           const members = pick.members.filter(id => state.roster[id] && !(t.forced || []).includes(id)).slice(0, 3);
           for (const id of pick.all) if (members.length < 3 && state.roster[id] && id !== pick.leader && !members.includes(id)) members.push(id);
           state.team.members = members;
           if (pick.leader && state.roster[pick.leader]) state.team.leader = pick.leader;
           game.commit('team'); ui.toast('Team picked by power and nature matchup.'); ui.refresh();
         }),
-        btn(unlocked ? '⚔️ Fight!' : '🔒 Locked', fight, 'primary', { disabled: !unlocked })] }),
+        btn(unlocked ? '⚔️ Fight!' : daily ? (dailyRecord(state, daily.dateKey).cleared ? '✓ Cleared' : 'No attempts left') : '🔒 Locked', fight, 'primary', { disabled: !unlocked })] }),
     coach,
     lessonNode ? null : tipCard(game, 'team'),
+    daily ? h('div.warnbox', `${TWIST_TEXT[daily.twist.id].icon} ${TWIST_TEXT[daily.twist.id].text(daily)}`) : null,
     h('div.card',
       h('div.row.between',
-        h('div', h('div.tiny.muted', 'Building for'), h('b', node.name), h('span.muted.small', ` · ${lessonNode ? C.tutorial.name : C.arc[node.arcId].name}`)),
+        daily
+          ? h('div', h('div.tiny.muted', 'Building for'), h('b', `📅 Daily challenge: ${TWIST_TEXT[daily.twist.id].name}`), h('span.muted.small', ` · ${daily.rounds.map(n => n.name).join(', ')} · enemy Lv ${daily.level}`))
+          : h('div', h('div.tiny.muted', 'Building for'), h('b', (hard ? '💀 ' : '') + node.name), h('span.muted.small', ` · ${lessonNode ? C.tutorial.name : C.arc[node.arcId].name}${hard ? ` · Hard, enemy Lv ${syncLv}` : ''}`)),
         h('div.row', h('span.small.muted', 'Enemy natures'), ...[...new Set(enemyN)].map(n => natureChip(n)), enemyN.length ? null : h('span.nat.none', 'None'))),
       h('div.divider'),
       h('div.matchup-box',
@@ -134,7 +146,7 @@ export function render(game, ui, params) {
     ) : null,
     ...warnings.map(w => h('div.warnbox', { style: { marginTop: '8px' } }, '⚠ ' + w)),
     h('div.filters', ...roles.map(r => h('button.chip' + (roleFilter === r ? '.on' : ''), { type: 'button', onclick: () => { roleFilter = r; ui.refresh(); } }, r))),
-    h('p.tiny.dim', `Tap a slot, then a ninja. Sorted by power × matchup vs this node. ▲ = effective against these enemies, ▼ = countered.`),
+    h('p.tiny.dim', `Tap a slot, then a ninja. Sorted by power × matchup vs ${daily ? "today's challenge" : 'this node'}. ▲ = effective against these enemies, ▼ = countered.`),
     h('div.char-grid', ...list.map(x => {
       const inTeam = slotIds.includes(x.id);
       const banned = (t.banned || []).includes(x.id);

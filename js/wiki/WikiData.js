@@ -10,8 +10,11 @@ import { slugify } from './markdown.js';
 import { TIER_LABEL } from '../core/formulas.js';
 import { GAME_VERSION } from '../config/version.js';
 
-/** What the guides' {{fmt:path}} placeholders can read: balance.js, plus the version. */
-export function guideSources(B) { return { balance: B, version: { current: GAME_VERSION } }; }
+/** What the guides' {{fmt:path}} placeholders can read: balance.js, the version, and
+ *  arc names (for {{arc:…}}, which shows an arc id from balance.js by name). */
+export function guideSources(B, C = null) {
+  return { balance: B, version: { current: GAME_VERSION }, rush: { unlockArc: C?.bossRush?.unlockArc }, arcNames: C ? Object.fromEntries(C.arcs.map(a => [a.id, a.name])) : {} };
+}
 
 /** Hand-written guides: wiki/guides/<slug>.md (markdown, rendered in game). */
 export const GUIDES = [
@@ -21,6 +24,7 @@ export const GUIDES = [
   { slug: 'jutsu-clash', title: 'Jutsu Clash explained', icon: '⚡', blurb: 'Meet an enemy jutsu head-on: Overpower, Standoff and Overwhelmed.' },
   { slug: 'summoning', title: 'Summoning and pity', icon: '📜', blurb: 'Rates, banners, the Kage guarantee and duplicates.' },
   { slug: 'levelling', title: 'Levelling and economy', icon: '🪙', blurb: 'Where Ryo and scrolls come from, and how to spend them.' },
+  { slug: 'endgame', title: 'Hard mode and Daily challenge', icon: '💀', blurb: 'What to do once a part is cleared: Hard mode, the Daily challenge and the Boss Rush.' },
   { slug: 'achievements', title: 'Achievements', icon: '🏆', blurb: 'Goals across the whole game, their rewards, and an exclusive Naruto.' },
   { slug: 'whats-new', title: "What's new", icon: '✨', blurb: 'What changed in each version of the game.' },
 ].map(g => ({ ...g, id: `guide/${g.slug}`, file: `wiki/guides/${g.slug}.md` }));
@@ -40,7 +44,7 @@ export const REFERENCE = [
 export const HELP_PAGES = {
   home: 'guide/how-to-play', story: 'arcs', team: 'guide/team-composition', roster: 'guide/levelling',
   summon: 'guide/summoning', rush: 'boss-rush', settings: 'guide/how-to-play', tutorial: 'guide/how-to-play',
-  wiki: 'guide/how-to-play', battle: 'guide/jutsu-clash', achievements: 'guide/achievements',
+  wiki: 'guide/how-to-play', battle: 'guide/jutsu-clash', achievements: 'guide/achievements', daily: 'guide/endgame', hard: 'guide/endgame',
 };
 
 /** Link targets a guide may use besides wiki pages (handled by the Wiki screen). */

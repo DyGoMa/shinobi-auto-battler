@@ -4,7 +4,7 @@ import { BALANCE } from '../js/config/balance.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 import { enemyLevelForNode, hashString } from '../js/core/formulas.js';
 import { buildPlayerUnit } from '../js/core/Ninja.js';
-import { buildNodeEnemies, bossRushRound, isArcCleared } from '../js/core/Progression.js';
+import { buildNodeEnemies, bossRushRound, isArcCleared, nodeEnemyLevel } from '../js/core/Progression.js';
 import { autoPickTeam } from '../js/core/TeamPicker.js';
 
 export const C = CONTENT;
@@ -40,19 +40,25 @@ export function teamForNode(node, pick) {
   return { members: all, leader };
 }
 
+/** Characters available once every arc of `part` is cleared (a Hard mode player's pool). */
+export function availableAfterPart(part) {
+  const last = Math.max(...C.arcs.filter(a => a.part === part).map(a => a.arcIndex));
+  return availableBeforeArc(last + 1);
+}
+
 /** Build player unit specs from { id: {level, stars} } for a team. */
-export function playerSpecs(team, owned, node) {
+export function playerSpecs(team, owned, node, { hard = false } = {}) {
   const leaderDef = team.leader ? C.char[team.leader] : null;
   return team.members.map(id => {
-    const o = owned[id] || { level: enemyLevelForNode(node?.globalIndex ?? 0, B), stars: 1 };
+    const o = owned[id] || { level: node ? nodeEnemyLevel(node, B, { hard }) : enemyLevelForNode(0, B), stars: 1 };
     return buildPlayerUnit(C.char[id], o, leaderDef, B);
   });
 }
 
-/** Run one story-node battle. Returns { state, time, sim }. */
-export function runNode(node, team, owned, seed, { ultMode = DEFAULT_BOT, ultsEnabled = true, specsOverride = null } = {}) {
-  const { enemies, civilians, enemyFactory } = buildNodeEnemies(node, C, B);
-  const player = specsOverride || playerSpecs(team, owned, node);
+/** Run one story-node battle (hard: the node on Hard mode). Returns { state, time, sim }. */
+export function runNode(node, team, owned, seed, { ultMode = DEFAULT_BOT, ultsEnabled = true, specsOverride = null, hard = false } = {}) {
+  const { enemies, civilians, enemyFactory } = buildNodeEnemies(node, C, B, { hard });
+  const player = specsOverride || playerSpecs(team, owned, node, { hard });
   const sim = new BattleSim({ player, enemies, civilians, enemyFactory, objective: node.objective, seed, balance: B, recordEvents: false, ultsEnabled });
   const state = sim.runToEnd({ ultMode: ultsEnabled ? ultMode : 'none' });
   return { state, time: sim.time, sim };
@@ -60,10 +66,15 @@ export function runNode(node, team, owned, seed, { ultMode = DEFAULT_BOT, ultsEn
 
 /** On-curve team for a node: level = node enemy level (+offset), stars by tier, and the
  *  strongest lineup per tier slot among characters available by then. Nature-NEUTRAL
- *  (matchup ignored) so bosses are tuned for a typical team; counters then add an edge. */
-export function onCurveTeam(node, { levelOffset = B.targets.onCurve.levelOffset, stars = B.targets.onCurve.stars, tierMix = B.targets.onCurve.tierMix } = {}) {
-  const level = enemyLevelForNode(node.globalIndex, B) + levelOffset;
-  const avail = availableBeforeArc(node.arcIndex);
+ *  (matchup ignored) so bosses are tuned for a typical team; counters then add an edge.
+ *  hard: Hard mode's on-curve team (targets.hardMode.onCurve): the Hard level, and
+ *  everyone unlocked by the end of the node's part (Hard opens once the part is cleared). */
+export function onCurveTeam(node, opts = {}) {
+  const hard = !!opts.hard;
+  const def = hard ? B.targets.hardMode.onCurve : B.targets.onCurve;
+  const { levelOffset = def.levelOffset, stars = def.stars, tierMix = def.tierMix } = opts;
+  const level = nodeEnemyLevel(node, B, { hard }) + levelOffset;
+  const avail = hard ? availableAfterPart(node.part) : availableBeforeArc(node.arcIndex);
   const cands = avail.map(c => ({ id: c.id, level, stars: typeof stars === 'number' ? stars : (stars[c.tier] ?? 1) }));
   // A forced ninja whose tier isn't in the mix (e.g. a forced Kage) takes the lowest
   // slot; otherwise no lineup can match the mix and the forced ninja fights alone.

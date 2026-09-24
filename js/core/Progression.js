@@ -42,6 +42,20 @@ export function isBannerUnlocked(state, banner, C) {
 
 export function isBossRushUnlocked(state, C) { return isArcCleared(state, C.arc[C.bossRush.unlockArc]); }
 
+// ---- Hard mode: opens per part once every story battle of that part is cleared;
+// its battles then unlock one after another, like the story.
+export function isPartCleared(state, part, C) { const ns = C.nodes.filter(n => n.part === part); return ns.length > 0 && ns.every(n => isNodeCleared(state, n.id)); }
+export function isHardUnlocked(state, part, C) { return isPartCleared(state, part, C); }
+export function isHardNodeCleared(state, nodeId) { return !!state.progress.hard?.[nodeId]; }
+export function isHardNodeUnlocked(state, node, C) {
+  if (!node || node.tutorial || !isHardUnlocked(state, node.part, C)) return false;
+  const prev = C.nodes[node.globalIndex - 1];
+  return !prev || prev.part !== node.part || isHardNodeCleared(state, prev.id);
+}
+export function isArcHardCleared(state, arc) { return !!arc?.nodes?.length && arc.nodes.every(n => isHardNodeCleared(state, n.id)); }
+/** The next Hard battle of a part (first not cleared), or null. */
+export function currentHardNode(state, part, C) { return isHardUnlocked(state, part, C) ? C.nodes.find(n => n.part === part && !isHardNodeCleared(state, n.id)) || null : null; }
+
 /** The next node the player should play (first uncleared), or null when done. */
 export function currentNode(state, C) { return C.nodes.find(n => !isNodeCleared(state, n.id)) || null; }
 
@@ -78,11 +92,23 @@ export function levelUp(state, id, B = BALANCE) {
 // ---------------------------------------------------------------------------
 // Rewards
 // ---------------------------------------------------------------------------
-/** Records a node result and grants rewards. Returns a rewards summary. */
-export function completeNode(state, node, won, C, B = BALANCE, battleStats = {}) {
-  const out = { won, scrolls: 0, ryo: 0, firstClear: false, arcCleared: null, unlocked: [] };
+/** Rewards for a battle on Hard: the story curves at the node's index × hardMode.rewards. */
+export function hardNodeRewards(node, firstClear, B = BALANCE) {
+  const r = nodeRewards(node.globalIndex, { firstClear, isBossNode: node.isBossNode }, B);
+  const m = B.hardMode.rewards[firstClear ? 'firstClear' : 'replay'];
+  return { scrolls: Math.round(r.scrolls * m.scrolls), ryo: Math.round(r.ryo * m.ryo) };
+}
+export function hardArcClearRewards(arc, B = BALANCE) {
+  const r = arcClearRewards(arc.arcIndex, B), m = B.hardMode.rewards.arcClear;
+  return { scrolls: Math.round(r.scrolls * m.scrolls), ryo: Math.round(r.ryo * m.ryo) };
+}
+
+/** Records a node result and grants rewards (Hard mode: pass { hard: true }). Returns a rewards summary. */
+export function completeNode(state, node, won, C, B = BALANCE, battleStats = {}, { hard = false } = {}) {
+  const out = { won, scrolls: 0, ryo: 0, firstClear: false, arcCleared: null, unlocked: [], hard };
   state.stats.battles = (state.stats.battles || 0) + 1;
   if (!won) { state.stats.losses = (state.stats.losses || 0) + 1; return out; }
+  if (hard) return completeHardNode(state, node, C, B, battleStats, out);
   const first = !isNodeCleared(state, node.id);
   const arc = C.arc[node.arcId];
   const wasArcCleared = isArcCleared(state, arc);
@@ -102,6 +128,22 @@ export function completeNode(state, node, won, C, B = BALANCE, battleStats = {})
   return out;
 }
 
+function completeHardNode(state, node, C, B, battleStats, out) {
+  if (!state.progress.hard) state.progress.hard = {};
+  const first = !isHardNodeCleared(state, node.id);
+  const arc = C.arc[node.arcId];
+  const wasCleared = isArcHardCleared(state, arc);
+  const r = hardNodeRewards(node, first, B);
+  out.scrolls += r.scrolls; out.ryo += r.ryo; out.firstClear = first;
+  const rec = state.progress.hard[node.id] || { clears: 0, best: null };
+  rec.clears++; if (battleStats.time && (!rec.best || battleStats.time < rec.best)) rec.best = Math.round(battleStats.time * 10) / 10;
+  state.progress.hard[node.id] = rec;
+  if (!wasCleared && isArcHardCleared(state, arc)) { const b = hardArcClearRewards(arc, B); out.scrolls += b.scrolls; out.ryo += b.ryo; out.arcCleared = arc.id; }
+  state.currencies.scrolls += out.scrolls; state.currencies.ryo += out.ryo;
+  state.stats.wins = (state.stats.wins || 0) + 1;
+  return out;
+}
+
 export function completeBossRushRound(state, round, B = BALANCE) {
   const r = bossRushRewards(round, B);
   state.currencies.scrolls += r.scrolls; state.currencies.ryo += r.ryo;
@@ -112,12 +154,13 @@ export function completeBossRushRound(state, round, B = BALANCE) {
 // ---------------------------------------------------------------------------
 // Teams
 // ---------------------------------------------------------------------------
-/** Enemy level of a node: the story curve by global index; tutorial nodes use
- *  balance.tutorial.enemyLevel. */
-export function nodeEnemyLevel(node, B = BALANCE) {
+/** Enemy level of a node: the story curve by global index (+ hardMode.levelOffset on
+ *  Hard, capped at the level cap); tutorial nodes use balance.tutorial.enemyLevel. */
+export function nodeEnemyLevel(node, B = BALANCE, { hard = false } = {}) {
   if (!node) return 1;
   if (node.tutorial) return B.tutorial.enemyLevel;
-  return enemyLevelForNode(node.globalIndex, B);
+  const base = enemyLevelForNode(node.globalIndex, B);
+  return hard ? Math.min(B.stats.levelCap, base + B.hardMode.levelOffset) : base;
 }
 
 /**
@@ -125,9 +168,9 @@ export function nodeEnemyLevel(node, B = BALANCE) {
  * (or fixed Leader) never fights below the loaner level: owning an unlevelled
  * copy must not be worse than not owning it. Stars stay the player's own.
  */
-export function ownedOrLoaner(state, id, node, B = BALANCE) {
+export function ownedOrLoaner(state, id, node, B = BALANCE, { hard = false } = {}) {
   const o = state.roster[id];
-  const lvl = node ? nodeEnemyLevel(node, B) : 1;
+  const lvl = node ? nodeEnemyLevel(node, B, { hard }) : 1;
   const forced = !!node && ((node.team?.forced || []).includes(id) || node.team?.leader === id);
   if (o) return forced && o.level < lvl ? { ...o, level: lvl, loaner: false, synced: true } : { ...o, loaner: false };
   return { level: lvl, stars: 1, loaner: true };
@@ -165,26 +208,29 @@ export function resolveTeam(state, node, C, chosen = state.team) {
 }
 
 /** Build BattleSim player specs for a resolved team. */
-export function buildTeamUnits(state, node, C, team, B = BALANCE, overrides = {}) {
+export function buildTeamUnits(state, node, C, team, B = BALANCE, overrides = {}, { hard = false } = {}) {
   const leaderDef = team.leader ? C.char[team.leader] : null;
   return team.members.map(id => {
     const def = C.char[id];
-    const own = overrides[id] || ownedOrLoaner(state, id, node, B);
+    const own = overrides[id] || ownedOrLoaner(state, id, node, B, { hard });
     return buildPlayerUnit(def, own, leaderDef, B, { loaner: !!own.loaner });
   });
 }
 
-/** Enemy + civilian specs for a node. */
-export function buildNodeEnemies(node, C, B = BALANCE) {
-  const level = nodeEnemyLevel(node, B);
-  const nm = B.enemyScaling.nodeMult?.[node.id] || {};
+/** Enemy + civilian specs for a node. Hard: + level offset, bosses × hardMode.bossMult,
+ *  and hardMode.nodeMult (falling back to the story's nodeMult). `level` overrides
+ *  the level (the Daily challenge fights at the player's story level). */
+export function buildNodeEnemies(node, C, B = BALANCE, { hard = false, level: forcedLevel = null } = {}) {
+  const level = forcedLevel ?? nodeEnemyLevel(node, B, { hard });
+  const nm = (hard ? B.hardMode.nodeMult?.[node.id] : null) || B.enemyScaling.nodeMult?.[node.id] || {};
   const tune = (s) => { s.maxHp = Math.round(s.maxHp * (nm.hp ?? 1)); s.atk = Math.round(s.atk * (nm.atk ?? 1)); return s; };
+  const hardBoss = (s, isBoss) => { if (hard && isBoss) { s.maxHp = Math.round(s.maxHp * B.hardMode.bossMult); s.atk = Math.round(s.atk * B.hardMode.bossMult); } return s; };
   const nonBoss = node.enemies.filter(e => !e.boss).length;
   const gm = nonBoss > 0 ? curve(B.enemyScaling.groupMult, nonBoss) : 1;
   const group = (s, isBoss) => { if (!isBoss) { s.maxHp = Math.round(s.maxHp * gm); s.atk = Math.round(s.atk * gm); } return s; };
   const enemies = node.enemies.map(e => ({
     delay: e.delay || 0,
-    spec: tune(group(buildEnemyUnit(C.enemy[e.id], { level, globalIndex: node.globalIndex, part: node.part, isBoss: !!e.boss }, B), !!e.boss)),
+    spec: hardBoss(tune(group(buildEnemyUnit(C.enemy[e.id], { level, globalIndex: node.globalIndex, part: node.part, isBoss: !!e.boss }, B), !!e.boss)), !!e.boss),
   }));
   const civilians = node.objective?.type === 'protect' && node.objective.protect
     ? [buildEnemyUnit(C.enemy[node.objective.protect], { level, globalIndex: node.globalIndex, part: node.part }, B)] : [];
@@ -196,13 +242,13 @@ export function buildNodeEnemies(node, C, B = BALANCE) {
 }
 
 /** Everything needed to construct a BattleSim for a story node. */
-export function nodeBattleConfig(state, node, C, B = BALANCE, { seed = 1, team = null, overrides = {} } = {}) {
+export function nodeBattleConfig(state, node, C, B = BALANCE, { seed = 1, team = null, overrides = {}, hard = false } = {}) {
   const t = team || resolveTeam(state, node, C);
-  const player = buildTeamUnits(state, node, C, t, B, overrides);
+  const player = buildTeamUnits(state, node, C, t, B, overrides, { hard });
   // Tutorial lesson 3 starts the team with full chakra (the number is in balance.tutorial).
   const startChakra = node.startChakra != null ? B.tutorial?.[node.startChakra] : null;
   if (startChakra != null) for (const p of player) p.startChakraOverride = startChakra;
-  const { enemies, civilians, enemyFactory, level } = buildNodeEnemies(node, C, B);
+  const { enemies, civilians, enemyFactory, level } = buildNodeEnemies(node, C, B, { hard });
   return { player, enemies, civilians, enemyFactory, objective: node.objective, seed, balance: B, enemyLevel: level, team: t };
 }
 

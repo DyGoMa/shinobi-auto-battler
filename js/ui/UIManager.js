@@ -10,11 +10,13 @@ import * as Settings from './SettingsScreen.js';
 import * as Tutorial from './TutorialScreen.js';
 import * as Wiki from './WikiScreen.js';
 import * as Achievements from './AchievementsScreen.js';
+import * as Daily from './DailyScreen.js';
 import { BattleScreen } from './BattleScreen.js';
 import { canAfford } from '../core/GachaSystem.js';
 import { isBossRushUnlocked } from '../core/Progression.js';
 import { tutorialPending, skipTutorial, startTutorial, nextLessonIndex } from '../core/Tutorial.js';
 import { claimableAchievements } from '../core/Achievements.js';
+import { startDailyAttempt } from '../core/Daily.js';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: '🏯', mod: Home },
@@ -31,6 +33,7 @@ const SCREENS = {
   tutorial: { mod: Tutorial, tab: 'home' },
   rush: { mod: Rush, tab: 'home' },
   achievements: { mod: Achievements, tab: 'home' },
+  daily: { mod: Daily, tab: 'home' },
 };
 
 export class UIManager {
@@ -234,7 +237,7 @@ export class UIManager {
   }
 
   // ------------------------------------------------------------- battle
-  /** opts: { node } for story, { node, tutorial: { index, replay } } for a lesson, or { bossRush: true } */
+  /** opts: { node, hard? } for story, { node, tutorial: { index, replay } } for a lesson, { daily } or { bossRush: true } */
   startBattle(opts) {
     if (this.battle) return;
     // The tutorial runs before the Survival Test: gate the first story battle.
@@ -247,6 +250,12 @@ export class UIManager {
           btn('Skip tutorial', () => { close(); this.skipTutorial({ after: () => this.startBattle(opts) }); }, 'ghost'),
           btn('🎓 Go to the tutorial', () => { close(); this.openTutorial(); }, 'primary'))));
       return;
+    }
+    // A Daily challenge battle spends one of the day's attempts when it starts.
+    if (opts.daily) {
+      const r = startDailyAttempt(state, opts.daily, this.game.B);
+      if (!r.ok) { this.toast(r.error, 'bad'); return; }
+      this.game.commit('daily');
     }
     this.battle = new BattleScreen(this.game, this, opts);
     this.battle.open();

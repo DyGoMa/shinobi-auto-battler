@@ -12,6 +12,9 @@
 // Report: team level at each arc, pulls, stuck points, scroll/Ryo balance over time.
 // Target: every part in SIM_PARTS cleared, no node needing more than the max replays.
 // Runs CAMPAIGN_PLAYERS (default 10) seeds; prints the first in detail.
+// CAMPAIGN_HARD=1: after each part (but the last), the bot plays that part on Hard
+// mode until a Hard battle beats it 3 times, then moves on: Hard mode's economy check
+// (compare the end-of-part levels and Ryo with a normal run; BALANCE.md §7).
 import { C, B, runNode, teamForNode, median, seedFor, SIM_PARTS, PART_LABEL, DEFAULT_BOT } from './common.mjs';
 import { defaultState } from '../js/core/SaveManager.js';
 import { pull, canAfford, ticketPull } from '../js/core/GachaSystem.js';
@@ -31,6 +34,7 @@ const TUTORIAL = process.env.CAMPAIGN_TUTORIAL !== '0';
 // Achievements are unlocked and claimed as the bot plays (CAMPAIGN_ACHIEVEMENTS=0 to leave
 // them out and compare): Ryo is spent on levels, tickets on summons.
 const ACHIEVEMENTS = process.env.CAMPAIGN_ACHIEVEMENTS !== '0';
+const HARD = process.env.CAMPAIGN_HARD === '1';
 
 /** The three tutorial lessons with the starter team, through the game's own battle
  *  config (nodeBattleConfig). A lesson lost three times is skipped: same reward. */
@@ -55,7 +59,7 @@ function playCampaign(playerSeed, verbose) {
   const state = defaultState(C, B);
   const rng = makeRng(playerSeed);
   const nodes = C.nodes.filter(n => SIM_PARTS.includes(n.part));
-  const log = { arcs: [], stuck: [], fails: [], timeline: [], battles: 0, replays: 0, tutorial: null, ach: { claimed: [], ryo: 0, tickets: 0, rareTickets: 0 } };
+  const log = { arcs: [], stuck: [], fails: [], timeline: [], battles: 0, replays: 0, tutorial: null, ach: { claimed: [], ryo: 0, tickets: 0, rareTickets: 0 }, hard: [] };
   let battleSeed = playerSeed * 7919;
   if (TUTORIAL) log.tutorial = playTutorial(state, battleSeed + 500000);
   const claimReady = () => {
@@ -97,12 +101,31 @@ function playCampaign(playerSeed, verbose) {
       levelUp(state, id, B);
     }
   };
-  const ownedMap = (team, node) => Object.fromEntries(team.members.map(id => [id, ownedOrLoaner(state, id, node, B)]));
-  const battle = (node, team) => {
+  const ownedMap = (team, node, hard = false) => Object.fromEntries(team.members.map(id => [id, ownedOrLoaner(state, id, node, B, { hard })]));
+  const battle = (node, team, hard = false) => {
     log.battles++;
-    const r = runNode(node, team, ownedMap(team, node), battleSeed++);
-    if (ACHIEVEMENTS) recordBattle(state, { won: r.state === 'won', mode: 'story', sim: r.sim, matchup: teamMatchupRating(team.members.map(id => C.char[id]), nodeEnemyNatures(node, C), B) }, B);
+    const r = runNode(node, team, ownedMap(team, node, hard), battleSeed++, { hard });
+    if (ACHIEVEMENTS) recordBattle(state, { won: r.state === 'won', mode: hard ? 'hard' : 'story', sim: r.sim, matchup: teamMatchupRating(team.members.map(id => C.char[id]), nodeEnemyNatures(node, C), B) }, B);
     return r;
+  };
+  // CAMPAIGN_HARD: the part on Hard, in order, until one Hard battle beats the bot 3 times.
+  const playHard = (part) => {
+    const out = { part, cleared: 0, battles: 0, scrolls: 0, ryo: 0, stuckAt: null };
+    for (const node of C.nodes.filter(n => n.part === part)) {
+      let won = false;
+      for (let t = 0; t < 3 && !won; t++) {
+        spendScrolls(node);
+        const team = pickTeam(node, t > 0);
+        levelTeam(team);
+        out.battles++;
+        const r = battle(node, team, true);
+        won = r.state === 'won';
+        const res = completeNode(state, node, won, C, B, { time: r.time }, { hard: true });
+        if (won) { out.cleared++; out.scrolls += res.scrolls; out.ryo += res.ryo; claimReady(); }
+      }
+      if (!won) { out.stuckAt = node.id; break; }
+    }
+    log.hard.push(out);
   };
   const teamLevel = (team) => {
     const owned = team.members.filter(id => state.roster[id]);
@@ -149,6 +172,8 @@ function playCampaign(playerSeed, verbose) {
       for (const id of Object.keys(state.roster)) tiers[C.char[id].tier]++;
       if (ACHIEVEMENTS) claimReady();
       log.arcs.push({ arc: arc.name, part: arc.part, teamLevel: last?.level ?? 0, enemyLevel: enemyLevelForNode(node.globalIndex, B), pulls: state.gacha.totalPulls, scrolls: state.currencies.scrolls, ryo: state.currencies.ryo, owned: Object.keys(state.roster).length, tiers, team: last?.team || [], achievements: log.ach.claimed.length });
+      const partNodes = nodes.filter(n => n.part === arc.part);
+      if (HARD && node === partNodes[partNodes.length - 1] && arc.part !== SIM_PARTS[SIM_PARTS.length - 1]) playHard(arc.part);
     }
   }
   if (verbose) print(log, state);
@@ -168,10 +193,11 @@ function print(log, state) {
   for (let i = 0; i < line.length; i += 118) console.log('  ' + line.slice(i, i + 118));
   console.log(`\nStuck points (needed replays): ${log.stuck.length ? log.stuck.map(s => `${s.node} (${s.replays} replay${s.replays > 1 ? 's' : ''})`).join(', ') : 'none'}`);
   console.log(`Total pulls: ${state.gacha.totalPulls}   battles: ${log.battles}   farm replays: ${log.replays}`);
+  for (const hp of log.hard) console.log(`Hard mode, Part ${hp.part} before moving on (player #1): cleared ${hp.cleared}/${C.nodes.filter(n => n.part === hp.part).length} Hard battles in ${hp.battles} tries${hp.stuckAt ? `, stopped at ${hp.stuckAt}` : ''}; paid 📜 ${hp.scrolls} 🪙 ${hp.ryo}`);
   if (ACHIEVEMENTS) console.log(`Achievements claimed (player #1): ${log.ach.claimed.length}/${C.achievements.length} — ${log.ach.claimed.join(', ')}; paid 🪙 ${log.ach.ryo}, 🎟️ ${log.ach.tickets}, 🎫 ${log.ach.rareTickets}`);
 }
 
-console.log(`Shinobi Auto-Battler — free-to-play campaign sim, ${PART_LABEL()} (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node${TUTORIAL ? ', new players play the tutorial first' : ', no tutorial'}${ACHIEVEMENTS ? ', achievements claimed' : ', no achievements'})`);
+console.log(`Shinobi Auto-Battler — free-to-play campaign sim, ${PART_LABEL()} (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node${TUTORIAL ? ', new players play the tutorial first' : ', no tutorial'}${ACHIEVEMENTS ? ', achievements claimed' : ', no achievements'}${HARD ? ', each finished part played on Hard before moving on' : ''})`);
 const logs = [];
 const VERBOSE = Number(process.env.CAMPAIGN_VERBOSE || 1);
 for (let p = 0; p < PLAYERS; p++) logs.push(playCampaign(seedFor('campaign', p + 1), p + 1 === VERBOSE));
@@ -188,6 +214,10 @@ const allStuck = logs.flatMap(l => l.stuck.map(s => s.node));
 const freq = {}; for (const n of allStuck) freq[n] = (freq[n] || 0) + 1;
 const hot = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 6);
 console.log(`\nMost common stuck points: ${hot.length ? hot.map(([n, c]) => `${n} (${c}/${PLAYERS})`).join(', ') : 'none'}`);
+if (HARD) for (const part of SIM_PARTS.slice(0, -1)) {
+  const hs = logs.map(l => l.hard.find(h => h.part === part)).filter(Boolean);
+  if (hs.length) console.log(`Hard mode, Part ${part}: median ${median(hs.map(h => h.cleared))}/${C.nodes.filter(n => n.part === part).length} Hard battles cleared before moving on, median paid 📜 ${median(hs.map(h => h.scrolls))} 🪙 ${median(hs.map(h => h.ryo))}`);
+}
 console.log(`Median final team level: ${median(logs.map(l => l.arcs[l.arcs.length - 1]?.teamLevel || 0)).toFixed(1)}  (last enemy level ${enemyLevelForNode(C.nodes.filter(n => SIM_PARTS.includes(n.part)).slice(-1)[0].globalIndex, B)})`);
 for (const part of SIM_PARTS) {
   const ends = logs.map(l => l.arcs.filter(a => a.part === part).slice(-1)[0]).filter(Boolean);

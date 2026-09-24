@@ -5,8 +5,9 @@ import { migrate, defaultState, encodeSave, decodeSave, SAVE_VERSION, BATTLE_TIP
 import { startTutorial, completeLesson, skipTutorial } from '../js/core/Tutorial.js';
 import { pull, ticketPull, bannerPool } from '../js/core/GachaSystem.js';
 import { checkAchievements, claimAchievement, recordBattle, recordDayPlayed } from '../js/core/Achievements.js';
-import { makeRng, curve, enemyLevelForNode } from '../js/core/formulas.js';
-import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner } from '../js/core/Progression.js';
+import { makeRng, curve, enemyLevelForNode, beatenBy } from '../js/core/formulas.js';
+import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner, isHardUnlocked, isHardNodeUnlocked, isArcHardCleared, isArcCleared, nodeEnemyLevel, buildNodeEnemies, hardNodeRewards, currentNode } from '../js/core/Progression.js';
+import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, dailyReward, dailyBattleConfig, dailyEnemyNature, dailyContent } from '../js/core/Daily.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 
 let fails = 0, passes = 0;
@@ -232,6 +233,86 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     recordBattle(cs, { won: true, mode: 'tutorial', sim: fake(true, 20, 1, 5), matchup: { label: 'Bad' } }, B);
     ok(cs.stats.clashWins === 3 && cs.stats.counteredWins === 1, 'tutorial battles never count toward achievements');
     ok(recordDayPlayed(cs, '2026-01-01') && !recordDayPlayed(cs, '2026-01-01') && recordDayPlayed(cs, '2026-01-02') && cs.stats.daysPlayed === 2, 'days played count each calendar day once');
+  }
+  // ---- Session 4: Hard mode ----
+  {
+    const s = defaultState(C, B);
+    const p1 = C.nodes.filter(n => n.part === 1);
+    const [h1, h2] = p1;
+    ok(!isHardUnlocked(s, 1, C) && !isHardNodeUnlocked(s, h1, C), 'Hard mode is locked on a fresh save');
+    for (const n of p1.slice(0, -1)) s.progress.cleared[n.id] = { clears: 1, best: null };
+    ok(!isHardUnlocked(s, 1, C), 'Hard mode stays locked until every battle of the part is cleared');
+    s.progress.cleared[p1[p1.length - 1].id] = { clears: 1, best: null };
+    ok(isHardUnlocked(s, 1, C) && isHardNodeUnlocked(s, h1, C) && !isHardNodeUnlocked(s, h2, C) && !isHardUnlocked(s, 2, C), 'clearing Part I opens its first Hard battle, and only that');
+    ok(p1.every(n => nodeEnemyLevel(n, B, { hard: true }) === Math.min(B.stats.levelCap, nodeEnemyLevel(n, B) + B.hardMode.levelOffset)), 'Hard enemies are hardMode.levelOffset levels higher, up to the level cap');
+    // bosses: × hardMode.bossMult on top of the story's scaling at the same level
+    const flat = { ...B, hardMode: { ...B.hardMode, nodeMult: {} }, enemyScaling: { ...B.enemyScaling, nodeMult: {} } };
+    const bossNode = C.nodes.find(n => n.isBossNode);
+    const hardBoss = buildNodeEnemies(bossNode, C, flat, { hard: true }).enemies.find(e => e.spec.isBoss).spec;
+    const storyBoss = buildNodeEnemies(bossNode, C, flat, { level: nodeEnemyLevel(bossNode, B, { hard: true }) }).enemies.find(e => e.spec.isBoss).spec;
+    ok(Math.abs(hardBoss.maxHp - storyBoss.maxHp * B.hardMode.bossMult) <= 1 && Math.abs(hardBoss.atk - storyBoss.atk * B.hardMode.bossMult) <= 1, 'Hard bosses get hardMode.bossMult more HP and ATK');
+    // rewards and records
+    const sc = s.currencies.scrolls, ry = s.currencies.ryo, storyRec = JSON.stringify(s.progress.cleared);
+    const r1 = completeNode(s, h1, true, C, B, { time: 42 }, { hard: true });
+    const fr = hardNodeRewards(h1, true, B);
+    ok(r1.firstClear && r1.hard && s.currencies.scrolls === sc + fr.scrolls && s.currencies.ryo === ry + fr.ryo, 'a first Hard clear pays hardMode.rewards.firstClear × the story reward');
+    ok(s.progress.hard[h1.id].clears === 1 && JSON.stringify(s.progress.cleared) === storyRec, 'Hard clears are recorded apart from the story');
+    ok(isHardNodeUnlocked(s, h2, C), 'a Hard clear opens the next Hard battle');
+    const sc2 = s.currencies.scrolls; const r2 = completeNode(s, h1, true, C, B, {}, { hard: true });
+    ok(!r2.firstClear && s.currencies.scrolls === sc2 + hardNodeRewards(h1, false, B).scrolls && s.progress.hard[h1.id].clears === 2, 'Hard replays pay the replay reward');
+    const sc3 = s.currencies.scrolls; const lost = completeNode(s, h2, false, C, B, {}, { hard: true });
+    ok(!lost.won && s.currencies.scrolls === sc3 && !s.progress.hard[h2.id], 'a Hard loss pays and records nothing');
+    const arc0 = C.arcs[0];
+    let last = null;
+    for (const n of arc0.nodes) last = completeNode(s, n, true, C, B, {}, { hard: true });
+    ok(last.arcCleared === arc0.id && isArcHardCleared(s, arc0), 'clearing a whole arc on Hard pays the Hard arc bonus once');
+    const cfgA = nodeBattleConfig(s, bossNode, C, B, { seed: 7, hard: true });
+    const cfgB = nodeBattleConfig(s, bossNode, C, B, { seed: 7, hard: true });
+    const simA = new BattleSim({ ...cfgA, recordEvents: false }), simB = new BattleSim({ ...cfgB, recordEvents: false });
+    ok(simA.runToEnd({ ultMode: 'smart' }) === simB.runToEnd({ ultMode: 'smart' }) && simA.time === simB.time, 'Hard battles are deterministic for a seed');
+  }
+  // ---- Session 4: the Daily challenge ----
+  {
+    const s = defaultState(C, B);
+    ok(dailyFor(s, C, B, '2026-03-01') === null, 'the Daily is locked on a fresh save');
+    const unlock = C.arc[B.daily.unlockArc];
+    for (const n of C.nodes.filter(n => n.arcIndex <= unlock.arcIndex)) s.progress.cleared[n.id] = { clears: 1, best: null };
+    const key = (d) => JSON.stringify([d.twist.id, d.rounds.map(n => n.id), d.nature, d.level]);
+    const d1 = dailyFor(s, C, B, '2026-03-01');
+    ok(d1 && key(d1) === key(dailyFor(s, C, B, '2026-03-01')), 'same date and same progress: same challenge');
+    const month = Array.from({ length: 60 }, (_, k) => dailyFor(s, C, B, new Date(Date.UTC(2026, 0, 1 + k)).toISOString().slice(0, 10)));
+    ok(B.daily.twists.every(t => month.some(d => d.twist.id === t.id)), 'every twist in balance.daily.twists comes up within 60 days');
+    ok(month.every(d => d.rounds.every(n => isArcCleared(s, C.arc[n.arcId]) && n === C.arc[n.arcId].nodes[C.arc[n.arcId].nodes.length - 1])), 'Daily bosses are final battles of arcs the player has cleared');
+    ok(month.every(d => d.level === enemyLevelForNode(currentNode(s, C).globalIndex, B)), 'the Daily is fought at the player\'s story level');
+    // attempts and the reward
+    const rec = dailyRecord(s, d1.dateKey);
+    ok(rec.attempts === 0 && attemptsLeft(s, B, d1.dateKey) === B.daily.attemptsPerDay, 'a new day starts with daily.attemptsPerDay attempts');
+    for (let i = 0; i < B.daily.attemptsPerDay; i++) startDailyAttempt(s, d1, B);
+    ok(!startDailyAttempt(s, d1, B).ok && attemptsLeft(s, B, d1.dateKey) === 0, 'no attempts beyond daily.attemptsPerDay');
+    const sc = s.currencies.scrolls, ry = s.currencies.ryo, want = dailyReward(s, C, B);
+    const paid = completeDaily(s, d1, C, B);
+    ok(paid && s.currencies.scrolls === sc + B.daily.rewards.scrolls && s.currencies.ryo === ry + want.ryo && s.daily.totalCleared === 1, 'the first clear pays daily.rewards');
+    ok(completeDaily(s, d1, C, B) === null && s.currencies.scrolls === sc + B.daily.rewards.scrolls, 'a second clear the same day pays nothing');
+    const d2 = dailyFor(s, C, B, '2026-03-02');
+    ok(attemptsLeft(s, B, d2.dateKey) === B.daily.attemptsPerDay && !dailyRecord(s, d2.dateKey).cleared && s.daily.totalCleared === 1, 'a new date resets attempts and the clear, not the lifetime count');
+    ok(startDailyAttempt(s, d2, B).ok, 'the new day\'s challenge can be fought');
+    // twists
+    const dayWith = (id) => month.find(d => d.twist.id === id);
+    const team = resolveTeam(s, null, C);
+    const powerOf = (d) => d.twist.power ?? 1;
+    const lock = dayWith('lockedNature'); const lc = dailyBattleConfig(s, lock, 0, C, B, { seed: 1 });
+    ok(lc.enemies.every(e => e.spec.natures.length === 1 && e.spec.natures[0] === lock.nature) && lc.ultsEnabled, 'Locked nature: every enemy takes the day\'s nature');
+    const plain = buildNodeEnemies(lock.node, dailyContent(lock, [], C, B), B, { level: lock.level }).enemies;
+    ok(lc.enemies.every((e, i) => Math.abs(e.spec.maxHp - plain[i].spec.maxHp * powerOf(lock)) <= 1 && Math.abs(e.spec.atk - plain[i].spec.atk * powerOf(lock)) <= 1), 'each twist\'s power multiplies the enemies\' HP and ATK');
+    const nu = dailyBattleConfig(s, dayWith('noUlts'), 0, C, B, { seed: 1 });
+    ok(nu.ultsEnabled === false, 'No Ultimates: the team\'s Ultimates are sealed');
+    const co = dayWith('counteredOnly'); const cc = dailyBattleConfig(s, co, 0, C, B, { seed: 1 });
+    const want2 = dailyEnemyNature(co, team.members.map(id => C.char[id]), B);
+    ok(cc.enemies.every(e => e.spec.natures[0] === want2) && team.members.some(id => beatenBy(C.char[id].natures?.[0], B) === want2), 'Countered: enemies take the nature that beats the team\'s main nature');
+    const all = defaultState(C, B); for (const n of C.nodes) all.progress.cleared[n.id] = { clears: 1, best: null };
+    const rush = Array.from({ length: 60 }, (_, k) => dailyFor(all, C, B, new Date(Date.UTC(2026, 0, 1 + k)).toISOString().slice(0, 10))).find(d => d.twist.id === 'bossRush');
+    const rc = dailyBattleConfig(all, rush, 1, C, B, { seed: 1 });
+    ok(rush.rounds.length === B.daily.twists.find(t => t.id === 'bossRush').rounds && rc.objective.type === 'defeatBoss' && rc.enemies.every(e => e.spec.isBoss) && rc.node === rush.rounds[1], 'Boss rush: several bosses, one per round, bosses only');
   }
   // curves
   ok(curve({ type: 'step', base: 1, table: [[10, 2], [20, 3]] }, 15) === 2, 'step curve');

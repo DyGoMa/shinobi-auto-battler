@@ -10,7 +10,9 @@ Everything is in place except the final art, music and effects.
 - **An exclusive ninja:** complete Part I and Part II to earn Naruto Uzumaki (Nine-Tails Chakra Mode), who never appears in any banner.
 - **Screen tips** the first time you open each screen. Switch them back on in Settings.
 - **Settings** reworked: choose the Auto-ult mode (clash-aware or fire when ready), sign in and out of Google, see your cloud save's status, and confirm a reset by typing it.
-- **Challenges** on the Home screen, starting with the Boss Rush.
+- **Hard mode:** clear a part and play its battles again with enemies {{num:hardMode.levelOffset}} levels higher and tougher bosses, for more scrolls. Switch to **💀 Hard** on the Story map. See [Hard mode and Daily challenge](wiki:guide/endgame).
+- **The Daily challenge:** a new fight every day, a boss you've already beaten with a twist (a locked nature, no Ultimates, a boss rush, or enemies that counter your team). {{num:daily.attemptsPerDay}} attempts a day, with a reward on your first clear.
+- **Challenges** on the Home screen: the Daily challenge, Hard mode and the Boss Rush.
 - **Divers** in protect missions no longer freeze your team: your ninja turn around and chase them.
 
 ## Version 0.3

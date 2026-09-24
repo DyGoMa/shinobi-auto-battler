@@ -6,7 +6,8 @@ import { h, btn, fmt, avatar, objectiveText } from './dom.js';
 import { BattleSim } from '../core/BattleSim.js';
 import { Renderer } from '../render/Renderer.js';
 import { Effects } from '../render/Effects.js';
-import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeUnlocked } from '../core/Progression.js';
+import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeUnlocked, isHardNodeUnlocked } from '../core/Progression.js';
+import { dailyBattleConfig, completeDaily, attemptsLeft, startDailyAttempt, TWIST_TEXT } from '../core/Daily.js';
 import { hashString, bestNature, beatenBy, natureRelation } from '../core/formulas.js';
 import { leaderBuffText } from '../core/Ninja.js';
 import { arcOf } from '../content/index.js';
@@ -42,7 +43,9 @@ export class BattleScreen {
   open() {
     const { C } = this.game;
     this.isRush = !!this.opts.bossRush;
-    this.node = this.opts.node || null;
+    this.daily = this.opts.daily || null;          // the Daily challenge (js/core/Daily.js)
+    this.hard = !!this.opts.hard;                  // a story battle on Hard mode
+    this.node = this.opts.node || this.daily?.node || null;
     const theme = this.isRush ? { sky: ['#3b2a3f', '#b98a8a'], ground: '#5b3a3a', far: '#3a2430', accent: '#ff4d4d' } : arcOf(this.node, C).theme;
 
     this.objEl = h('div.obj');
@@ -105,8 +108,13 @@ export class BattleScreen {
       if (carry) player = player.map(p => { const c = carry.find(x => x.key === p.key); return c ? { ...p, startHp: c.alive ? c.hp : 0, startChakraOverride: c.chakra * B.bossRush.chakraCarry } : p; }).filter(p => p.startHp == null || p.startHp > 0);
       this.rushBoss = R;
       cfg = { player, enemies: [{ spec: R.spec }], enemyFactory: R.enemyFactory, objective: { type: 'defeatBoss' }, seed: this._seed() + this.round, balance: B };
+    } else if (this.daily) {
+      cfg = dailyBattleConfig(state, this.daily, this.round - 1, C, B, { seed: this._seed() + this.round, carry });
+      this.node = cfg.node;
+      const natures = cfg.enemyNature ? [cfg.enemyNature] : nodeEnemyNatures(this.node, C);
+      this.matchup = teamMatchupRating(cfg.team.members.map(id => C.char[id]), natures, B);
     } else {
-      cfg = nodeBattleConfig(state, this.node, C, B, { seed: this._seed() });
+      cfg = nodeBattleConfig(state, this.node, C, B, { seed: this._seed(), hard: this.hard });
       // The team's nature matchup at the start ("Against the Odds" counts Poor or Bad).
       this.matchup = teamMatchupRating(cfg.team.members.map(id => C.char[id]), nodeEnemyNatures(this.node, C), B);
     }
@@ -150,8 +158,12 @@ export class BattleScreen {
     if (this.isRush) {
       const d = this.rushBoss.def;
       this.objEl.replaceChildren(h('div', `☁️ Boss Rush — Round ${this.round}: ${d.name}`), h('div.sub', `Lv ${this.rushBoss.level}${this.rushBoss.loop ? ` · Loop ${this.rushBoss.loop + 1}` : ''} · no healing between rounds`));
+    } else if (this.daily) {
+      const tw = TWIST_TEXT[this.daily.twist.id];
+      const rounds = this.daily.rounds.length;
+      this.objEl.replaceChildren(h('div', `📅 Daily: ${tw.name}${rounds > 1 ? ` · round ${this.round} of ${rounds}` : ''}`), h('div.sub', `${this.node.name} · Lv ${this.daily.level} · 🎯 ${objectiveText(this.sim.objective, C)}`));
     } else {
-      this.objEl.replaceChildren(h('div', this.node.name), h('div.sub', '🎯 ' + objectiveText(this.node.objective, C)));
+      this.objEl.replaceChildren(h('div', (this.hard ? '💀 Hard · ' : '') + this.node.name), h('div.sub', '🎯 ' + objectiveText(this.node.objective, C)));
     }
   }
 
@@ -277,7 +289,7 @@ export class BattleScreen {
   _updateTimer() {
     const t = this.sim.time;
     const surv = this.sim.surviveSeconds();
-    if (!this.isRush && surv && (this.node.objective.type === 'survive' || this.node.objective.type === 'protect')) {
+    if (!this.isRush && surv && (this.sim.objective.type === 'survive' || this.sim.objective.type === 'protect')) {
       this.timerEl.textContent = `⏳ ${Math.max(0, Math.ceil(surv - t))}s`;
     } else {
       this.timerEl.textContent = `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -429,8 +441,9 @@ export class BattleScreen {
       setTimeout(() => this._tutorialResults(won, res), 650);
       return;
     }
-    const result = completeNode(state, this.node, won, C, B, { time: this.sim.time });
-    recordBattle(state, { won, mode: 'story', sim: this.sim, matchup: this.matchup }, B);
+    if (this.daily) { this._dailyEnd(won); return; }
+    const result = completeNode(state, this.node, won, C, B, { time: this.sim.time }, { hard: this.hard });
+    recordBattle(state, { won, mode: this.hard ? 'hard' : 'story', sim: this.sim, matchup: this.matchup }, B);
     game.commit('battle');
     won ? game.audio.victory() : game.audio.defeat();
     setTimeout(() => this._results(won, result), 650);
@@ -508,10 +521,54 @@ export class BattleScreen {
     ))));
   }
 
+  /** A daily battle ended. Boss rush dailies go round by round, carrying HP and chakra. */
+  _dailyEnd(won) {
+    const { game } = this; const { C, B, state } = game;
+    recordBattle(state, { won, mode: 'daily', sim: this.sim, matchup: this.matchup }, B);
+    if (won && this.round < this.daily.rounds.length) {
+      game.commit('daily');
+      game.audio.victory();
+      const carry = this.sim.playerCarry();
+      const next = this.daily.rounds[this.round];
+      const box = h('div.pause-veil', h('div.card.center', { style: { maxWidth: '380px' } },
+        h('div.result-hero', h('div.big.win', `ROUND ${this.round} CLEAR`)),
+        h('p', 'Next: ', h('b', next.name), ` (Lv ${this.daily.level})`),
+        h('p.small', `${carry.filter(c => c.alive).length} ninja still standing. No healing between rounds.`),
+        btn('Next round ▶', () => { box.remove(); this.round++; this.ended = false; this._buildSim(carry); }, 'primary block')));
+      this.stage.appendChild(box);
+      return;
+    }
+    const reward = won ? completeDaily(state, this.daily, C, B) : null;
+    game.commit('daily');
+    won ? game.audio.victory() : game.audio.defeat();
+    setTimeout(() => this._dailyResults(won, reward), 650);
+  }
+
+  _dailyResults(won, reward) {
+    const { game, ui } = this; const { B, state } = game;
+    const left = attemptsLeft(state, B, this.daily.dateKey);
+    const tw = TWIST_TEXT[this.daily.twist.id];
+    const content = h('div',
+      h('div.result-hero', h('div.big.' + (won ? 'win' : 'lose'), won ? 'CHALLENGE CLEARED' : 'DEFEAT'), h('div.muted', `📅 Daily challenge · ${tw.name}`)),
+      won && reward ? h('div.reward-row', h('div.reward', `📜 +${fmt(reward.scrolls)}`), h('div.reward', `🪙 +${fmt(reward.ryo)}`)) : null,
+      won ? h('p.center', 'Come back tomorrow for a new challenge.') : h('p.center', left ? `${left} attempt${left === 1 ? '' : 's'} left today. Try a team whose natures beat the enemy.` : 'No attempts left today. A new challenge arrives tomorrow.'),
+      h('h3', 'Damage dealt'), this._statsTable());
+    const actions = h('div.actions');
+    const close = ui.modal(h('div', content, actions), { dismissable: false, wide: true, label: 'Daily challenge results' });
+    const leave = (goTo) => { close(); this.close(goTo); };
+    actions.append(btn('Back to the challenge', () => leave({ id: 'daily' }), won || !left ? 'primary' : 'ghost'));
+    if (!won && left) actions.append(btn('👥 Team', () => leave({ id: 'team', params: { daily: true } })), btn('↻ Try again', () => {
+      const r = startDailyAttempt(state, this.daily, B);
+      if (!r.ok) { ui.toast(r.error, 'bad'); return; }
+      game.commit('daily'); close(); this.round = 1; this.restart();
+    }, 'primary'));
+  }
+
   _results(won, result) {
     const { game, ui, node } = this; const { C, state } = game;
+    const hard = this.hard;
     const next = C.nodes[node.globalIndex + 1];
-    const nextOpen = next && !next.placeholder && isNodeUnlocked(state, next, C);
+    const nextOpen = next && !next.placeholder && (hard ? isHardNodeUnlocked(state, next, C) : isNodeUnlocked(state, next, C));
     const cl = this.sim.stats.clashes;
     const reasons = { defeated: 'Your team was defeated.', protectFailed: `${C.enemy[node.objective.protect]?.name || 'The escort'} fell.`, timeout: 'Time ran out.', retreat: 'You retreated.' };
     const content = h('div',
@@ -528,9 +585,9 @@ export class BattleScreen {
     const actions = h('div.actions');
     const close = ui.modal(h('div', content, actions), { dismissable: false, wide: true });
     const leave = (goTo) => { close(); this.close(goTo); };
-    if (won && nextOpen) actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: next.arcId, nodeId: next.id } }), 'ghost'), btn('↻ Replay', () => { close(); this.restart(); }), btn(`Next: ${next.name} ▶`, () => { close(); this.close(null, true); ui.startBattle({ node: next }); }, 'primary'));
-    else if (won) actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: node.arcId, nodeId: node.id } }), 'ghost'), btn('↻ Replay', () => { close(); this.restart(); }, 'primary'));
-    else actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: node.arcId, nodeId: node.id } }), 'ghost'), btn('👥 Team', () => leave({ id: 'team', params: { nodeId: node.id } })), btn('↻ Retry', () => { close(); this.restart(); }, 'primary'));
+    if (won && nextOpen) actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: next.arcId, nodeId: next.id, hard } }), 'ghost'), btn('↻ Replay', () => { close(); this.restart(); }), btn(`Next: ${next.name} ▶`, () => { close(); this.close(null, true); ui.startBattle({ node: next, hard }); }, 'primary'));
+    else if (won) actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: node.arcId, nodeId: node.id, hard } }), 'ghost'), btn('↻ Replay', () => { close(); this.restart(); }, 'primary'));
+    else actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: node.arcId, nodeId: node.id, hard } }), 'ghost'), btn('👥 Team', () => leave({ id: 'team', params: { nodeId: node.id, hard } })), btn('↻ Retry', () => { close(); this.restart(); }, 'primary'));
   }
 
   _rushResults(stopped = false) {

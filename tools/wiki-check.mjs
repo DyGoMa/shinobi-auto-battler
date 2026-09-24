@@ -43,6 +43,9 @@ export const GUARDED = [
   { path: 'bossRush.loopMult', fmt: 'x' },
   { path: 'tutorial.rewards.scrolls', ctx: /scroll|tutorial/i }, { path: 'tutorial.rewards.ryo', ctx: /ryo|tutorial/i },
   { path: 'achievements.underdogLevels', ctx: /below|under|boss/i },
+  { path: 'hardMode.levelOffset', ctx: /level|higher/i }, { path: 'hardMode.bossMult', fmt: 'x' },
+  { path: 'hardMode.rewards.firstClear.scrolls', fmt: 'pct' }, { path: 'hardMode.rewards.replay.scrolls', fmt: 'x' }, { path: 'hardMode.rewards.replay.ryo', fmt: 'x' },
+  { path: 'daily.attemptsPerDay', ctx: /attempt|tr(y|ies)/i }, { path: 'daily.rewards.scrolls', ctx: /scroll/i },
 ];
 
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -95,7 +98,7 @@ export function checkWiki({ achievements = C.achievements || [] } = {}) {
     const path = `${ROOT}${g.file}`;
     if (!existsSync(path)) { errors.push(`wiki: guide ${g.id} is missing its file ${g.file}`); continue; }
     const raw = readFileSync(path, 'utf8');
-    const { text, errors: pe } = fillPlaceholders(raw, guideSources(B));
+    const { text, errors: pe } = fillPlaceholders(raw, guideSources(B, C));
     for (const e of pe) errors.push(`wiki: ${g.file}: ${e}`);
     parsed.set(g.id, { raw, blocks: parseMarkdown(text) });
   }

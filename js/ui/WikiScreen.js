@@ -157,7 +157,7 @@ export function guideBody(game, ui, slug, go = (pid, extra) => ui.openWiki(pid, 
     return h('div.card.center', h('p', 'This guide could not be loaded. Check your connection and try again.'),
       btn('↻ Try again', () => { rec.retry = true; guides.delete(slug); loadGuide(slug, ui); ui.refresh(); }, 'primary'));
   }
-  const { text } = fillPlaceholders(rec.text, guideSources(game.B));
+  const { text } = fillPlaceholders(rec.text, guideSources(game.B, game.C));
   const blocks = parseMarkdown(text);
   // The guide's own # title is the screen title already.
   if (blocks[0]?.t === 'h' && blocks[0].level === 1) blocks.shift();

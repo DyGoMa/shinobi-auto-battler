@@ -6,6 +6,8 @@ import { tutorialPending, nextLessonIndex, tutorialLessons } from '../core/Tutor
 import { LESSON_TITLE } from './TutorialScreen.js';
 import { helpButton } from './chrome.js';
 import { isUnlocked, claimableAchievements } from '../core/Achievements.js';
+import { isDailyUnlocked, dailyFor, dailyRecord, attemptsLeft, TWIST_TEXT } from '../core/Daily.js';
+import { isHardUnlocked, currentHardNode } from '../core/Progression.js';
 
 export function render(game, ui) {
   const { C, B, state } = game;
@@ -51,6 +53,8 @@ export function render(game, ui) {
     ),
     h('div.section-title', h('h2', 'Challenges')),
     h('div.grid.two',
+      dailyCard(game, ui),
+      hardCard(game, ui),
       challengeCard('☁️', C.bossRush.name, rush ? (state.bossRush.runs ? `Best: round ${state.bossRush.highestRound || 0}` : 'New! Seven Akatsuki back to back.') : `Unlocks after you clear ${C.arc[C.bossRush.unlockArc].name}.`,
         rush ? () => ui.go('rush') : () => ui.toast(`Clear ${C.arc[C.bossRush.unlockArc].name} to unlock the Boss Rush.`), !rush, rush && !state.bossRush.runs)),
     h('div.section-title', h('h2', 'Your team')),
@@ -67,6 +71,26 @@ export function render(game, ui) {
     rush || isArcCleared(state, C.arc.arc_tea) ? null : h('p.small.dim', { style: { marginTop: '14px' } }, `Tip: replaying a cleared battle pays Ryo, which helps when a boss is a wall. Ninja ${B.economy.catchUp.gap}+ levels behind your best one level up at a discount.`),
     h('p.tiny.dim', { style: { marginTop: '20px' } }, 'Fan-made, non-commercial project. Naruto is © Masashi Kishimoto / Shueisha / Studio Pierrot. No official artwork is used: characters are shown as coloured tokens with initials.'),
   );
+}
+
+function dailyCard(game, ui) {
+  const { C, B, state } = game;
+  if (!isDailyUnlocked(state, C, B)) return challengeCard('📅', 'Daily challenge', `A new fight with a twist every day. Unlocks after you clear ${C.arc[B.daily.unlockArc].name}.`, () => ui.go('daily'), true);
+  const d = dailyFor(state, C, B);
+  const rec = dailyRecord(state, d.dateKey);
+  const left = attemptsLeft(state, B, d.dateKey);
+  const text = rec.cleared ? `✓ Cleared today: ${TWIST_TEXT[d.twist.id].name}. Back tomorrow.` : `Today: ${TWIST_TEXT[d.twist.id].name}. ${left} attempt${left === 1 ? '' : 's'} left.`;
+  return challengeCard('📅', 'Daily challenge', text, () => ui.go('daily'), false, !rec.cleared && left > 0);
+}
+
+function hardCard(game, ui) {
+  const { C, state } = game;
+  const parts = [1, 2].filter(p => isHardUnlocked(state, p, C));
+  if (!parts.length) return challengeCard('💀', 'Hard mode', 'The story again with stronger enemies and better rewards. Opens for each part once you clear it.', () => ui.toast('Clear every battle of Part I to open Hard mode.'), true);
+  const p = parts.find(x => currentHardNode(state, x, C)) || parts[parts.length - 1];
+  const next = currentHardNode(state, p, C);
+  const text = next ? `Next on Hard: ${next.name} (Part ${p === 1 ? 'I' : 'II'}).` : `Every Part ${p === 1 ? 'I' : 'II'} battle cleared on Hard.`;
+  return challengeCard('💀', 'Hard mode', text, () => ui.go('story', { part: p, hard: true, ...(next ? { arcId: next.arcId, nodeId: next.id } : {}) }));
 }
 
 function challengeCard(icon, title, text, onclick, locked = false, fresh = false) {

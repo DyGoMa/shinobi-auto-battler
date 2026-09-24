@@ -37,6 +37,14 @@ export const SCREEN_TIPS = {
     icon: '🏆', title: 'Achievements',
     text: () => 'Achievements unlock by themselves as you play, including everything you had already done. Claim their rewards here: Ryo, summon tickets and Rare+ summons.',
   },
+  hard: {
+    icon: '💀', title: 'Hard mode',
+    text: (g) => `The same battles with enemies ${g.B.hardMode.levelOffset} levels higher and tougher bosses, for better rewards. It opens for each part once you clear it, and its battles unlock one after another.`,
+  },
+  daily: {
+    icon: '📅', title: 'The Daily challenge',
+    text: (g) => `A new fight every day, with a twist. You get ${g.B.daily.attemptsPerDay} attempts a day, and the reward is paid on your first clear.`,
+  },
   settings: {
     icon: '⚙️', title: 'Settings',
     text: () => 'Link a Google account to keep your save on every device. Tips like this one can be switched back on here.',

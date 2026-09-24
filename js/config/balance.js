@@ -371,6 +371,104 @@ export const BALANCE = {
   },
 
   // ---------------------------------------------------------------------------
+  // HARD MODE — the story's battles again, harder, once a part is cleared.
+  // Same nodes and enemies; enemy levels + levelOffset; bosses × bossMult. Tuned
+  // (targets.hardMode + `npm run autotune -- --write`) for a player who finished
+  // that part and brings their whole collection. Check with `npm run sim`.
+  // ---------------------------------------------------------------------------
+  hardMode: {
+    // Hard enemy level = the battle's story level + this (never above stats.levelCap). 5–25
+    levelOffset: 12,
+    // THE Hard mode difficulty knob: extra HP and ATK for every boss on Hard, on top
+    // of enemyScaling.bossMult. Re-run autotune after changing it. 1–2
+    bossMult: 1.5,
+    // Rewards = the story's reward curves at the battle's own node index × these.
+    // First clears pay the story's first-clear scrolls again but little Ryo: 32 extra
+    // first clears are a lot of income, and `CAMPAIGN_HARD=1 npm run campaign` (clear
+    // Part I on Hard before Part II) must not start Part II far ahead of the curve
+    // (BALANCE.md §7: +3.5 levels, down from +10.8 at 1.5/0.5). Replays pay a bit more
+    // than the same battle in the story. 0.1–3 each.
+    rewards: {
+      firstClear: { scrolls: 1.0, ryo: 0.15 },
+      replay:     { scrolls: 1.5, ryo: 1.25 },
+      arcClear:   { scrolls: 0.5, ryo: 0.15 },
+    },
+    // Per-boss fine-tuning on Hard, written by `npm run autotune -- --write` (same
+    // rules as enemyScaling.nodeMult; Hard falls back to the story value for other nodes).
+    nodeMult: {
+      n_bell_3:    { hp: 1.57, atk: 1.57 },
+      n_waves_5:   { hp: 0.95, atk: 0.95 },
+      n_chunin_5:  { hp: 0.88, atk: 0.88 },
+      n_crush_3:   { hp: 0.71, atk: 0.71 },
+      n_crush_4:   { hp: 1.16, atk: 1.16 },
+      n_tsunade_4: { hp: 0.92, atk: 0.92 },
+      n_tea_3:     { hp: 1.21, atk: 1.21 },
+      n_sr_4:      { hp: 0.93, atk: 0.93 },
+      n_sr_5:      { hp: 0.91, atk: 0.91 },
+      n_kuro_3:    { hp: 0.94, atk: 0.94 },
+      n_kaz_4:     { hp: 0.97, atk: 0.97 },
+      n_kaz_5:     { hp: 1.02, atk: 1.02 },
+      n_tenchi_4:  { hp: 0.94, atk: 0.94 },
+      n_twelve_3:  { hp: 1.25, atk: 1.25 },
+      n_hidan_3:   { hp: 0.99, atk: 0.99 },
+      n_hidan_4:   { hp: 1.02, atk: 1.02 },
+      n_three_2:   { hp: 1.10, atk: 1.10 },
+      n_three_3:   { hp: 1.18, atk: 1.18 },
+      n_itachi_3:  { hp: 0.93, atk: 0.93 },
+      n_jiraiya_4: { hp: 0.83, atk: 0.83 },
+      n_brothers_2:{ hp: 1.06, atk: 1.06 },
+      n_brothers_4:{ hp: 0.97, atk: 0.97 },
+      n_sixtails_3:{ hp: 1.08, atk: 1.08 },
+      n_pain_5:    { hp: 1.03, atk: 1.03 },
+      n_summit_3:  { hp: 0.33, atk: 0.33 },
+      n_summit_4:  { hp: 0.83, atk: 0.83 },
+      n_countdown_2:{ hp: 0.76, atk: 0.76 },
+      n_countdown_4:{ hp: 0.72, atk: 0.72 },
+      n_confront_4:{ hp: 0.89, atk: 0.89 },
+      n_confront_5:{ hp: 0.95, atk: 0.95 },
+      n_climax_3:  { hp: 1.05, atk: 1.05 },
+      n_climax_5:  { hp: 0.92, atk: 0.92 },
+      n_anbu_3:    { hp: 0.99, atk: 0.99 },
+      n_birth_2:   { hp: 0.67, atk: 0.67 },
+      n_birth_4:   { hp: 0.69, atk: 0.69 },
+      n_kaguya_2:  { hp: 0.99, atk: 0.99 },
+      n_kaguya_4:  { hp: 0.82, atk: 0.82 },
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // DAILY CHALLENGE — one rotating fight per day, picked from the date (no server):
+  // an arc boss you have already beaten, at your story level, with a twist.
+  // Everyone at the same point of the story gets the same challenge on the same day.
+  // ---------------------------------------------------------------------------
+  daily: {
+    // Opens once this arc is cleared (the pool = bosses of every arc you've cleared).
+    unlockArc: 'arc_waves',
+    // Only the bosses of your most recent N cleared arcs (0 = every cleared arc).
+    recentArcs: 0,
+    // Battles you may start per day. The reward is paid on the first clear. 1–5
+    attemptsPerDay: 3,
+    // First clear of the day: these scrolls, plus the story replay Ryo of your
+    // current battle × ryoMult. scrolls 50–400, ryoMult 0.5–3.
+    rewards: { scrolls: 150, ryoMult: 1.5 },
+    // The twists rotate by date. Enemies are at your story level; power multiplies
+    // their HP and ATK, so a twist that takes something away from you comes with
+    // weaker enemies. A multiplier, not a level offset: N levels is a big gap early
+    // and a small one late. Tuned so every player in `npm run sim` (Daily info)
+    // clears each twist within attemptsPerDay tries at least half the time. 0.3–1.2
+    //   lockedNature   every enemy fights with the day's nature
+    //   noUlts         Ultimates are sealed (enemies still use their jutsu)
+    //   bossRush       `rounds` bosses back to back, HP and chakra carried over
+    //   counteredOnly  every enemy takes the nature that beats your team's main one
+    twists: [
+      { id: 'lockedNature', power: 0.9 },
+      { id: 'noUlts', power: 0.5 },
+      { id: 'bossRush', rounds: 3, power: 0.45 },
+      { id: 'counteredOnly', power: 0.65 },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
   // ACHIEVEMENTS — targets and rewards for js/content/achievements.js (claimed on
   // the Achievements screen). Reward keys: ryo, scrolls, tickets (one free summon
   // each), rareTickets (one summon that is guaranteed rareTicketMinTier or better).
@@ -426,6 +524,26 @@ export const BALANCE = {
     counterGapLevelOffset: 1.6,
     counterGap3of4Range: [0.25, 0.30],   // 3-of-4 units countered, clash-aware bot
     counterGapFullyRange: [0.10, 0.15],  // all 4 units countered, clash-aware bot
+    counterGapNeutralRange: [0.55, 0.65], // the same team re-typed neutral: the scenario's baseline
+    // Hard mode (npm run sim, "Hard" rows): every arc boss must land in bossWinRange,
+    // and the Hard counter-gap scenario in the same three bands as the story's.
+    hardMode: {
+      // A player who cleared the part and brings their whole collection: everyone
+      // unlocked by the end of that part, at the Hard level, starred up.
+      onCurve: {
+        levelOffset: 0,
+        stars: { genin: 4, chunin: 3, jonin: 2, kage: 2 },
+        tierMix: ['kage', 'jonin', 'jonin', 'chunin'],
+      },
+      // The counter-gap fight on Hard. It uses the story scenario's team (same members
+      // and Leader) with the stars above, so the rows measure Hard mode itself; the
+      // offset is levels above the Hard enemy level where that team, neutral, wins ~60%.
+      counterGapNode: 'n_waves_5',
+      counterGapLevelOffset: 9,
+    },
+    // Daily challenge (info only): each twist's win rate for an on-curve team, and the
+    // chance to clear it within daily.attemptsPerDay. Flagged below this.
+    dailyMinClearChance: 0.5,
     fightLengthRange: [30, 60],        // s, median of won boss fights (reported)
     campaignMaxReplaysPerNode: 3,
     // "On-curve" team used by the boss sims: level = node enemy level + offset,

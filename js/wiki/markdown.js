@@ -28,6 +28,8 @@ export const FORMATS = {
   tier: (v) => String(v).charAt(0).toUpperCase() + String(v).slice(1),
   // {{cycle:natureWheel.cycle}} -> Fire › Wind › Lightning › Earth › Water › Fire
   cycle: (v) => [...v, v[0]].join(' › '),
+  // {{arc:daily.unlockArc}} -> Land of Waves (the arc id in config, shown by name; needs sources.arcNames)
+  arc: (v, sources) => sources.arcNames?.[v],
 };
 FORMATS.cfg = FORMATS.num;
 const ARRAY_FORMATS = ['cycle'];
@@ -47,7 +49,9 @@ export function fillPlaceholders(text, sources) {
     const ok = ARRAY_FORMATS.includes(fmt) ? Array.isArray(v) && v.length > 0
       : v !== undefined && v !== null && typeof v !== 'object' && !(typeof v === 'number' && !Number.isFinite(v));
     if (!ok) { errors.push(`${m} does not resolve to a config value`); return m; }
-    return f(v);
+    const shown = f(v, sources);
+    if (shown == null) { errors.push(`${m} does not name a known arc`); return m; }
+    return shown;
   });
   return { text: out, errors };
 }
