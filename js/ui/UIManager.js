@@ -17,6 +17,8 @@ import { isBossRushUnlocked } from '../core/Progression.js';
 import { tutorialPending, skipTutorial, startTutorial, nextLessonIndex } from '../core/Tutorial.js';
 import { claimableAchievements } from '../core/Achievements.js';
 import { startDailyAttempt } from '../core/Daily.js';
+import { playIntro, prefersReducedMotion } from './Intro.js';
+import { introPlan } from '../core/StartFlow.js';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: '🏯', mod: Home },
@@ -75,8 +77,10 @@ export class UIManager {
       const want = t.id === 'wiki' ? `wiki/${t.params.page || 'home'}` : t.id;
       if (want !== now && !this.battle) this.go(t.id, t.params);
     });
-    this.welcome();
   }
+
+  /** Settings → Replay intro: the full splash and scene again. */
+  playIntro() { return playIntro(introPlan({ full: true, reducedMotion: prefersReducedMotion() })); }
 
   go(id, params = {}) {
     if (!SCREENS[id]) id = 'home';

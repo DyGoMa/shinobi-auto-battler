@@ -580,3 +580,37 @@ button.toast { font: inherit; cursor: pointer; }
   .setting { flex-wrap: wrap; }
   .setting .seg { margin-left: auto; }
 }
+
+/* ---------------- Splash and intro (Session 5) ----------------
+   A fixed overlay above the app. 100dvh: the real visible height on phones (the
+   address bar comes and goes). The runners are the battle token in CSS: a head
+   circle over a tunic trapezoid, in silhouette. */
+#intro { position: fixed; inset: 0; height: 100vh; height: 100dvh; z-index: 100; background: radial-gradient(900px 500px at 50% 110%, #1c2533, transparent 70%), var(--bg); display: grid; place-items: center; overflow: hidden; transition: opacity .3s ease-in; }
+#intro.out { opacity: 0; pointer-events: none; }
+#intro.shake { animation: introShake .4s linear; }
+.intro-skip { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); z-index: 2; color: var(--muted); }
+.intro-splash { display: grid; place-items: center; gap: 14px; animation: introFade .25s ease-out both; }
+.intro-splash.out { animation: introFadeOut .2s ease-in both; }
+.brand-mark.big { width: 84px; height: 84px; font-size: 46px; box-shadow: 0 0 0 3px #2a1a0c inset, 0 10px 40px rgba(240, 105, 31, .35); }
+.intro-name { font-weight: 900; font-size: clamp(1.3rem, 5vw, 2rem); letter-spacing: .02em; }
+.intro-scene { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 16px; }
+/* A dusk band behind the runners, so their silhouettes read against the sky. */
+.intro-scene::before { content: ''; position: absolute; left: 0; right: 0; bottom: 28%; height: 34%; background: linear-gradient(180deg, transparent, rgba(255, 138, 61, .10) 55%, rgba(255, 184, 107, .22) 100%); pointer-events: none; }
+.intro-ground { position: absolute; left: 0; right: 0; bottom: 28%; height: 2px; background: linear-gradient(90deg, transparent, var(--line) 20%, var(--line) 80%, transparent); }
+.runner { position: absolute; left: 0; bottom: calc(28% + var(--dy, 0px)); width: 40px; height: 62px; transform: translateX(-120px) scale(var(--s, 1)); transform-origin: 50% 100%; animation: introRun 1.1s linear var(--d, 0ms) both; }
+.runner .bob { position: absolute; inset: 0; animation: introBob .2s ease-in-out infinite alternate; }
+.runner .head { position: absolute; left: 8px; top: 0; width: 24px; height: 24px; border-radius: 50%; background: #05070a; }
+.runner .body { position: absolute; left: 2px; bottom: 6px; width: 36px; height: 34px; background: #05070a; clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%); }
+.runner::after { content: ''; position: absolute; left: 0; bottom: 0; width: 40px; height: 6px; border-radius: 50%; background: rgba(0, 0, 0, .55); }
+.intro-title { position: relative; z-index: 1; opacity: 0; display: grid; place-items: center; gap: 8px; text-align: center; }
+.intro-title h1 { margin: 0; font-size: clamp(1.8rem, 8vw, 3.4rem); letter-spacing: .01em; text-shadow: 0 6px 30px rgba(0, 0, 0, .6); }
+.intro-title p { margin: 0; color: var(--muted); font-weight: 700; }
+.intro-title.slam { animation: introSlam .5s cubic-bezier(.2, .9, .25, 1.2) both; }
+.intro-title.fade { animation: introFade .6s ease-out both; }
+.intro-flash { position: absolute; inset: 0; background: #fff; pointer-events: none; animation: flash .5s ease-out forwards; }
+@keyframes introFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes introFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes introRun { from { transform: translateX(-120px) scale(var(--s, 1)); } to { transform: translateX(calc(100vw + 120px)) scale(var(--s, 1)); } }
+@keyframes introBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+@keyframes introSlam { from { opacity: 0; transform: scale(2.8); } 60% { opacity: 1; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes introShake { 0%, 100% { transform: none; } 20% { transform: translate(-8px, 5px); } 40% { transform: translate(7px, -4px); } 60% { transform: translate(-5px, 3px); } 80% { transform: translate(3px, -2px); } }

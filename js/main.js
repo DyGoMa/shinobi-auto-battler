@@ -11,8 +11,13 @@ import { DebugPanel } from './ui/DebugPanel.js';
 import { makeRng } from './core/formulas.js';
 import { checkAchievements, recordDayPlayed } from './core/Achievements.js';
 import { h } from './ui/dom.js';
+import { playIntro, prefersReducedMotion } from './ui/Intro.js';
+import { introPlan, introSeen, setIntroSeen } from './core/StartFlow.js';
 
 async function boot() {
+  // The intro starts first, so the splash is up while the game loads behind it.
+  const intro = playIntro(introPlan({ seen: introSeen(), reducedMotion: prefersReducedMotion() }));
+  setIntroSeen();
   const errs = validateContent(CONTENT);
   if (errs.length) console.warn(`[content] ${errs.length} validation problem(s):\n` + errs.join('\n'));
 
@@ -56,6 +61,7 @@ async function boot() {
   ui = new UIManager(game);
   game.ui = ui;
   ui.init();
+  intro.done.then(() => ui.welcome());   // the welcome prompt waits for the intro
 
   let lastState = save.state;
   save.onChange((s) => {

@@ -2,6 +2,10 @@
 
 ## Version {{cfg:version.current}}
 
+- **An opening scene.** A short splash and intro the first time the game loads (tap anywhere to skip it). Later visits show only the splash; Settings → Replay the intro plays it again.
+
+## Version 0.9
+
 Everything is in place except the final art, music and effects.
 
 - **The Academy tutorial.** Three short lessons before the Survival Test teach team building, the Nature Wheel and Jutsu Clash. You can skip it any time and still get its reward.

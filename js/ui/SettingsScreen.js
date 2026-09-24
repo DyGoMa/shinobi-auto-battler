@@ -36,6 +36,7 @@ export function render(game, ui) {
       row('Show tips again', 'One-time tips on each screen and in your first battle. Switching this on shows every tip once more.',
         toggle(tipsEnabled(state), (on) => { if (on) { resetTips(game); ui.toast('Tips are back on: each screen shows its tip once more.', 'good'); } else { s.tips = false; game.commit('settings'); } }, 'Show tips again')),
       row('Replay the tutorial', 'The three Academy lessons again (no extra reward).', btn('🎓 Replay', () => ui.openTutorial({ replay: true }), 'small')),
+      row('Replay the intro', 'The splash and the opening scene from when you first started the game.', btn('🎬 Replay', () => ui.playIntro(), 'small')),
       row('The Wiki', 'Guides and every ninja, jutsu, enemy and battle.', btn('📚 Open', () => ui.openWiki('home'), 'small')),
     ),
 

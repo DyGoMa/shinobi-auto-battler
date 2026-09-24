@@ -1,6 +1,6 @@
 {
   "name": "shinobi-auto-battler",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "description": "Naruto-universe 2D auto-battler web game (fan project). No bundler: plain ES modules served from the repo root; package.json only runs Node tools.",
   "type": "module",

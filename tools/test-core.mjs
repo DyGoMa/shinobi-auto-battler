@@ -9,6 +9,7 @@ import { makeRng, curve, enemyLevelForNode, beatenBy } from '../js/core/formulas
 import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner, isHardUnlocked, isHardNodeUnlocked, isArcHardCleared, isArcCleared, nodeEnemyLevel, buildNodeEnemies, hardNodeRewards, currentNode } from '../js/core/Progression.js';
 import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, dailyReward, dailyBattleConfig, dailyEnemyNature, dailyContent } from '../js/core/Daily.js';
 import { BattleSim } from '../js/core/BattleSim.js';
+import { INTRO, introPlan, introSeen, setIntroSeen } from '../js/core/StartFlow.js';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -325,6 +326,27 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(curve({ type: 'exp', base: 2, growth: 2 }, 3) === 16, 'exp curve');
   ok(curve({ type: 'poly', base: 3, growth: 2 }, 4) === 48, 'poly curve');
   ok(curve({ type: 'linear', base: 1, growth: 2, cap: 5 }, 10) === 5, 'curve cap');
+}
+
+// ---- Session 5: the start flow -------------------------------------------------
+{
+  // the intro: first visit, seen, reduced motion, replay; always under INTRO.maxMs
+  const first = introPlan({ seen: false });
+  ok(first.scene && first.effects && first.splashMs === INTRO.splashFirst && first.totalMs <= INTRO.maxMs, `a first visit gets the full intro (${first.totalMs} ms, under ${INTRO.maxMs})`);
+  const again = introPlan({ seen: true });
+  ok(!again.scene && again.splashMs === INTRO.splashAgain && again.totalMs === INTRO.splashAgain, 'once seen, later loads get only the short splash');
+  const reduced = introPlan({ seen: false, reducedMotion: true });
+  ok(reduced.scene && !reduced.effects && reduced.totalMs < first.totalMs, 'prefers-reduced-motion: the scene fades without run, shake or flash');
+  ok(introPlan({ seen: true, full: true }).scene && introPlan({ seen: true, full: true, reducedMotion: true }).effects === false, 'Settings → Replay the intro plays the scene even when seen (still honouring reduced motion)');
+  // the intro-seen flag lives in localStorage (stubbed here), never in the synced save
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  ok(introSeen() === false, 'a new device has not seen the intro');
+  setIntroSeen();
+  ok(introSeen() === true && store.has('shinobi-auto-battler:pref:introSeen') && !Object.keys(defaultState(C, B)).some(k => /intro/i.test(k)), 'the intro-seen flag is a device preference, not part of the save');
+  setIntroSeen(false);
+  ok(introSeen() === false, 'the flag can be cleared');
+  delete globalThis.localStorage;
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);
