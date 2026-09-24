@@ -72,5 +72,5 @@ firestore.rules
 
 ## Roadmap
 * **Session 1:** the engine, every system, Part I, and deployment.
-* **Session 2 (this):** all Shippuden arcs (13 canon + 4 filler), 34 more characters and alternate forms, the Nature Wheel counter-gap fix, bigger units on phone portrait.
-* **Session 3:** full-campaign balance and canon audit.
+* **Session 2 (this):** all Shippuden arcs (13 canon + 4 filler), 34 more characters and alternate forms, a measured Nature Wheel counter-gap study (no lever applied, see BALANCE.md §6), bigger units on phone portrait.
+* **Session 3:** full-campaign balance and canon audit (see the Session 2 handoff notes in BALANCE.md §6 and NAMING.md).
