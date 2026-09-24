@@ -69,6 +69,7 @@ firestore.rules
 * **CONTENT_GUIDE.md**: templates and worked examples for every content type.
 * **NAMING.md**: every name in the game, the Narutopedia source checked, and its verification status.
 * **FIREBASE_SETUP.md**: step-by-step cloud-save setup (free Spark plan only).
+* **HANDOFF.md**: Session 2 → Session 3 notes (what changed, open questions, deliberate leftovers).
 
 ## Roadmap
 * **Session 1:** the engine, every system, Part I, and deployment.
