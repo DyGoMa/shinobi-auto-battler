@@ -65,7 +65,7 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   completeNode(s, C.node.n_bell_2, true, C, B); const r3 = completeNode(s, C.node.n_bell_3, true, C, B);
   ok(r3.arcCleared === 'arc_belltest', 'arc clear bonus fires on the last node');
   const t = resolveTeam(s, C.node.n_bell_1, C);
-  ok(t.leader === null && !t.members.includes('kakashi') && ['naruto', 'sakura', 'sasuke'].every(id => t.members.includes(id)), 'Bell Test: forced Team 7, no leader, Kakashi benched');
+  ok(t.leader === null && !t.members.includes('kakashi') && ['naruto', 'sakura', 'sasuke'].every(id => t.members.includes(id)), 'Survival Test: forced Team 7, no leader, Kakashi benched');
   const hz = resolveTeam(s, C.node.n_crush_3, C);
   ok(hz.members.includes('hiruzen') && hz.leader === 'hiruzen', 'forced loaner Leader (Third Hokage) joins even if not owned');
   const before = s.currencies.ryo; const lu = levelUp(s, 'naruto', B);

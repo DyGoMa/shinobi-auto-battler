@@ -352,7 +352,7 @@ export const BALANCE = {
   // ---------------------------------------------------------------------------
   targets: {
     battlesPerScenario: 200,
-    bellTestMinWin: 0.80,              // starter team, level 1, no ults
+    bellTestMinWin: 0.80,              // Survival Test (n_bell_1): starter team, level 1, no ults
     bossWinRange: [0.50, 0.70],        // each arc boss, on-curve team, ult bot
     bossRushRoundRange: [4, 5],        // median highest round, Jonin-heavy team
     natureCheckMinGap: 0.25,           // win-rate gap countered vs countering team

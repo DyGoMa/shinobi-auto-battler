@@ -66,7 +66,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 * The 4th slot is the **Leader**. Its passive buff is defined per character as a stat (`atk, hp, def, speed, crit, chakra, startChakra, nature`) plus an optional scope (a team tag, a nature, a role, or a tier).
 * Scoped buffs are ×1.8 stronger than whole-team buffs, and Kage leaders give ×1.45.
 * Example: Kakashi, the starter Leader, gives +21.6% ATK to Team 7.
-* Some nodes remove the Leader (Bell Test) or force one (the Third Hokage's Last Stand).
+* Some nodes remove the Leader (Survival Test) or force one (the Third Hokage's Last Stand).
 
 ### 2.5 Nature Wheel (canon)
 `Fire › Wind › Lightning › Earth › Water › Fire`
@@ -105,7 +105,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 * **Naruto theme:** jutsu clashes are the series' iconic moments (Chidori vs Rasengan, Fire vs Water).
 * **Real decision:** fire now for damage and chakra tempo, or hold for a clash? And *which* ninja takes it: the counter-nature striker, or the tank to guard?
   * The sim measures the payoff (`npm run sim`, same teams and seeds). A bot that clashes on purpose beats the fire-when-ready bot on 7 of 8 Part 1 bosses: Final Valley 58% → 93%, Kurosuki 65% → 90%, Land of Tea 66% → 85%, Chunin Exams 62% → 71%, Land of Waves 60% → 70%.
-  * The exception is the Bell Test boss (66% → 61%). Kakashi's special has no nature, so holding ults for it is rarely worth it: the decision cuts both ways.
+  * The exception is the Survival Test boss (66% → 61%). Kakashi's special has no nature, so holding ults for it is rarely worth it: the decision cuts both ways.
 * **Taps only:** one tap on a portrait. There are no combos and no gestures.
 * **Nature wheel and team composition:** the outcome *is* the wheel, and it rewards bringing counters and a Tank.
 * **Tunable, with an on/off flag:** `balance.jutsuClash` has `enabled` plus every multiplier. The enemy wind-up time is `enemyScaling.enemyJutsu.windup`, and the boss wind-up is `bossMechanics.telegraphAoE.windup`.
@@ -152,7 +152,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 * `banned`
 * `recommended` (small Auto-pick bonus)
 
-Example: the Bell Test forces Naruto, Sakura and Sasuke with no Leader and benches Kakashi, since he is the examiner. "The Third Hokage's Last Stand" is a flashback-style node where you fight as Hiruzen.
+Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and benches Kakashi, since he is the examiner. "The Third Hokage's Last Stand" is a flashback-style node where you fight as Hiruzen.
 
 ---
 
@@ -179,7 +179,7 @@ Example: the Bell Test forces Naruto, Sakura and Sasuke with no Leader and bench
 
 | Arc | Enemy level at the end |
 |---|---|
-| Bell Test | 3 |
+| Prologue: Survival Test | 3 |
 | Land of Waves | 8 |
 | Chunin Exams | 12 |
 | Destruction of the Hidden Leaf Village | 16 |

@@ -23,7 +23,7 @@ export const BANNERS = [
   },
   {
     id: 'banner_konoha', type: 'arc', arc: 'arc_konoha_crush', name: 'Destruction of the Hidden Leaf',
-    blurb: 'Rate-up: the Sand Siblings (join after the arc) and the Third Hokage.', featured: ['gaara', 'temari', 'kankuro', 'hiruzen'],
+    blurb: 'Rate-up: Gaara, Temari and Kankuro (join after the arc) and the Third Hokage.', featured: ['gaara', 'temari', 'kankuro', 'hiruzen'],
   },
   {
     id: 'banner_tsunade', type: 'arc', arc: 'arc_tsunade', name: 'The Legendary Sannin',
@@ -35,7 +35,7 @@ export const BANNERS = [
   },
   {
     id: 'banner_sasuke', type: 'arc', arc: 'arc_sasuke_recovery', name: 'Sasuke Retrieval Squad',
-    blurb: 'Rate-up: the Sound Four, Kimimaro and the Final Valley forms (join after the arc), plus the squad.',
+    blurb: 'Rate-up: the Sound Ninja Four, Kimimaro and the Final Valley forms (join after the arc), plus the squad.',
     featured: ['kimimaro', 'sakon', 'tayuya', 'kidomaru', 'jirobo', 'naruto_ninetails', 'sasuke_cursemark', 'shikamaru', 'neji', 'choji'],
   },
   {

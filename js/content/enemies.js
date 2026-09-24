@@ -25,7 +25,7 @@
 //   basedOn    optional roster id (for colour/initials reuse and the NAMING audit)
 
 export const ENEMIES = [
-  // =========================== Prologue: Bell Test ===========================
+  // ========================= Prologue: Survival Test ==========================
   {
     id: 'e_kakashi_bell', name: 'Kakashi Hatake', basedOn: 'kakashi', role: 'Striker', natures: ['Earth', 'Lightning', 'Water'],
     stats: { hp: 1.35, atk: 0.62, def: 1.0 },

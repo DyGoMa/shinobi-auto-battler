@@ -242,7 +242,7 @@ export class BattleScreen {
   }
   _showTip(id) {
     const text = {
-      start: [h('b', 'Welcome to the Bell Test!'), ' Your ninja walk and fight on their own. ', h('b', 'Survive 45 seconds'), ' — or defeat Kakashi outright.'],
+      start: [h('b', 'Welcome to the Survival Test!'), ' Your ninja walk and fight on their own. ', h('b', 'Survive 45 seconds'), ' — or defeat Kakashi outright.'],
       ult: [h('b', 'Chakra full!'), ' A glowing portrait (below the battlefield) means that ninja\'s ', h('b', 'Ultimate'), ' is ready — tap it to fire. (Keys 1–4 work too.)'],
       clash: [h('b', 'Kakashi is winding up a jutsu'), ' (see the ⚠ bar). Fire an Ultimate ', h('b', 'now'), ' to ', h('b', 'JUTSU CLASH'), '. The badge on each portrait predicts it: ▲ your nature beats his (Lightning beats Earth), = standoff, ▼ weak.'],
     }[id];

@@ -59,7 +59,7 @@ export function render(game, ui) {
     ),
     h('div.card', { style: { marginTop: '12px' } },
       h('h2', 'Danger zone'),
-      h('p.small', 'Start over from the Bell Test with the starter team. This cannot be undone (export first if unsure).'),
+      h('p.small', 'Start over from the Survival Test with the starter team. This cannot be undone (export first if unsure).'),
       btn('🗑️ Reset progress', async () => {
         const ok = await ui.confirm('Reset all progress?', 'Your ninja, currencies and story progress will be wiped. This cannot be undone.', { okText: 'Reset everything', danger: true });
         if (!ok) return;

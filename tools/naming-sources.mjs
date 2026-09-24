@@ -23,7 +23,7 @@ for (const [n, p] of Object.entries({
   'Deidara': 'Deidara', 'Sasori': 'Sasori', 'Hidan': 'Hidan', 'Kakuzu': 'Kakuzu',
 })) set(n, p, 'V', 'Article title; the dub spelling drops macrons (romanization convention, not a separate dub field).');
 set('Pain', 'Nagato', 'V', 'Narutopedia redirects "Pain" to Nagato; "Pain" is the name the dub uses for him in battle.');
-set('Naruto Uzumaki (Nine-Tails Chakra)', 'Kurama', 'P', 'Alternate-form label. "Nine-Tails" per the style guide; Narutopedia\'s English TV name for the fox is "Nine-Tailed Fox" — both are dub-acceptable.');
+set('Naruto Uzumaki (Nine-Tails Chakra)', 'Jinchūriki Forms', 'D', 'RE-CHECKED (Session 2): descriptive form label, kept. Narutopedia\'s name for this form is "Initial Jinchūriki Form" (Jinchūriki Forms article), with no English TV / dub name for the form itself. "Nine-Tails" is the dub term (dub titles of ep 40 "The Nine-Tails Unleashed" and Shippuden ep 165 "Nine-Tails, Captured!"). Not the Part II "Nine-Tails Chakra Mode".');
 set("Sasuke Uchiha (Heavens' Curse Mark)", 'Cursed Seal of Heaven', 'V', 'Form label; "Heavens\' Curse Mark" is the English TV name.');
 set('Hashirama Senju (Reanimated)', 'Summoning: Impure World Reincarnation', 'V', '"Hashirama Senju" + "(Reanimated)" from the dub "Summoning Jutsu: Reanimation".');
 set('Tobirama Senju (Reanimated)', 'Summoning: Impure World Reincarnation', 'V', '"Tobirama Senju" + "(Reanimated)" (see above).');
@@ -65,7 +65,7 @@ S['Puppet Master Jutsu'].note = 'Narutopedia "English TV" field (Kankuro, ep 41)
 for (const n of ['Rasengan', 'Chidori', 'Dynamic Entry', 'Flying Swallow', 'Chakra Scalpel', 'Resonating Echo Drill', 'Soft Physique Modification', 'Tsukuyomi', 'Coiling Around', 'C3', 'Amaterasu', 'Shadow Senbon'])
   set(n, n, 'V', 'Article has no separate English TV name — the dub keeps this name.');
 set('Iaido', 'Iaidō', 'V', 'No separate English TV name; macron dropped.');
-set('Six Paths of Pain', 'Six Paths of Pain', 'P', 'Narutopedia article title; no English TV field found — assumed unchanged in the dub.');
+set('Six Paths of Pain', 'Six Paths of Pain', 'V', 'RE-CHECKED (Session 2): confirmed. No English TV field on the article, and the dub uses the same phrasing: Shippuden ep 132 dub title "In Attendance, the Six Paths of Pain" (Wikipedia, season 6).');
 
 // ---- descriptive labels (never presented as canon technique names) -----------
 for (const n of ['Water Clone', "Gato's Thug", 'Misty Follower', 'Sand Ninja', 'Sound Ninja', 'Puppet', 'Itachi (Shadow Clone)', 'Kurosuki Family Member', 'Chakra absorption', 'Immortality', "Ranmaru's eyes guide Raiga", 'Kurosuki Family ambush'])
@@ -76,10 +76,10 @@ set('Demon of the Hidden Mist', 'Zabuza Momochi', 'V', 'Zabuza\'s epithet, from 
 set('Thunder of the Hidden Mist', 'Raiga Kurosuki', 'V', 'Raiga\'s epithet, from the article.');
 
 // ---- arcs, nodes, banners ------------------------------------------------------
-set('Prologue: Bell Test', 'Bell Test', 'P', 'Narutopedia article "Bell Test" (inside "Prologue — Land of Waves", eps 4–5). The ep 4 dub title calls it the "Survival Test"; the name is kept from the design brief.');
+set('Prologue: Survival Test', 'Bell Test', 'V', 'RE-CHECKED (Session 2): renamed from "Prologue: Bell Test" (dub-first). Dub titles of eps 4–5: "Pass or Fail: Survival Test" and "You Failed! Kakashi\'s Final Decision" (Wikipedia, Naruto season 1). Alternate: "Bell Test" is the Narutopedia article name. Internal ids (arc_belltest, banner_belltest, targets.bellTestMinWin) are unchanged.');
 set('Land of Waves', 'Land of Waves', 'V');
 set('Chunin Exams', 'Chūnin Exams (Arc)', 'V', 'Dub spelling "Chunin".');
-set('Destruction of the Hidden Leaf Village', 'Zero Hour! The Konoha Crush Begins!', 'V', 'Dub title of ep 68 ("Zero Hour! The Destruction of the Hidden Leaf Village Begins!"). Narutopedia/Viz call the arc "Konoha Crush"; the brief used that name — changed per the dub rule.');
+set('Destruction of the Hidden Leaf Village', 'Zero Hour! The Konoha Crush Begins!', 'P', 'Dub-derived arc name (Narutopedia/Viz: "Konoha Crush"). Session 1 recorded the ep 68 dub title as "Zero Hour! The Destruction of the Hidden Leaf Village Begins!"; Wikipedia\'s Naruto season 3 list gives "Zero Hour! The Destruction of Leaf Begins!". Both use "Destruction … Leaf"; the exact wording is left for Session 3.');
 set('Search for Tsunade', 'Search for Tsunade', 'V');
 set('Land of Tea Escort Mission', 'Land of Tea Escort Mission', 'V', 'Anime-only (filler) arc name on Narutopedia.');
 set('Sasuke Retrieval Squad', 'Sasuke Recovery Mission', 'V', 'Dub title of ep 110 ("Formation! The Sasuke Retrieval Squad"). Narutopedia arc: "Sasuke Recovery Mission" — the brief used that name; changed per the dub rule. Internal id stays arc_sasuke_recovery.');
@@ -93,13 +93,28 @@ const nodes = {
   'Preliminaries: Yoroi and Misumi': [null, 'D'], 'Finals: Naruto vs. Neji': [null, 'D'], 'Zero Hour': ['Zero Hour! The Konoha Crush Begins!', 'V', 'From the ep 68 dub title.'],
   'Shino vs. Kankuro': [null, 'D'], "The Third Hokage's Last Stand": [null, 'D'], 'Naruto vs. Gaara': [null, 'D'], 'Itachi and Kisame': [null, 'D'], "Tsunade's Bet": [null, 'D'],
   'Kabuto in Tanzaku Town': ['Tanzaku Town', 'D', 'Descriptive; "Tanzaku Town" is the dub name.'],
-  'Deadlock! Sannin Showdown!': ['Deadlock! Sannin Showdown!', 'P', 'Episode article title (ep 96); the dub title was not separately confirmed.'],
+  'Deadlock! Sannin Showdown!': ['Deadlock! Sannin Showdown!', 'V', 'RE-CHECKED (Session 2): confirmed. Dub title of ep 96 (Wikipedia, Naruto season 4) matches the Narutopedia episode article.'],
   'Ambush at Sea': [null, 'D'], 'Reinforcements from the Sand': [null, 'D'], 'Final Valley': ['Valley of the End', 'V', 'English TV name of the Valley of the End.'],
   'Funeral March for the Living': ['Funeral March for the Living', 'V', 'Episode article title (ep 152).'], 'Raiga and Ranmaru': [null, 'D'],
   'Standard Summon': [null, 'D'], 'Team 7 Assembles': [null, 'D'], 'Destruction of the Hidden Leaf': ['Zero Hour! The Konoha Crush Begins!', 'V', 'Short form of the arc name.'],
   'The Legendary Sannin': ['Sannin', 'V'], 'Land of Tea': ['Land of Tea', 'V'],
 };
 for (const [n, [p, st, note]] of Object.entries(nodes)) set(n, p, st, note || (st === 'D' ? 'Descriptive node/banner title.' : ''));
+
+// ---- Session 2 re-checks of group and village names ---------------------------
+// Recorded even where the name is no longer shown, so the decision is traceable.
+set('Sound Ninja Four', 'Sound Four', 'V', 'RE-CHECKED (Session 2): corrected from "Sound Four". The article\'s English TV name is "Sound Ninja Four" (and "Sound Ninja Five" with Kimimaro). Used in two blurbs.');
+set('Sound Four', 'Sound Four', 'P', 'RE-CHECKED (Session 2): Narutopedia/Viz name, not the dub. Replaced in game by "Sound Ninja Four".');
+set('Sand Siblings', 'Three Sand Siblings', 'P', 'RE-CHECKED (Session 2): not confirmable as a dub name. Narutopedia: "Three Sand Siblings" (other: "Three Hidden Sand Siblings"), no English TV field, and no dub episode title uses it. Removed from the game: the two blurbs name Gaara, Temari and Kankuro, and the leader-scope label is now "Hidden Sand ninja".');
+for (const [n, p, note] of [
+  ['Leaf', 'Konohagakure', 'English TV "Village Hidden in the Leaves" / "Hidden Leaf Village"; short form in dub titles ("Hero of the Leaf", ep 175; "Sound vs. Leaf", Part I ep 111).'],
+  ['Sand', 'Sunagakure', 'English TV "The Village Hidden in the Sand"; short form in dub titles ("User of the Scorch Style: Pakura of the Sand!", ep 285; "The Sand Shinobi: Allies of the Leaf", Part I ep 125).'],
+  ['Mist', 'Kirigakure', 'English TV "The Village Hidden in the Mist"; short form in dub titles ("The Assassin of the Mist!", Part I ep 7).'],
+  ['Cloud', 'Kumogakure', 'English TV "The Village Hidden in the Clouds" / "Hidden Cloud Village" (singular "Cloud" in the short form).'],
+  ['Stone', 'Iwagakure', 'English TV "The Village Hidden in the Stones" / "Hidden Stone Village" ("Stone", never "Rock").'],
+  ['Sound', 'Otogakure', 'English TV "The Village Hidden in the Sound"; short form in dub titles ("An Invitation from the Sound", "Sound vs. Leaf", Part I eps 109, 111).'],
+  ['Rain', 'Amegakure', 'English TV "The Village Hidden in the Rain"; dub title of ep 129 "Infiltrate! The Village Hidden in the Rain".'],
+]) set(n, p, 'V', 'RE-CHECKED (Session 2) village short form. ' + note + ' In game: places as "Hidden Leaf Village" / "Village Hidden in the Rain", groups as "Hidden X ninja" (leader-scope labels), generic units as "X Ninja". No Japanese village names are used.');
 
 // =============================================================================
 // PART II (Session 2). Same method: Narutopedia MediaWiki API (article titles,

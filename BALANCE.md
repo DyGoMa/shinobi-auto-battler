@@ -64,7 +64,7 @@ across the whole campaign), an arc number, or a Boss Rush round.
 | **Turn off Jutsu Clash** | `jutsuClash.enabled` | `true` → `false` | Ults ignore enemy wind-ups (they still telegraph). |
 | Clashes are more rewarding | `jutsuClash.overpowerUltMult` | `1.35` → `1.6` | Overpowered clashes hit 60% harder. |
 | Longer wind-ups (easier to clash) | `enemyScaling.enemyJutsu.windup`, `bossMechanics.telegraphAoE.windup` | `2 / 3` → `3 / 4` | More time to react. |
-| A shorter "survive" in the Bell Test | `objectives.surviveTimeMult` | `1.0` → `0.8` | Every "survive X s" objective drops to 80% of X. |
+| A shorter "survive" in the Survival Test | `objectives.surviveTimeMult` | `1.0` → `0.8` | Every "survive X s" objective drops to 80% of X. |
 | A tougher Boss Rush | `bossRush.statMultByRound.base` | `0.39` → `0.45` | Every round's boss is ~15% stronger. |
 | Loops ramp harder | `bossRush.loopMult` | `1.4` → `1.6` | After Pain, each loop is +60%. |
 
@@ -95,7 +95,7 @@ The campaign report lists "Most common stuck points".
 
 | Scenario | Target (in `targets`) |
 |---|---|
-| Bell Test with the starter team at level 1, **no ults** | win ≥ 80% (`bellTestMinWin`) |
+| Survival Test (first node) with the starter team at level 1, **no ults** | win ≥ 80% (`bellTestMinWin`) |
 | Each arc boss (Part I and Part II), "on-curve" team | win 50–70% (`bossWinRange`) |
 | Boss Rush, Jonin-heavy team at level 32 | median round 4–5 (`bossRushRoundRange`) |
 | Nature check: same team re-typed to counter vs be countered | gap ≥ 25% (`natureCheckMinGap`) |

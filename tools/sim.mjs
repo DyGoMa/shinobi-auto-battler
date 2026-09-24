@@ -1,7 +1,7 @@
 // tools/sim.mjs — per-node battle win-rate tests. `npm run sim`
 // 200 seeded battles per scenario (balance.targets.battlesPerScenario) with a
 // bot that fires every Ultimate the moment it is ready. Prints a PASS/FAIL table.
-//   1. Bell Test — starter team, level 1, NO ults: win >= targets.bellTestMinWin
+//   1. Survival Test (n_bell_1) — starter team, level 1, NO ults: win >= targets.bellTestMinWin
 //   2. Every arc boss (Part I and Part II; SIM_PARTS) — "on-curve" team: win within targets.bossWinRange
 //   3. Boss Rush — Jonin-heavy team at the unlock level: median round in targets.bossRushRoundRange
 //   4. Nature check — a countering team clearly beats a badly-countered one
@@ -18,14 +18,14 @@ let bossTimes = [];
 
 function add(name, value, target, pass, note = '') { rows.push({ name, value, target, pass, note }); }
 
-// ---------------------------------------------------------------- 1. Bell Test
+// ---------------------------------------------------------------- 1. Survival Test
 {
   const node = C.node['n_bell_1'];
   const team = { members: ['naruto', 'sakura', 'sasuke'], leader: null };
   const owned = { naruto: { level: 1, stars: 1 }, sakura: { level: 1, stars: 1 }, sasuke: { level: 1, stars: 1 } };
   let w = 0; const times = [];
   for (let i = 0; i < N; i++) { const r = runNode(node, team, owned, seedFor('bell', i), { ultsEnabled: false }); if (r.state === 'won') { w++; times.push(r.time); } }
-  add('Bell Test (starter, Lv1, no ults)', pct(w / N), `>= ${pct(T.bellTestMinWin)}`, w / N >= T.bellTestMinWin, `median ${median(times).toFixed(0)}s`);
+  add('Survival Test (starter, Lv1, no ults)', pct(w / N), `>= ${pct(T.bellTestMinWin)}`, w / N >= T.bellTestMinWin, `median ${median(times).toFixed(0)}s`);
 }
 
 // ---------------------------------------------------------------- 2. Arc bosses

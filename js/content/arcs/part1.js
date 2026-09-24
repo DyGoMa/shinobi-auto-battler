@@ -19,7 +19,7 @@
 export const PART1_ARCS = [
   // ---------------------------------------------------------------------------
   {
-    id: 'arc_belltest', part: 1, order: 1, name: 'Prologue: Bell Test', episodes: '4–5',
+    id: 'arc_belltest', part: 1, order: 1, name: 'Prologue: Survival Test', episodes: '4–5',
     blurb: 'Kakashi Hatake gives Team 7 until noon to take two bells from him. Pass or fail — it all comes down to teamwork.',
     banner: 'banner_belltest',
     theme: { sky: ['#9bd4ff', '#e8f6ff'], ground: '#5fa04e', far: '#3f7d3a', accent: '#f97316' },
@@ -249,7 +249,7 @@ export const PART1_ARCS = [
   // ---------------------------------------------------------------------------
   {
     id: 'arc_sasuke_recovery', part: 1, order: 7, name: 'Sasuke Retrieval Squad', episodes: '107–135',
-    blurb: 'Shikamaru leads the new squad after the Sound Four and Sasuke — one fight at a time.',
+    blurb: 'Shikamaru leads the new squad after the Sound Ninja Four and Sasuke — one fight at a time.',
     banner: 'banner_sasuke',
     theme: { sky: ['#5b6b8c', '#b9c5dc'], ground: '#465066', far: '#2f374a', accent: '#60a5fa' },
     nodes: [
@@ -269,7 +269,7 @@ export const PART1_ARCS = [
       },
       {
         id: 'n_sr_3', name: 'Reinforcements from the Sand', episodes: '119–125',
-        blurb: 'Sakon and Ukon, and Tayuya with her Doki — just as the Sand Siblings arrive.',
+        blurb: 'Sakon and Ukon, and Tayuya with her Doki — just as Gaara, Temari and Kankuro arrive from the Sand.',
         enemies: [{ id: 'e_sakon' }, { id: 'e_tayuya' }],
         objective: { type: 'defeatAll' },
         team: { banned: ['sakon', 'tayuya'], recommended: ['kankuro', 'temari', 'kiba', 'shikamaru'] },

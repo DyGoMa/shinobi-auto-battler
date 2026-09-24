@@ -187,7 +187,7 @@ A unit only becomes a *boss* (boss stat multiplier, crown, boss HP bar) when a n
 
 ### Worked examples (one per objective)
 ```js
-// survive — node 1, the Bell Test (Team 7 without their sensei)
+// survive — node 1, the Survival Test (Team 7 without their sensei)
 { id: 'n_bell_1', name: 'Pass or Fail: Survival Test', episodes: '4',
   blurb: 'Survive 45 seconds against Kakashi — or take him down.',
   enemies: [{ id: 'e_kakashi_bell' }], objective: { type: 'survive', seconds: 45 },
