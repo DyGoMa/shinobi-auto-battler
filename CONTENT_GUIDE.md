@@ -239,3 +239,24 @@ Round strength comes from `balance.bossRush` (`levelByRound`, `statMultByRound`,
 4. Add every new name to `tools/naming-sources.mjs`, then run `node tools/naming.mjs --write`.
 5. Run `npm run validate`, then `npm run autotune -- --write` for the new bosses, then `npm run sim` and `npm run campaign`. Both sims cover every part with content (set `SIM_PARTS=1,2` to pick parts).
 6. Keep the last node's enemy level under `stats.levelCap`: with `levelByNode` growth 0.95, the cap is reached around node 105 (Part II ends at node 99, level 94).
+
+## 9. The Wiki: generated pages and guides
+
+The in-game Wiki builds its reference pages (characters, jutsu, enemies, arcs, banners, achievements, the Boss Rush and the Nature Wheel chart) from the same content and `balance.js` the game loads, so new content gets its pages automatically. `npm run validate` fails if an entry has no page, if two jutsu names would share one page, if a guide link doesn't resolve, or if a guide types a config value by hand (`tools/wiki-check.mjs`).
+
+**Guides** are markdown files in `wiki/guides/<slug>.md`, listed in `GUIDES` in `js/wiki/WikiData.js`. Write them for a new player, in the game's voice, with dub names only.
+* Link another page with `[text](wiki:<page id>)`, for example `wiki:character/kakashi` or `wiki:guide/summoning#duplicates-and-stars`. Page ids are listed at the top of `js/wiki/WikiData.js`.
+* Never type a number that lives in `balance.js`. Use a placeholder instead:
+
+| Placeholder | Shows |
+|---|---|
+| `{{num:economy.pullCost.ten}}` | 900 |
+| `{{pct:gacha.rates.kage}}` | 2% |
+| `{{x:natureWheel.advantage}}` | ×1.12 |
+| `{{plus:stats.starBonus}}` | +10% |
+| `{{tier:gacha.pityTier}}` | Kage |
+| `{{cycle:natureWheel.cycle}}` | Fire › Wind › Lightning › Earth › Water › Fire |
+
+* When a guide starts mentioning another config value, add it to `GUARDED` in `tools/wiki-check.mjs` so the check keeps it honest.
+
+> **Standing rule:** any session that changes a system must update the matching guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing.

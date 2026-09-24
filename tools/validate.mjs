@@ -6,6 +6,9 @@ import { CONTENT, validateContent } from '../js/content/index.js';
 import { BALANCE } from '../js/config/balance.js';
 import { curve, TIERS } from '../js/core/formulas.js';
 import { missingNames } from './naming.mjs';
+import { checkWiki } from './wiki-check.mjs';
+import { GAME_VERSION } from '../js/config/version.js';
+import { readFileSync } from 'node:fs';
 
 const errors = validateContent(CONTENT);
 
@@ -39,6 +42,20 @@ if (lastLevel > B.stats.levelCap) errors.push(`enemy level at the last node (${l
 const headroom = curve(B.enemyScaling.levelByNode, 89);
 if (headroom > B.stats.levelCap) errors.push(`enemy level at node 90 (${headroom}) exceeds levelCap — no headroom for ~90 nodes`);
 
+// ---- tutorial --------------------------------------------------------------
+for (const n of CONTENT.tutorial?.nodes || []) {
+  if (n.startChakra != null && !(typeof B.tutorial?.[n.startChakra] === 'number')) errors.push(`tutorial ${n.id}: startChakra "${n.startChakra}" is not a number in balance.tutorial`);
+}
+if (!(B.tutorial?.enemyLevel >= 1)) errors.push('balance.tutorial.enemyLevel must be at least 1');
+
+// ---- version ----------------------------------------------------------------
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+if (pkg.version !== GAME_VERSION) errors.push(`package.json version ${pkg.version} does not match js/config/version.js GAME_VERSION ${GAME_VERSION}`);
+
+// ---- wiki (pages, guide links, config placeholders) ---------------------------
+const wiki = checkWiki();
+errors.push(...wiki.errors);
+
 // ---- report ----------------------------------------------------------------
 const C = CONTENT;
 const byTier = Object.fromEntries(TIERS.map(t => [t, C.roster.filter(c => c.tier === t).length]));
@@ -49,6 +66,7 @@ console.log(`  balance curves checked: ${curveSpecs.length}   last node enemy le
 const unsourced = missingNames();
 if (unsourced.length) console.log(`  ⚠ ${unsourced.length} name(s) have no source in tools/naming-sources.mjs (NAMING.md): ${unsourced.join(', ')}`);
 else console.log('  names: every in-game name has a recorded source (NAMING.md)');
+console.log(`  wiki: ${wiki.pages} pages, ${wiki.guides} guides, ${wiki.links} guide links${wiki.errors.length ? ` — ${wiki.errors.length} problem(s)` : ': every page, link and config value checks out'}`);
 if (errors.length) {
   console.log(`\nFAIL — ${errors.length} problem(s):`);
   for (const e of errors) console.log('  ✗ ' + e);

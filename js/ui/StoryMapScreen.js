@@ -6,6 +6,7 @@ import { nodeEnemyNatures, teamMatchupRating } from '../core/TeamPicker.js';
 import { inkFor } from '../render/Renderer.js';
 import { tutorialPending, tutorialLessons, nextLessonIndex } from '../core/Tutorial.js';
 import { tipCard } from './tips.js';
+import { screenHead } from './chrome.js';
 
 export function render(game, ui, params) {
   const { C, state } = game;
@@ -23,7 +24,7 @@ export function render(game, ui, params) {
   const list = h('div.arc-list', part === 1 && tutorialPending(state) ? tutorialCard(game, ui) : null, ...arcs.map(a => arcCard(game, ui, a, a.id === arcId, cur)));
 
   return h('div.screen',
-    h('div.row.between', h('h1', 'Story'), seg),
+    screenHead(ui, { title: 'Story', right: [seg], help: arc ? `arc/${arc.id}` : 'arcs' }),
     tipCard(game, 'story'),
     part === 2 ? h('p.small.muted', 'Part II — Naruto: Shippuden. The story and enemy levels continue from Part I.') : null,
     list,

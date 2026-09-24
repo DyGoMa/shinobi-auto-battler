@@ -1,0 +1,30 @@
+# What's new
+
+## Version {{cfg:version.current}}
+
+Everything is in place except the final art, music and effects.
+
+- **The Academy tutorial.** Three short lessons before the Survival Test teach team building, the Nature Wheel and Jutsu Clash. You can skip it any time and still get its reward.
+- **The Wiki.** Every ninja, jutsu, enemy, battle and banner, built from the game itself, plus guides like this one. Every screen has a **?** button that opens its page.
+- **Screen tips** the first time you open each screen. Switch them back on in Settings.
+- **Challenges** on the Home screen, starting with the Boss Rush.
+- **Divers** in protect missions no longer freeze your team: your ninja turn around and chase them.
+
+## Version 0.3
+
+- The Nature Wheel is gentler, and losing a Jutsu Clash (Overwhelmed) now blocks the enemy jutsu too and gives back most of the chakra.
+- 🤖 Auto-ult is clash-aware: it fires counters into wind-ups and holds ninja who would be Overwhelmed.
+- Late Part II rewards are tuned so teams finish near the enemy level.
+- Forced ninja fight at least at the battle's level, and when a battle forces four ninja, the Leader slot makes way.
+- The Summon screen shows the current banners in one row and groups past banners by story part.
+
+## Version 0.2
+
+- **Part II (Shippuden):** seventeen arcs, from the Kazekage Rescue Mission to Kaguya Otsutsuki Strikes.
+- Thirty-four new ninja and alternate forms, including Sage Mode and Six Paths Sage Mode Naruto.
+- Bigger, easier-to-read units on phones held upright.
+
+## Version 0.1
+
+- **Part I:** eight arcs, from the Survival Test to the Kurosuki Family Removal Mission.
+- Summoning, levelling, the Nature Wheel, Jutsu Clash and the Akatsuki Boss Rush.

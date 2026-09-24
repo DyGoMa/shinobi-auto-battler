@@ -29,6 +29,10 @@ export const SCREEN_TIPS = {
     icon: '☁️', title: 'Boss Rush',
     text: () => 'Seven Akatsuki back to back. HP and chakra carry over and nobody heals between rounds, so bring a healer and save Ultimates for Jutsu Clashes.',
   },
+  wiki: {
+    icon: '📚', title: 'The Wiki',
+    text: () => 'Search any ninja, jutsu, enemy or battle. Every screen has a ? button that opens its page here, and the guides explain each system step by step.',
+  },
   settings: {
     icon: '⚙️', title: 'Settings',
     text: () => 'Link a Google account to keep your save on every device. Tips like this one can be switched back on here.',

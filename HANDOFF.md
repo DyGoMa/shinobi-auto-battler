@@ -1,5 +1,7 @@
 # HANDOFF.md — Session 3b → Session 4 (sim/game bot mismatch and counter-gap fix)
 
+> **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
+
 Session 3b was a short, focused balance session: fix the sim-vs-game bot
 mismatch Session 3 left open, and properly resolve the nature-counter gap
 (Session 3 changed the refund but never reached the target bands). No new

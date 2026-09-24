@@ -4,6 +4,7 @@ import { h, btn, fmt, avatar } from './dom.js';
 import { currentNode, isBossRushUnlocked, isArcCleared, resolveTeam, unitPower } from '../core/Progression.js';
 import { tutorialPending, nextLessonIndex, tutorialLessons } from '../core/Tutorial.js';
 import { LESSON_TITLE } from './TutorialScreen.js';
+import { helpButton } from './chrome.js';
 
 export function render(game, ui) {
   const { C, B, state } = game;
@@ -28,6 +29,7 @@ export function render(game, ui) {
   return h('div.screen',
     h('div.hero',
       h('div.kanji', { 'aria-hidden': 'true' }, '忍'),
+      h('div.hero-help', helpButton(ui, 'guide/how-to-play')),
       h('div.pill.accent', tut ? 'Tutorial — The Academy' : (node?.part ?? 2) === 1 ? 'Part I — The Hidden Leaf Village' : 'Part II — Shippuden'),
       h('h1', { style: { marginTop: '10px' } }, 'Shinobi Auto-Battler'),
       h('p', { style: { maxWidth: '620px' } }, 'Your ninja fight on their own. You choose the team, read the Nature Wheel, and decide when to unleash each Ultimate. Fire one into an enemy\'s wind-up to trigger a ', h('b', 'Jutsu Clash'), '.'),
@@ -45,6 +47,10 @@ export function render(game, ui) {
       tile('Kage pity', `${Math.max(0, B.gacha.pity - state.gacha.pity)}`, 'summons to a guaranteed Kage'),
       tile('Boss Rush', rush ? `Round ${state.bossRush.highestRound || 0}` : '🔒', rush ? 'highest round reached' : `clear ${C.arc[C.bossRush.unlockArc].name}`),
     ),
+    h('div.section-title', h('h2', 'Challenges')),
+    h('div.grid.two',
+      challengeCard('☁️', C.bossRush.name, rush ? (state.bossRush.runs ? `Best: round ${state.bossRush.highestRound || 0}` : 'New! Seven Akatsuki back to back.') : `Unlocks after you clear ${C.arc[C.bossRush.unlockArc].name}.`,
+        rush ? () => ui.go('rush') : () => ui.toast(`Clear ${C.arc[C.bossRush.unlockArc].name} to unlock the Boss Rush.`), !rush, rush && !state.bossRush.runs)),
     h('div.section-title', h('h2', 'Your team')),
     h('div.card.hover', { onclick: () => ui.go('team', { nodeId: node?.id }), role: 'button', tabindex: '0', 'aria-label': 'Edit your team' },
       h('div.row', ...team.members.map(id => h('div.col', { style: { alignItems: 'center', gap: '4px' } }, avatar(C.char[id]), h('span.tiny.muted', C.char[id].short + (id === team.leader ? ' ★' : '')))),
@@ -61,5 +67,10 @@ export function render(game, ui) {
   );
 }
 
+function challengeCard(icon, title, text, onclick, locked = false, fresh = false) {
+  return h('button.card.hover.challenge' + (locked ? '.locked' : ''), { type: 'button', onclick, 'aria-disabled': locked ? 'true' : null },
+    h('div.row.between', h('h3', { style: { margin: 0 } }, `${icon} ${title}`), locked ? h('span.pill', '🔒') : fresh ? h('span.pill.bad', 'NEW') : h('span.muted', '›')),
+    h('p.small', { style: { margin: '6px 0 0' } }, text));
+}
 function tile(k, v, sub) { return h('div.tile', h('div.k', k), h('div.v', v), h('div.tiny.dim', sub)); }
 function how(icon, title, text) { return h('div.card', h('h3', `${icon} ${title}`), h('p.small', text)); }

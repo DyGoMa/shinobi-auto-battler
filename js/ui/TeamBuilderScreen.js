@@ -6,6 +6,7 @@ import { nodeEnemyNatures, teamMatchupRating, characterMatchup, autoPickTeam } f
 import { leaderBuffText } from '../core/Ninja.js';
 import { tutorialLessons } from '../core/Tutorial.js';
 import { tipCard } from './tips.js';
+import { screenHead } from './chrome.js';
 
 let selectedSlot = 0;          // 0..2 members, 3 = leader
 let roleFilter = 'All';
@@ -100,8 +101,7 @@ export function render(game, ui, params) {
     h('p.small', 'When you\'re happy with your team, press ', h('b', '⚔️ Fight!'), '.')) : null;
 
   return h('div.screen',
-    h('div.row.between', h('h1', 'Team Builder'),
-      h('div.row',
+    screenHead(ui, { title: 'Team Builder', help: 'guide/team-composition', right: [
         lessonNode ? null : btn('✨ Auto', () => {
           const cands = owned.map(id => ({ id, level: state.roster[id].level, stars: state.roster[id].stars }));
           const pick = autoPickTeam(cands, node, C, B);
@@ -111,7 +111,7 @@ export function render(game, ui, params) {
           if (pick.leader && state.roster[pick.leader]) state.team.leader = pick.leader;
           game.commit('team'); ui.toast('Team picked by power and nature matchup.'); ui.refresh();
         }),
-        btn(unlocked ? '⚔️ Fight!' : '🔒 Locked', fight, 'primary', { disabled: !unlocked }))),
+        btn(unlocked ? '⚔️ Fight!' : '🔒 Locked', fight, 'primary', { disabled: !unlocked })] }),
     coach,
     lessonNode ? null : tipCard(game, 'team'),
     h('div.card',

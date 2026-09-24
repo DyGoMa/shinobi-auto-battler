@@ -4,6 +4,7 @@ import { characterStats, powerRating, leaderBuffText } from '../core/Ninja.js';
 import { canLevelUp, levelUp, isCharacterAvailable, levelCostFor } from '../core/Progression.js';
 import { TIERS, TIER_LABEL } from '../core/formulas.js';
 import { tipCard } from './tips.js';
+import { screenHead, helpButton } from './chrome.js';
 
 let filter = { show: 'all', role: 'All', tier: 'All' };
 
@@ -30,7 +31,7 @@ export function render(game, ui) {
   const chipset = (key, values, label = (v) => v) => h('div.filters', ...values.map(v => h('button.chip' + (filter[key] === v ? '.on' : ''), { type: 'button', onclick: () => { filter[key] = v; ui.refresh(); } }, label(v))));
 
   return h('div.screen',
-    h('div.row.between', h('h1', 'Roster'), h('span.pill', `${ownedCount} / ${C.roster.length} recruited`)),
+    screenHead(ui, { title: 'Roster', help: 'guide/levelling', right: [h('span.pill', `${ownedCount} / ${C.roster.length} recruited`)] }),
     tipCard(game, 'roster'),
     h('p.small', 'Level up with Ryo. Duplicate summons add a star (+10% stats each, up to 5★); duplicates past 5★ refund Ryo. Ninja 5+ levels behind your highest level up at a catch-up discount.'),
     chipset('show', ['all', 'owned', 'missing'], v => ({ all: 'All', owned: 'Owned', missing: 'Missing' })[v]),
@@ -84,13 +85,14 @@ export function openDetail(game, ui, d) {
     };
     return h('div',
       tipCard(game, 'character'),
-      h('div.row', avatar(d, { size: 'lg' }),
-        h('div.col', { style: { gap: '4px' } },
+      h('div.row', { style: { alignItems: 'flex-start' } }, avatar(d, { size: 'lg' }),
+        h('div.col.grow', { style: { gap: '4px' } },
           h('h2', { style: { margin: 0 } }, d.name),
           h('div.row', tierTag(d.tier), roleTag(d.role)),
           h('div.row', ...natureChips(d), own ? stars(st) : h('span.pill', 'Not recruited')),
           d.formOf ? h('div.tiny.muted', `Alternate form of ${C.char[d.formOf].name} — only one of them can be in a team.`) : null,
-        )),
+        ),
+        h('button.icon-btn.help-btn', { type: 'button', 'aria-label': `Open ${d.name}'s Wiki page`, title: 'Wiki page', onclick: () => { close(); ui.openWiki(`character/${d.id}`); } }, '?')),
       h('div.divider'),
       h('dl.kv',
         h('dt', 'Level'), h('dd', own ? `${lvl} / ${B.stats.levelCap}` : '—'),

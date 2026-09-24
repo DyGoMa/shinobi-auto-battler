@@ -8,6 +8,7 @@ import * as Summon from './SummonScreen.js';
 import * as Rush from './BossRushScreen.js';
 import * as Settings from './SettingsScreen.js';
 import * as Tutorial from './TutorialScreen.js';
+import * as Wiki from './WikiScreen.js';
 import { BattleScreen } from './BattleScreen.js';
 import { canAfford } from '../core/GachaSystem.js';
 import { isBossRushUnlocked } from '../core/Progression.js';
@@ -19,13 +20,14 @@ const TABS = [
   { id: 'team', label: 'Team', icon: '👥', mod: Team },
   { id: 'roster', label: 'Roster', icon: '📖', mod: Roster },
   { id: 'summon', label: 'Summon', icon: '📜', mod: Summon },
-  { id: 'rush', label: 'Boss Rush', icon: '☁️', mod: Rush },
+  { id: 'wiki', label: 'Wiki', icon: '📚', mod: Wiki },
   { id: 'settings', label: 'Settings', icon: '⚙️', mod: Settings },
 ];
 // Screens that are not tabs. `tab` = the tab highlighted while they are open.
 const SCREENS = {
   ...Object.fromEntries(TABS.map(t => [t.id, { mod: t.mod, tab: t.id }])),
   tutorial: { mod: Tutorial, tab: 'home' },
+  rush: { mod: Rush, tab: 'home' },
 };
 
 export class UIManager {
@@ -53,11 +55,18 @@ export class UIManager {
       this.game.audio.setMuted(s.muted); this.game.commit('mute'); this.refreshTop();
     });
     this.refreshTop();
-    const hash = (location.hash || '').replace('#', '');
-    this.go(SCREENS[hash] && hash !== 'tutorial' ? hash : 'home');
+    const fromHash = () => {
+      const raw = decodeURIComponent((location.hash || '').replace('#', ''));
+      if (raw.startsWith('wiki/')) return { id: 'wiki', params: { page: raw.slice(5) } };
+      return SCREENS[raw] && raw !== 'tutorial' ? { id: raw, params: {} } : { id: 'home', params: {} };
+    };
+    const start = fromHash();
+    this.go(start.id, start.params);
     window.addEventListener('hashchange', () => {
-      const id = (location.hash || '').replace('#', '');
-      if (SCREENS[id] && id !== this.current && !this.battle) this.go(id);
+      const t = fromHash();
+      const now = this.current === 'wiki' ? `wiki/${this.params.page || 'home'}` : this.current;
+      const want = t.id === 'wiki' ? `wiki/${t.params.page || 'home'}` : t.id;
+      if (want !== now && !this.battle) this.go(t.id, t.params);
     });
     this.welcome();
   }
@@ -65,7 +74,8 @@ export class UIManager {
   go(id, params = {}) {
     if (!SCREENS[id]) id = 'home';
     this.current = id; this.params = params;
-    try { if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id); } catch { /* file:// */ }
+    const hash = '#' + (id === 'wiki' && params.page && params.page !== 'home' ? `wiki/${params.page}` : id);
+    try { if (location.hash !== hash) history.replaceState(null, '', hash); } catch { /* file:// */ }
     this.render(true);
     this.screenEl.scrollTop = 0;
   }
@@ -102,9 +112,16 @@ export class UIManager {
     for (const b of this.tabbar.children) {
       b.querySelector('.dot')?.remove();
       const id = b.dataset.tab;
-      const show = (id === 'summon' && canAfford(s, 1, this.game.B)) || (id === 'rush' && isBossRushUnlocked(s, this.game.C) && !s.bossRush.runs);
+      const show = (id === 'summon' && canAfford(s, 1, this.game.B)) || (id === 'home' && isBossRushUnlocked(s, this.game.C) && !s.bossRush.runs);
       if (show) b.appendChild(h('span.dot', { 'aria-hidden': 'true' }));
     }
+  }
+
+  // ------------------------------------------------------------- wiki
+  /** Open a Wiki page. From another screen, the Wiki remembers it for its back button. */
+  openWiki(page = 'home', { from = null, anchor = null } = {}) {
+    const origin = from || (this.current === 'wiki' ? this.params.from : { id: this.current, params: this.params });
+    this.go('wiki', { page, anchor, from: origin && origin.id !== 'wiki' ? origin : null });
   }
 
   // ------------------------------------------------------------- tutorial

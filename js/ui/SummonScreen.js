@@ -5,6 +5,7 @@ import { isBannerUnlocked, isCharacterAvailable } from '../core/Progression.js';
 import { TIER_LABEL, RARITY_LABEL } from '../core/formulas.js';
 import { TIER_COLORS } from '../render/Renderer.js';
 import { tipCard } from './tips.js';
+import { screenHead } from './chrome.js';
 
 let selected = null;
 let archiveOpen = false;   // "Past banners" expanded
@@ -85,7 +86,7 @@ export function render(game, ui, params) {
 
   const hist = (state.gacha.history || []).slice(0, 20);
   return h('div.screen',
-    h('div.row.between', h('h1', 'Summon'), h('span.pill', `📜 ${fmt(state.currencies.scrolls)} scrolls`)),
+    screenHead(ui, { title: 'Summon', help: 'guide/summoning', right: [h('span.pill', `📜 ${fmt(state.currencies.scrolls)} scrolls`)] }),
     tipCard(game, 'summon'),
     tabs,
     hero,

@@ -5,6 +5,7 @@ import { bossRushRewards } from '../core/formulas.js';
 import { enemyToken } from './StoryMapScreen.js';
 import { teamMatchupRating } from '../core/TeamPicker.js';
 import { tipCard } from './tips.js';
+import { screenHead } from './chrome.js';
 
 export function render(game, ui) {
   const { C, B, state } = game;
@@ -15,7 +16,7 @@ export function render(game, ui) {
   const rating = teamMatchupRating(team.members.map(id => C.char[id]), natures, B);
 
   return h('div.screen',
-    h('div.row.between', h('h1', R.name), unlocked ? h('span.pill.accent', `Best: round ${state.bossRush.highestRound || 0}`) : h('span.pill', '🔒 Locked')),
+    screenHead(ui, { title: R.name, back: { label: 'Home', id: 'home' }, help: 'boss-rush', right: [unlocked ? h('span.pill.accent', `Best: round ${state.bossRush.highestRound || 0}`) : h('span.pill', '🔒 Locked')] }),
     unlocked ? tipCard(game, 'rush') : null,
     h('p', 'Seven Akatsuki members back to back. Your team keeps its HP and chakra between rounds — nobody heals. After Pain the rotation loops and every boss gets stronger. How far can you go?'),
     !unlocked ? h('div.warnbox', `Unlocks after clearing “${C.arc[R.unlockArc].name}”.`) : null,

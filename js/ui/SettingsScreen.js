@@ -3,6 +3,7 @@ import { h, btn, toggle } from './dom.js';
 import { SAVE_VERSION } from '../core/SaveManager.js';
 import { FIREBASE_SDK_VERSION } from '../save/FirebaseBackend.js';
 import { tipCard, tipsEnabled, resetTips } from './tips.js';
+import { screenHead } from './chrome.js';
 
 export function render(game, ui) {
   const { state, save, cloud } = game;
@@ -14,7 +15,7 @@ export function render(game, ui) {
   const lastSync = save.lastCloudSave ? `Last upload ${new Date(save.lastCloudSave).toLocaleTimeString()}` : '';
 
   return h('div.screen',
-    h('h1', 'Settings'),
+    screenHead(ui, { title: 'Settings', help: 'guide/how-to-play' }),
     tipCard(game, 'settings'),
     h('div.card',
       h('h2', 'Game'),

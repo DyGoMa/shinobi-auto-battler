@@ -13,6 +13,7 @@ import { arcOf } from '../content/index.js';
 import { completeLesson, tutorialLessons } from '../core/Tutorial.js';
 import { tipsEnabled, tipSeen, markTipSeen } from './tips.js';
 import { LESSON_TITLE } from './TutorialScreen.js';
+import { guideBody, whenGuideReady } from './WikiScreen.js';
 
 const CLASH_LABEL = { overpower: '▲ OVERPOWER', standoff: '= STANDOFF', overwhelmed: '▼ WEAK' };
 
@@ -180,10 +181,21 @@ export class BattleScreen {
         h('p.small', 'Tip: when an enemy shows a ⚠ wind-up bar, tap a ready portrait to Jutsu Clash. The badge on each portrait predicts the result.'),
         h('div.col',
           btn('▶ Resume', () => this.togglePause(false), 'primary block'),
+          btn('❓ How Jutsu Clash works', () => this._help(), 'block'),
           this.tutorial && !this.tutorial.replay ? btn('Skip tutorial', () => this._skipTutorial(), 'block') : null,
           btn(this.isRush ? '🏳️ End the run' : this.tutorial ? '🏳️ Leave the lesson' : '🏳️ Retreat (counts as a loss)', () => this._forfeit(), 'danger block'))));
       this.stage.appendChild(veil);
     }
+  }
+
+  /** The battle's help: the Jutsu Clash guide in a modal over the paused battle. */
+  _help() {
+    const body = h('div');
+    const inert = () => this.ui.toast('The Wiki opens from the Wiki tab after the battle.');
+    const draw = () => body.replaceChildren(guideBody(this.game, this.ui, 'jutsu-clash', inert));
+    draw();
+    whenGuideReady('jutsu-clash', this.ui, draw);
+    const close = this.ui.modal(h('div', body, h('div.actions', btn('Back to the battle', () => close(), 'primary'))), { wide: true, label: 'Jutsu Clash help' });
   }
 
   /** Skip the tutorial from inside a lesson battle: same reward as finishing it. */
