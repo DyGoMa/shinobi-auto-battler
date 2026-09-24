@@ -229,6 +229,19 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 5. **The redirect fallback can't be made reliable on GitHub Pages.** It only runs when a popup can't open (blocked pop-ups, some in-app browsers), and then needs the `authDomain`'s storage as third-party storage, which Chrome blocks by default. The game now reports that case instead of looping silently. **The only full fix is a custom domain** with Firebase's auth helper (`/__/auth/`) served from the game's own origin; Pages can't proxy it (FIREBASE_SETUP.md §9).
 6. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
 
+## Live check (0.10.1, popup first)
+
+`4a9ff3c` deployed by the workflow (`version.json` = `4a9ff3c`, 2026-09-24 15:13 UTC), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 with its Android user agent and a coarse pointer, on the profile's existing guest session (no account created):
+
+| Check | Result |
+|---|---|
+| Load | Start menu, stamp **v4a9ff3c · 2026-09-24 15:13 UTC**, no console messages. |
+| Tap "Sign in with Google" (a real click) | The in-app browser can't open popup windows, so the popup failed and the **redirect fallback** ran: the same tab went to `accounts.google.com` (redirect_uri the authDomain's `/__/auth/handler`, no `window.opener`). Nothing was entered there. |
+| Back to the game in the same tab, sign-in not completed | The flag came back as `kind: "link"` (so the link popup had been tried first), `getRedirectResult` gave no user, and the menu showed **"Google sign-in didn't complete. Chrome may be blocking third-party cookies…"** in the warning colour with **↻ Try again**. Flag cleared. The one console line is the matching `[FirebaseBackend]` warning. This is the Pixel 8a's old silent loop, now reported. |
+| Popup closed (the deployed SDK's `linkWithPopup` spied, rejecting with `auth/popup-closed-by-user`; the button pressed from JavaScript) | Calls: `linkWithPopup` only (no redirect, no `signInAnonymously`). Still on the menu, guest session unchanged, no message, buttons enabled, no flag. |
+
+Not verifiable here: a real popup window opening (this browser has none) and completing a Google sign-in (needs a Google account).
+
 ## Live check (Session 5)
 
 After `5caae86` deployed through the workflow (run "Deploy to GitHub Pages", success; `version.json` = `5caae86`, built 2026-09-24 14:50:06 UTC), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 (mobile user agent), the same profile as the Session 4 checks (it already had a guest account for this origin):
