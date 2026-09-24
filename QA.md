@@ -48,6 +48,8 @@ things a script can't judge.
 | 844×390 (landscape) | ✅ clean | ✅ clean | ✅ |
 | 932×430 (large phone, landscape) | ✅ clean | — | ✅ all tabs reachable |
 | 1280×800 | ✅ clean | ✅ clean | ✅ |
+| **412×915** (Pixel 8a, Session 5) | ✅ clean | ✅ clean | ✅ start menu in every cloud state, Settings and Wiki from the menu |
+| **915×412** (Pixel 8a sideways, Session 5) | ✅ clean | ✅ clean | ✅ two-column start menu, footer on one line |
 
 Screens covered: Home (new player and mid-game), Story map (Part I, Part II, Hard, locked
 Part II), Team (story, Daily, tutorial lesson), Roster and the character dialog, Summon and
@@ -91,13 +93,18 @@ start" screens.
 - The pause button now reads "Resume" to screen readers while paused.
 - Names: no Japanese-only terms in the UI or guides (checked for Kyuubi, Bijuu, Konoha, village -gakure names, jutsu -ton names, Jounin/Chuunin, "dattebayo" and more). "Jinchuriki" is the dub's own term. In-game names are checked against the dub by `npm run validate` (NAMING.md).
 
+## Session 5: the start flow
+
+`auditScreen` runs on the start menu too (the menu is up while `window.__game.ui.startPending` is true; `ui.refresh()` after changing `__game.cloud.phase / ready / user` shows the other states without touching Firebase). Checked at 412×915 and 915×412: the guest, Google, no-session, connecting, error and cloud-off menus, Settings and the Wiki opened from the menu (tab bar hidden, "‹ Menu" back button), the intro overlay (Skip is 54×44 in the safe corner, five runners along the ground line, the title inside the frame). Screenshots in the desktop preview pane time out often at these sizes; the geometry was read from the DOM instead. Nothing on the existing screens needed a fix at 412×915 or 915×412.
+
 ## Check on real devices before a release
 
 The audit runs in a desktop browser. On a real phone also check:
 - the notch and home-bar areas (`env(safe-area-inset-*)`) on an iPhone, both orientations;
 - iOS Safari's collapsing address bar on long screens (Wiki, Settings);
 - the Android back button (it moves through the `#hash` history);
-- a 10-summon with a Kage (the biggest particle burst) on a low-end phone.
+- a 10-summon with a Kage (the biggest particle burst) on a low-end phone;
+- **Session 5:** the intro's motion at 60 fps (the preview pane throttles animations, so the run and the slam were checked frame by frame, not live); the Android back button on the intro (skips) and on the start menu (stays); **Sign in with Google** on the start menu in Chrome for Android (the redirect flow, FIREBASE_SETUP.md step 9) and coming back signed in; the build stamp clear of the gesture bar in both orientations.
 
 ## For the art, audio and VFX pass
 

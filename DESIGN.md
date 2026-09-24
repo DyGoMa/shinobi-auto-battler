@@ -259,6 +259,13 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
 * None depend on luck alone. Rewards are mostly Ryo and summon tickets, with a few Rare+ tickets; the top one (Part I and Part II complete) also gives the exclusive Naruto form (§5).
 * They unlock by themselves, including retroactively for old saves, with a toast. Rewards are claimed on the Achievements screen (🏆 in the top bar). Everything is stored in the save.
 
+## 11b. The start flow (Session 5)
+
+* **Splash and intro** (`js/ui/Intro.js`, timings in `js/core/StartFlow.js` `INTRO`): a fixed overlay above the app while it loads. First visit: a 0.8 s splash, then five ninja silhouettes (the battle token in CSS) run across a dusk band and the title slams in with a shake and a flash, 2.8 s in all. Tap, Skip or the back button ends it. Seen once (a device preference, not the save), later loads get a 0.5 s splash; Settings → Replay the intro. `prefers-reduced-motion`: fades only.
+* **Start menu** (`js/ui/StartScreen.js`, `StartFlow.menuModel`): the first screen. No cloud session exists until the player picks **Continue as guest** (the anonymous account) or **Sign in with Google**; the Wiki and Settings open from the menu without either (tab bar hidden, "‹ Menu" back). A browser with a session gets one **Continue** ("Signed in as <name>" or "Guest save"); guests keep **Sign in with Google** to link. Cloud off: **Play**. Unreachable: **Play offline** and **Try again**. A deep link (`#wiki/…`) opens once the player enters. The Android back button skips the intro and stays on the menu.
+* **Sign-in** reuses the Session 3 paths (`FirebaseBackend.signInWithGoogle` / `linkGoogle`, the "cloud save is newer" prompt after entering). Phones use the redirect flow; the page comes back, `init()` picks the result up (`getRedirectResult`) and the game enters by itself.
+* **Build stamp** (`js/core/Version.js`): "v<short sha> · <UTC build date>" bottom-right of the menu and of Settings › About, from `version.json`, which the Pages deploy workflow writes (never committed); "dev" locally.
+
 ## 12. Endgame: Hard mode and the Daily challenge
 
 **Hard mode** (`balance.hardMode`):

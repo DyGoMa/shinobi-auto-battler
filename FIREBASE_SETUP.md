@@ -90,10 +90,17 @@ You need a Google account and about 10 minutes. The game side is already built. 
 5. ✅ **You should see:** "Cloud save: connected — Guest (anonymous)", and after your next battle, pull or level-up, "synced". In the Firebase console under **Firestore → Data**, a `users` collection appears with your save at `users/<id>/save/main`.
 
 ### 8. (Optional) Carry your save to another device
-1. In the game, open **Settings → Link Google account**. A Google popup opens; choose your account.
-2. ✅ **You should see:** "Google account linked — your save now follows you."
-3. On the other device, open the game, then **Settings → Link Google account** with the same Google account.
+1. In the game, pick **Sign in with Google** on the start menu (or **Settings → Link Google account** while playing as a guest). On a computer a Google popup opens; on a phone the page goes to Google and comes back. Choose your account.
+2. ✅ **You should see:** "Google account linked: your save now follows you." (or "Signed in as …" on the start menu the next time).
+3. On the other device, open the game and pick **Sign in with Google** on the start menu with the same Google account.
 4. ✅ **You should see:** the game asks **"Cloud save is newer — load it?"**. Choose **Load cloud save**.
+
+### 9. The start menu and sign-in on phones (Session 5)
+Nothing to change in the console for this. Since Session 5 the game opens on a start menu and **creates no account until the player picks "Continue as guest" or "Sign in with Google"**: a visitor who only reads the Wiki never appears under Authentication → Users.
+
+On phones and tablets (a touch screen, or an Android/iOS browser) Google sign-in uses Firebase's **redirect** flow instead of a popup: the page leaves for `accounts.google.com`, then comes back to the game, which finishes the sign-in and goes straight in. Computers keep the popup, and fall back to the redirect if the popup is blocked. Both flows run through the same `authDomain` (`inbox-zero-480418.firebaseapp.com`) that step 6 and the API-key restriction already allow, so **no new authorized domain is needed**.
+
+> **⚠️ Check the redirect on a real phone.** Modern browsers are phasing out third-party cookies, and Firebase's redirect flow depends on the `authDomain`'s storage being readable from `dygoma.github.io`. In Chrome for Android with the default settings it works; with **"Block third-party cookies"** on, or in Safari/Firefox with strict tracking protection, the redirect can come back signed out. If that happens the menu shows "Something went wrong" and the player can still continue as a guest. The fixes Firebase documents (serving `/__/auth/` from the game's own domain, or a custom `authDomain`) both need the site and the auth helper on one domain, which GitHub Pages cannot do for a project site; a custom domain for the game would allow it. Until then, it is a known limit, not a console setting.
 
 ---
 
@@ -118,7 +125,9 @@ You need a Google account and about 10 minutes. The game side is already built. 
 | `auth/unauthorized-domain` | Step 6: add your `…github.io` domain. |
 | `auth/operation-not-allowed` | Step 5: enable Anonymous (and Google for linking). |
 | `permission-denied` / `Missing or insufficient permissions` | Step 4: publish the rules exactly as shown. |
-| Google popup closes immediately | Allow pop-ups for the site, then try again. |
+| Google popup closes immediately | Allow pop-ups for the site, then try again (the game also falls back to the redirect flow when the popup is blocked). |
+| On a phone, "Sign in with Google" goes to Google and comes back signed out | Third-party cookies or storage are blocked for `inbox-zero-480418.firebaseapp.com` (step 9). Allow them for this site, or continue as a guest. |
+| The start menu says "Couldn't reach cloud save" | Offline, or the Firebase scripts (gstatic.com) are blocked. **Play offline** keeps the save in the browser; **Try again** reconnects. |
 | Still "not configured" | Step 7: every `PASTE_…` placeholder must be replaced, and the page reloaded after GitHub Pages updates. |
 | Saves write but nothing appears under **Firestore → Data** | Step 3: the database must be the one named **(default)**. Delete a database created with a custom Database ID and create it again with `(default)`. |
 | "You've reached your project limit" when creating the project | Step 1 tip: restore a pending-deletion project and use **Add Firebase to Google Cloud project**. |

@@ -1,11 +1,50 @@
-# HANDOFF.md — Session 4 → the art, audio and VFX pass
+# HANDOFF.md — Session 5 → the art, audio and VFX pass
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
 
-The game is finished in every way except art, audio and visual effects. Everything a
+Session 5 added the start flow (below). The game is finished in every way except art, audio and visual effects. Everything a
 player sees is drawn in code (canvas shapes, CSS, emoji) and every sound is a tiny Web
 Audio synth: **there are no image or audio files in the repo**. This document lists every
 placeholder, where it's drawn, its size, and what's still open.
+
+## Session 5 in one table
+
+| Step | Commit | What it added |
+|---|---|---|
+| 1. Splash + intro | `1ba5fa5` | A fixed overlay while the game loads: 0.8 s splash, five CSS ninja silhouettes run across a dusk band, the title slams in with a shake and a flash (2.8 s in all); tap, Skip or back skips; seen once (device pref) → 0.5 s splash; Settings → Replay the intro; reduced motion → fades. `js/ui/Intro.js`, `js/core/StartFlow.js` |
+| 2. Start menu + sign-in | `94db10a` | The first screen. **No cloud session until the player picks** Continue as guest (anonymous) or Sign in with Google (popup on desktop, redirect on phones or a blocked popup; the existing link/sign-in and "cloud save is newer" paths). Returning: one Continue ("Signed in as <name>" / "Guest save"), guests keep Sign in with Google to link. Errors on the menu. Wiki and Settings from the menu ("‹ Menu"). Android back stays on the menu. `js/ui/StartScreen.js`, `StartFlow.menuModel`, `FirebaseBackend` (injectable SDK) |
+| 3. Build stamp + deploy | `5caae86` | "v<short sha> · <UTC build date>" bottom-right of the menu and Settings › About (`js/core/Version.js`). `.github/workflows/pages.yml` writes `version.json` and deploys through the Pages artifact action; the file is gitignored; missing → "dev". Pages source switched to **GitHub Actions** (done in-session, with permission) |
+| 4. Pixel 8a layout | (in 2–3) | 412×915 and 915×412: `auditAll` and `auditFlows` clean on every existing screen (nothing to fix); the menu is a two-column layout sideways; 100dvh on the intro, safe-area padding on the menu, 44 px targets |
+| 5. Docs | this commit | HANDOFF (this), FIREBASE_SETUP §8–9 and troubleshooting, README, DESIGN §11b, QA.md, the how-to-play and What's new guides |
+
+**Checks:** `npm test` passes: validate, syntax on 63 files, **137 core tests** (20 new: intro timing, the intro-seen flag, menu gating of the anonymous session with a fake SDK, redirect sign-in, the menu per cloud state, the build stamp and its "dev" fallback), **61/61 sim scenarios**, **10/10** campaign players.
+
+### How the start flow fits together
+
+```
+boot (js/main.js)
+  playIntro(introPlan(seen, reducedMotion))   overlay up at once; setIntroSeen()
+  save.init()                                  local save
+  save.connectCloud()  ──► FirebaseBackend.init(): load SDK, getRedirectResult, restore the session. Never creates one.
+  ui.init(): startPending = true, go('start')  the menu renders behind the intro; deep link kept for later
+  intro.done                                    the menu is visible
+
+start menu (js/ui/StartScreen.js, StartFlow.menuModel(save.cloudState()))
+  off        ▶ Play / ▶ Continue                          → game.enterGame()
+  connecting "Checking your account…"                     (buttons wait; the menu re-renders on save.onChange)
+  error      ▶ Play offline, ↻ Try again, a message       → enterGame() / save.connectCloud()
+  signedOut  Continue as guest → cloud.continueAsGuest()  (signInAnonymously: the ONLY place a guest account is made)
+             Sign in with Google → cloud.signInWithGoogle()  popup, or redirect on phones (returns { redirecting })
+  guest      ▶ Continue (Guest save), Sign in with Google → cloud.linkGoogle() (link, or sign into the existing account)
+  google     ▶ Continue (Signed in as <displayName>)
+  + 📚 Wiki, ⚙️ Settings (body.start-sub: no tab bar, "‹ Menu" back)
+
+game.enterGame({ signedIn, switched })         ui.enterGame() → Home or the deep link, welcome prompt, retro toasts,
+                                               then save.afterSignIn(): the "cloud save is newer" prompt, upload
+redirect return                                 init() sets cloud.redirectResult; main.js skips the intro and enters
+```
+
+Settings keeps its Account card (sign in / use as a guest / link / sign out) with the same backend calls; sign-out no longer stores a preference (the menu simply offers guest or Google again).
 
 ## Session 4 in one table
 
@@ -24,7 +63,9 @@ placeholder, where it's drawn, its size, and what's still open.
 
 **Checks:** `npm test` passes: validate (content, balance, names, Wiki), syntax on 59 files, **110 core tests**, **61/61 sim scenarios** (Story and Hard bosses, counter-gap bands in both modes, Boss Rush) plus the Daily info check, and **10/10** free-to-play campaign players clearing Parts I–II. The layout audit is clean at 390×844, 360×780, 844×390 and 1280×800 (QA.md).
 
-**Live:** https://dygoma.github.io/shinobi-auto-battler/, checked after the Session 4 push (see "Live check" at the end).
+**Live:** https://dygoma.github.io/shinobi-auto-battler/, deployed by the workflow since `5caae86` (see "Live check" at the end).
+
+**Deploys** now go through `.github/workflows/pages.yml` on every push to `main` (Actions tab → "Deploy to GitHub Pages", about a minute). It writes `version.json` and uploads the repo as the Pages artifact. If a deploy ever needs the old way back: Settings → Pages → Build and deployment → Source → "Deploy from a branch".
 
 ---
 
@@ -171,10 +212,25 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 3. **Nagato's Earth**, **Boss Rush Pain's five natures**, **Part II dub titles from Wikipedia's season lists**, **non-boss nodes are easy at level**: carried over from Session 3 (see the Session 3b handoff in git history, `025bf7f`).
 
 **Platform**
-4. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md).
-5. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
+4. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md). **Session 5 adds:** the intro at full speed (the preview pane throttles animations, so it was checked frame by frame), the back button on the intro (skips) and on the menu (stays), **Sign in with Google on the start menu in Chrome for Android** (the redirect flow: it leaves for Google and must come back signed in; third-party cookie blocking can break it, FIREBASE_SETUP.md §9), the build stamp clear of the gesture bar, and a Google sign-in end to end (no Google account was used in-session).
+5. **Redirect sign-in on GitHub Pages** depends on the `authDomain`'s storage being reachable from `dygoma.github.io` (Firebase's third-party-cookie caveat). A custom domain with the auth helper on the same origin would remove it; see FIREBASE_SETUP.md §9.
+6. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
 
-## Live check
+## Live check (Session 5)
+
+After `5caae86` deployed through the workflow (run "Deploy to GitHub Pages", success; `version.json` = `5caae86`, built 2026-09-24 14:50:06 UTC), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 (mobile user agent), the same profile as the Session 4 checks (it already had a guest account for this origin):
+
+| Check | Result |
+|---|---|
+| Load | Short splash (seen before), then the start menu: **▶ Continue — Guest save**, **Sign in with Google — Link this guest save…**, 📚 Wiki, ⚙️ Settings; stamp **v5caae86 · 2026-09-24 14:50 UTC** bottom-right. No console messages; `version.json?t=…` 200. |
+| Back button on the menu | Stays on the menu. |
+| ▶ Continue | Home with the tab bar, cloud "synced — Guest (anonymous)", the save uploaded. No console messages. |
+| First visit (intro-seen cleared, reload) | The full intro plays (scene, five runners, Skip), then the menu. |
+| Accounts | **No new Firebase account** was created: the menu restored the profile's existing guest session, and "Continue as guest" / "Sign in with Google" were not pressed on the live site. |
+
+Not verifiable here: a real Google sign-in (needs a Google account; prohibited for the assistant), the redirect return on a phone, the intro's motion at full frame rate (the pane throttles it).
+
+## Live check (Session 4)
 
 After the push (`ac69643`, GitHub Pages build "built"), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser (Chromium), 2026-09-24:
 
