@@ -58,9 +58,9 @@ export function roleTag(role) {
   return h('span.role', `${icon} ${role}`);
 }
 export function btn(label, onClick, cls = '', props = {}) { return h('button.btn' + (cls ? '.' + cls.split(' ').join('.') : ''), { onclick: onClick, type: 'button', ...props }, label); }
-export function toggle(on, onChange, label = '') {
-  const t = h('button.toggle' + (on ? '.on' : ''), { type: 'button', role: 'switch', 'aria-checked': String(!!on), 'aria-label': label });
-  t.addEventListener('click', () => { const v = !t.classList.contains('on'); t.classList.toggle('on', v); t.setAttribute('aria-checked', String(v)); onChange(v); });
+export function toggle(on, onChange, label = '', { disabled = false } = {}) {
+  const t = h('button.toggle' + (on ? '.on' : ''), { type: 'button', role: 'switch', 'aria-checked': String(!!on), 'aria-label': label, disabled });
+  if (!disabled) t.addEventListener('click', () => { const v = !t.classList.contains('on'); t.classList.toggle('on', v); t.setAttribute('aria-checked', String(v)); onChange(v); });
   return t;
 }
 export function describeMechanic(m) {

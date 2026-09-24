@@ -9,6 +9,7 @@ Everything is in place except the final art, music and effects.
 - **Achievements:** goals across story, collection, combat and your account, with Ryo, summon tickets and Rare+ summons as rewards. They unlock retroactively for everything you've already done.
 - **An exclusive ninja:** complete Part I and Part II to earn Naruto Uzumaki (Nine-Tails Chakra Mode), who never appears in any banner.
 - **Screen tips** the first time you open each screen. Switch them back on in Settings.
+- **Settings** reworked: choose the Auto-ult mode (clash-aware or fire when ready), sign in and out of Google, see your cloud save's status, and confirm a reset by typing it.
 - **Challenges** on the Home screen, starting with the Boss Rush.
 - **Divers** in protect missions no longer freeze your team: your ninja turn around and chase them.
 

@@ -546,3 +546,16 @@ textarea { min-height: 90px; resize: vertical; font-family: ui-monospace, Consol
 button.tile { text-align: left; color: var(--text); cursor: pointer; width: 100%; font: inherit; }
 button.tile:hover { border-color: var(--surface3); }
 button.toast { font: inherit; cursor: pointer; }
+
+/* ---------------- Settings (Session 4) ---------------- */
+.card.gap { margin-top: 12px; }
+.setting-text { min-width: 0; flex: 1 1 auto; }
+.setting .seg { flex: 0 0 auto; }
+.toggle:disabled { opacity: .45; cursor: not-allowed; }
+.good-text { color: var(--good); }
+.warn-text { color: var(--warn); }
+.spinner.small-spin { width: 18px; height: 18px; margin: 0; border-width: 2px; }
+@media (max-width: 480px) {
+  .setting { flex-wrap: wrap; }
+  .setting .seg { margin-left: auto; }
+}

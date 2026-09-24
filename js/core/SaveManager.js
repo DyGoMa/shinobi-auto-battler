@@ -27,7 +27,8 @@ export function defaultState(C, B = BALANCE) {
     bossRush: { highestRound: 0, runs: 0 },
     // autoUltMode: 'smart' = clash-aware (fires counter-nature ninja into wind-ups, holds
     // any that would be Overwhelmed); 'asap' = fire when ready. tips: one-time screen tips.
-    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true },
+    // music / sfx / vfx: placeholders the audio and effects update will wire up (Settings shows them disabled).
+    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true, music: true, sfx: true, vfx: true },
     // Combat and day records behind the achievements (js/core/Achievements.js).
     stats: { battles: 0, wins: 0, losses: 0, clashWins: 0, flawlessWins: 0, counteredWins: 0, underdogBossWins: 0, daysPlayed: 0, lastDay: '' },
     // status: 'new' (never started) | 'active' (lesson = next lesson index) | 'done'.
@@ -159,6 +160,7 @@ export class SaveManager {
   constructor({ local, cloud = null, content, balance = BALANCE, cloudDebounceMs = 3000, onCloudNewer = null }) {
     this.local = local; this.cloud = cloud; this.C = content; this.B = balance;
     this.cloudDebounceMs = cloudDebounceMs; this.onCloudNewer = onCloudNewer;
+    this.cloudRetryMs = 30000; this.cloudError = null; this._retryTimer = null;
     this.state = null; this._cloudTimer = null; this.lastCloudSave = 0; this.cloudStatus = 'not configured';
     this.listeners = new Set();
   }
@@ -217,9 +219,38 @@ export class SaveManager {
   }
 
   async saveCloudNow() {
-    if (!this.cloud || !this.cloud.ready) return;
-    try { await this.cloud.save(this.state); this.lastCloudSave = Date.now(); this.cloudStatus = this.cloud.status; }
-    catch (e) { console.warn('[save] cloud save failed', e); this.cloudStatus = 'error (will retry)'; }
+    if (!this.cloud || !this.cloud.ready) return false;
+    clearTimeout(this._retryTimer);
+    try {
+      await this.cloud.save(this.state);
+      this.lastCloudSave = Date.now(); this.cloudError = null; this.cloudStatus = this.cloud.status;
+      this._notify();
+      return true;
+    } catch (e) {
+      console.warn('[save] cloud save failed', e);
+      this.cloudError = e?.code || e?.message || 'unknown';
+      this.cloudStatus = 'error (will retry)';
+      // Try again in a while; every local save also schedules another upload.
+      this._retryTimer = setTimeout(() => this.saveCloudNow(), this.cloudRetryMs);
+      this._notify();
+      return false;
+    }
+  }
+
+  /** One summary of the cloud save for the UI (Settings). */
+  cloudState() {
+    const c = this.cloud;
+    if (!c) return { kind: 'off' };
+    if (c.phase === 'connecting') return { kind: 'connecting' };
+    if (c.phase === 'error') return { kind: 'error', error: c.error };
+    if (c.phase === 'signedOut' || !c.ready) return { kind: 'signedOut' };
+    return { kind: c.isAnonymous ? 'guest' : 'google', account: c.accountLabel, lastSync: this.lastCloudSave, syncError: this.cloudError };
+  }
+
+  /** After signing in (Google or guest): offer a newer cloud save, then upload this one. */
+  async afterSignIn() {
+    const loaded = await this.checkCloudNewer();
+    if (!loaded) await this.saveCloudNow();
     this._notify();
   }
 

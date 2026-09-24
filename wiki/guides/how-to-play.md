@@ -46,4 +46,4 @@ Your ninja fight on their own. **You** choose who fights, read the enemy's natur
 
 ## Your save
 
-Progress saves automatically on this device. Link a Google account in **Settings** to keep it in the cloud and carry it between devices.
+Progress saves automatically in this browser, and in the cloud as a guest when cloud save is available. Link a Google account in **Settings** to keep your save if you clear the browser, and sign in with the same account on another device to continue there. Settings also exports your save as a text code you can import anywhere.
