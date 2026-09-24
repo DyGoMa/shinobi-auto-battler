@@ -63,6 +63,7 @@ across the whole campaign), an arc number, or a Boss Rush round.
 | Nature Wheel matters less | same | → `1.15 / 0.9` | The team's nature barely matters. |
 | **Turn off Jutsu Clash** | `jutsuClash.enabled` | `true` → `false` | Ults ignore enemy wind-ups (they still telegraph). |
 | Clashes are more rewarding | `jutsuClash.overpowerUltMult` | `1.35` → `1.6` | Overpowered clashes hit 60% harder. |
+| Losing a clash hurts less | `jutsuClash.overwhelmedChakraRefund` | `0.5` → `0.7` | An Overwhelmed ult gives back 70 chakra instead of 50. Keep it below 1. |
 | Longer wind-ups (easier to clash) | `enemyScaling.enemyJutsu.windup`, `bossMechanics.telegraphAoE.windup` | `2 / 3` → `3 / 4` | More time to react. |
 | A shorter "survive" in the Survival Test | `objectives.surviveTimeMult` | `1.0` → `0.8` | Every "survive X s" objective drops to 80% of X. |
 | A tougher Boss Rush | `bossRush.statMultByRound.base` | `0.39` → `0.45` | Every round's boss is ~15% stronger. |
@@ -91,7 +92,7 @@ The campaign report lists "Most common stuck points".
 
 ## 3. What the checks mean
 
-`npm run sim` plays 200 seeded battles per scenario with a bot that fires every Ultimate as soon as it's ready:
+`npm run sim` plays 200 seeded battles per scenario with a bot that fires every Ultimate as soon as it's ready (the in-game 🤖 Auto-ult uses the clash-aware bot instead; the sim prints both where it matters):
 
 | Scenario | Target (in `targets`) |
 |---|---|
@@ -124,31 +125,39 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
 * `npm run validate` fails if the gacha rates don't add up to 1, if any curve produces a non-number, or if enemy levels exceed `stats.levelCap` before node 90.
 * The debug panel's edits are **not saved**. Reload the page to go back to the file's values.
 
-## 6. Why a countered team can't win (Session 2 measurement, open for Session 3)
+## 6. Countered teams and Jutsu Clash (Session 3: change applied, bands not reached)
 
-**Goal that was tested:** at equal level and rarity, a fully countered team should win 25–30%, and the countering team should still clearly win most fights.
+**Goal:** at equal level and rarity, a team with 3 of 4 units countered wins 25–30%, a fully countered team wins 10–15%, and the countering team still wins a clear majority.
 
-**Result: no single value reaches that band without changing the Jutsu Clash rules, so nothing was changed.** `npm run sim` now prints the numbers under "Nature check detail" on every run.
+**What Session 3 changed (design decision):**
+* An **Overwhelmed** Ultimate is still cancelled and deals no damage, and the enemy jutsu still lands at ×0.55. Now it also gives back `jutsuClash.overwhelmedChakraRefund` (**0.5** = 50 of 100 chakra). The other outcomes are unchanged, and Overwhelmed stays worse than a Standoff (a Standoff cancels their jutsu *and* hits at ×0.5).
+* The in-game 🤖 Auto-ult now uses the clash-aware bot (`botUlts('smart')`): it fires counter-nature units into wind-ups and holds units that would be Overwhelmed. `npm run sim` still uses the fire-when-ready bot (`'asap'`) for its boss targets, so autotune numbers mean the same thing as before.
+* Autotune was re-run (9 bosses moved by 0.01–0.06, including `n_waves_5` 0.98 → 1.00).
 
-The nature check puts the same on-curve team, re-typed, against the Land of Waves boss (Water, level 8). 200 seeded battles per cell:
+**Result: the refund alone does not reach either band, so it was not forced.** `npm run sim` prints both cases under "Nature check detail". Same on-curve team vs the Land of Waves boss (Water, level 8), re-typed; "3 of 4" keeps one unit neutral (Lightning), rotating which one by seed. 200 seeded battles per cell:
 
-| What was changed | Counter (Earth) | Neutral (Lightning) | Countered (Fire) |
-|---|---|---|---|
-| Nothing (wheel 1.3 / 0.8, Jutsu Clash on) | 98% | 34% | **0%** |
-| Wheel damage switched off (1 / 1) | 68% | 34% | 1% |
-| Jutsu Clash switched off | 97% | 23% | 0% |
-| Both off | 23% | 23% | 23% |
-| Wheel scaled to half (1.15 / 0.9) … a tenth (1.03 / 0.98) | 85% … 72% | 34% | 0% |
-| No damage penalty for the countered side, and Overwhelmed cancels the enemy jutsu (`overwhelmedJutsuMult` 0), clash-aware bot | 98% | 35% | **10%** (best that keeps the clash rules) |
-| Overwhelmed ults still land at 85–90% power, plus ~10–15% of the countered side's damage penalty | 98% | 34% | 24–33% |
+| Setting | Bot | Counter (Earth) | Neutral (Lightning) | 3 of 4 countered | Fully countered (Fire) |
+|---|---|---|---|---|---|
+| **Final (refund 0.5, after autotune)** | fire when ready | 98% | 24% | **1%** | **0%** |
+| **Final (refund 0.5, after autotune)** | clash-aware | 98% | 25% | **0%** | **0%** |
+| Refund 0 / 0.25 / 0.5 / 0.75 / 0.9 (before autotune) | fire when ready | 98% | 34% | 0 / 1 / 3 / 1 / 1% | 0% |
+| Refund 0 … 0.9 (before autotune) | clash-aware | 98% | 35% | 0% | 0% |
 
-What drives it:
-* **Jutsu Clash, more than damage.** A neutral team's Ultimates cancel the boss's telegraphed Water jutsu (Standoff), and a countering team's stun the boss (Overpower). A countered team's are simply spent (Overwhelmed) while the jutsu still lands. The fire-when-ready bot, which is also what the in-game 🤖 Auto-ult button uses, keeps firing into the same wind-up, wasting ~5 Ultimates a fight.
-* **The win curve is steep.** The countered team needs about **+6 levels** to reach 17–33%, while a neutral team at +1 level already wins 54%.
-* The damage-only candidates (lower the multipliers, cap the wheel's share of damage, mixed-team bonus) leave the countered team at 0–5%. A mixed-team bonus can't help an all-countered team by definition.
-* The only setting that reached the band made an **Overwhelmed** Ultimate still hit at ~85% power. That erases the point of the Overwhelmed outcome (DESIGN.md §3) and only helps auto-fire play: a player reading the ▼ badge would still be at ~10%. So it was not applied.
+Why the refund can't do it:
+* **The clash-aware bot never fires into a losing clash**, so it never triggers the refund; only Tank guards do. For the fire-when-ready bot, 50 chakra back is roughly one saved Ultimate per fight, which is small next to the wheel's damage swing.
+* **The neutral baseline is already low.** At this node a neutral mono-nature team wins only 24–35%, so the 25–30% band asks a mostly countered team to do as well as a neutral one.
+* The win curve is steep: +1 level takes the neutral team from 34% to 54%.
 
-**Options for Session 3** (each needs a design decision, not just a number):
-1. Switch the in-game 🤖 Auto-ult to the existing clash-aware mode (`botUlts('smart')`), so auto players stop wasting Ultimates. It won't lift the countered team much on its own.
-2. Let an Overwhelmed clash still cancel the enemy jutsu (spend your ult to block theirs). That is a rule change in `BattleSim.fireUlt`.
-3. Accept a steep wheel, and measure "countered" against a mixed team instead of a mono-nature re-type.
+**What a second lever would have to be** (measured with refund 0.5, before autotune; none applied):
+
+| Second lever | Bot | Counter | 3 of 4 | Fully |
+|---|---|---|---|---|
+| Softer wheel 1.15 / 0.9 | fire when ready | 85% | 10% | 0% |
+| Softer wheel 1.1 / 0.93 | fire when ready | 79% | 14% | 1% |
+| Overwhelmed also blocks the enemy jutsu (`overwhelmedJutsuMult` 0) | fire when ready | 98% | 7% | 0% |
+| Both: `overwhelmedJutsuMult` 0 + wheel 1.1 / 0.93 | fire when ready | 79% | **24%** | 8% |
+| Both | clash-aware | 93% | 13% | 3% |
+| Measure at +2 levels (neutral 78%), no rule change | fire when ready / clash-aware | 100% | 18% / 10% | 0% |
+| Measure at +3 levels (neutral 93%), no rule change | fire when ready / clash-aware | 100% | 38% / 26% | 4% / 3% |
+
+So reaching the bands needs **both** a much flatter wheel (about 1.1 / 0.93, down from 1.3 / 0.8) **and** a rule where an Overwhelmed clash still blocks the enemy jutsu. Even then the fully countered case stays under 10%, and the counter team drops to 79%. The other option is to redefine the reference: measure at a node or level where a neutral team wins about 60% (the boss target), not at 24–35%. Both are design decisions for Session 4.

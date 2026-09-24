@@ -171,7 +171,7 @@ export class BattleScreen {
     if (running) {
       if (this.game.state.settings.autoUlt) {
         const before = this.sim.stats.ults;
-        this.sim.botUlts('asap');
+        this.sim.botUlts('smart'); // clash-aware: holds ults that would be Overwhelmed
         if (this.sim.stats.ults > before) this.game.audio.ultFire();
       }
       this.sim.step(rawDt * this.speed);

@@ -233,21 +233,21 @@ export const BALANCE = {
     nodeMult: {
       n_bell_1:    { hp: 0.85, atk: 0.85 },
       n_bell_3:    { hp: 1.55, atk: 1.55 },
-      n_waves_5:   { hp: 0.98, atk: 0.98 },
+      n_waves_5:   { hp: 1.00, atk: 1.00 },
       n_chunin_5:  { hp: 1.05, atk: 1.05 },
-      n_crush_3:   { hp: 0.69, atk: 0.69 },
+      n_crush_3:   { hp: 0.70, atk: 0.70 },
       n_crush_4:   { hp: 0.88, atk: 0.88 },
       n_tsunade_4: { hp: 1.04, atk: 1.04 },
       n_tea_3:     { hp: 1.51, atk: 1.51 },
       n_sr_4:      { hp: 1.00, atk: 1.00 },
-      n_sr_5:      { hp: 0.97, atk: 0.97 },
-      n_kuro_3:    { hp: 1.07, atk: 1.07 },
+      n_sr_5:      { hp: 0.98, atk: 0.98 },
+      n_kuro_3:    { hp: 1.09, atk: 1.09 },
       n_kaz_4:     { hp: 1.04, atk: 1.04 },
       n_kaz_5:     { hp: 1.24, atk: 1.24 },
-      n_tenchi_4:  { hp: 1.12, atk: 1.12 },
+      n_tenchi_4:  { hp: 1.14, atk: 1.14 },
       n_twelve_3:  { hp: 1.27, atk: 1.27 },
       n_hidan_3:   { hp: 0.98, atk: 0.98 },
-      n_hidan_4:   { hp: 0.99, atk: 0.99 },
+      n_hidan_4:   { hp: 1.01, atk: 1.01 },
       n_three_2:   { hp: 1.11, atk: 1.11 },
       n_three_3:   { hp: 1.06, atk: 1.06 },
       n_itachi_3:  { hp: 0.93, atk: 0.93 },
@@ -257,9 +257,9 @@ export const BALANCE = {
       n_sixtails_3:{ hp: 1.20, atk: 1.20 },
       n_pain_5:    { hp: 0.97, atk: 0.97 },
       n_summit_3:  { hp: 1.04, atk: 1.04 },
-      n_summit_4:  { hp: 0.77, atk: 0.77 },
+      n_summit_4:  { hp: 0.78, atk: 0.78 },
       n_countdown_2:{ hp: 0.71, atk: 0.71 },
-      n_countdown_4:{ hp: 0.62, atk: 0.62 },
+      n_countdown_4:{ hp: 0.63, atk: 0.63 },
       n_confront_4:{ hp: 0.87, atk: 0.87 },
       n_confront_5:{ hp: 1.01, atk: 1.01 },
       n_climax_3:  { hp: 1.03, atk: 1.03 },
@@ -268,7 +268,7 @@ export const BALANCE = {
       n_birth_2:   { hp: 0.75, atk: 0.75 },
       n_birth_4:   { hp: 0.86, atk: 0.86 },
       n_kaguya_2:  { hp: 1.35, atk: 1.35 },
-      n_kaguya_4:  { hp: 0.90, atk: 0.90 },
+      n_kaguya_4:  { hp: 0.96, atk: 0.96 },
     },
     // Adds summoned by boss mechanics are this fraction of a normal enemy. 0.3–1
     addMult: 0.6,
@@ -330,8 +330,13 @@ export const BALANCE = {
     overpowerChakraRefund: 25, // chakra given back to the clasher. 0–60
     // Neutral: both jutsu cancel; your ult still resolves at this power.
     standoffUltMult: 0.5,    // 0–1
-    // Their nature beats yours: your ult is spent and theirs lands weakened.
+    // Their nature beats yours: your ult is cancelled (no damage) and theirs
+    // lands weakened...
     overwhelmedJutsuMult: 0.55, // 0–1
+    // ...but this share of the ult's chakra cost comes back, so a countered
+    // team isn't locked out of its next ult. Keep it below 1 so Overwhelmed
+    // stays worse than a Standoff. 0–0.8
+    overwhelmedChakraRefund: 0.5,
     // Taijutsu specialists can never be Overwhelmed (worst case = Standoff).
     taijutsuNeverOverwhelmed: true,
     // A Tank that clashes always pulls the enemy jutsu onto itself with extra DR.

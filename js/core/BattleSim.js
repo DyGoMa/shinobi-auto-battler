@@ -399,6 +399,7 @@ export class BattleSim {
       this._executeUlt(u, JC.standoffUltMult);
     } else {
       t.powerMult *= JC.overwhelmedJutsuMult;
+      u.chakra = this.B.combat.chakra.max * (JC.overwhelmedChakraRefund || 0);
     }
     this._emit({ type: 'clash', uid: u.uid, caster: t.caster, outcome, name: t.name, nature: t.nature });
     return { ok: true, clash: outcome };
@@ -638,7 +639,8 @@ export class BattleSim {
   /**
    * 'asap'  — fire every ready ult immediately (what npm run sim uses).
    * 'smart' — same, but uses Jutsu Clash well: fires counter-nature units into
-   *           enemy wind-ups and holds units that would be Overwhelmed.
+   *           enemy wind-ups and holds units that would be Overwhelmed. The
+   *           in-game 🤖 Auto-ult uses this mode.
    */
   botUlts(mode = 'asap') {
     if (!this.ultsEnabled) return;

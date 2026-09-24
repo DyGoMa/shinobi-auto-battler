@@ -17,7 +17,7 @@ export function render(game, ui) {
     h('div.card',
       h('h2', 'Game'),
       h('div.setting', h('div', h('b', 'Sound'), h('div.tiny.muted', 'Synth sound effects (saved)')), toggle(!s.muted, (on) => { s.muted = !on; game.audio.setMuted(s.muted); game.commit('settings'); ui.refreshTop(); }, 'Sound')),
-      h('div.setting', h('div', h('b', 'Auto-fire Ultimates'), h('div.tiny.muted', 'Fires ults the moment they are ready (you lose Jutsu Clash timing)')), toggle(!!s.autoUlt, (on) => { s.autoUlt = on; game.commit('settings'); }, 'Auto ults')),
+      h('div.setting', h('div', h('b', 'Auto-fire Ultimates'), h('div.tiny.muted', 'Fires ults when ready, holding any that would lose a Jutsu Clash')), toggle(!!s.autoUlt, (on) => { s.autoUlt = on; game.commit('settings'); }, 'Auto ults')),
       h('div.setting', h('div', h('b', 'Battle speed'), h('div.tiny.muted', 'Default speed for new battles')),
         h('div.seg', ...[1, 2].map(v => h('button' + ((s.speed || 1) === v ? '.on' : ''), { type: 'button', onclick: () => { s.speed = v; game.commit('settings'); ui.refresh(); } }, `${v}×`)))),
       h('div.setting', h('div', h('b', 'Replay the tutorial tips')), btn('Reset tips', () => { s.onboardingDone = false; game.commit('settings'); ui.toast('Tips will show in your next battle.'); }, 'small')),

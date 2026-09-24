@@ -76,7 +76,8 @@ for (const arc of C.arcs.filter(a => !a.placeholder && SIM_PARTS.includes(a.part
   const node = C.node['n_waves_5'];
   const { team, owned } = onCurveTeam(node);
   const base = playerSpecs(team, owned, node);
-  const retype = (nat) => base.map(s => ({ ...s, natures: [nat], taijutsu: false }));
+  // keep >= 0: that slot stays neutral (Lightning), so 3 of 4 units are countered.
+  const retype = (nat, keep = -1) => base.map((s, k) => ({ ...s, natures: [k === keep ? 'Lightning' : nat], taijutsu: false }));
   let good = 0, bad = 0;
   for (let i = 0; i < N; i++) {
     if (runNode(node, team, owned, seedFor('nat', i), { specsOverride: retype('Earth') }).state === 'won') good++;
@@ -87,8 +88,11 @@ for (const arc of C.arcs.filter(a => !a.placeholder && SIM_PARTS.includes(a.part
   // Info (BALANCE.md §6): the same check with a neutral re-type (Lightning) and with the
   // clash-aware bot, which holds ults it would lose in a Jutsu Clash (like a player
   // reading the ▼ badge).
-  const rate = (nat, ultMode) => { let w = 0; for (let i = 0; i < N; i++) if (runNode(node, team, owned, seedFor('nat', i), { specsOverride: retype(nat), ultMode }).state === 'won') w++; return pct(w / N); };
-  natureInfo.push(`  Nature check detail: neutral (Lightning) team ${rate('Lightning', 'asap')}; clash-aware bot counter ${rate('Earth', 'smart')} / countered ${rate('Fire', 'smart')}`);
+  // "3 of 4" rotates the neutral slot by seed so no single unit decides it.
+  const rate = (nat, ultMode, partial = false) => { let w = 0; for (let i = 0; i < N; i++) if (runNode(node, team, owned, seedFor('nat', i), { specsOverride: retype(nat, partial ? i % 4 : -1), ultMode }).state === 'won') w++; return pct(w / N); };
+  natureInfo.push(`  Nature check detail (targets: 3 of 4 countered 25–30%, fully countered 10–15%):`);
+  natureInfo.push(`    fire-when-ready bot: counter ${pct(good / N)}  neutral ${rate('Lightning', 'asap')}  3 of 4 countered ${rate('Fire', 'asap', true)}  fully countered ${pct(bad / N)}`);
+  natureInfo.push(`    clash-aware bot:     counter ${rate('Earth', 'smart')}  neutral ${rate('Lightning', 'smart')}  3 of 4 countered ${rate('Fire', 'smart', true)}  fully countered ${rate('Fire', 'smart')}`);
 }
 
 // ---------------------------------------------------------------- 5. Fight length

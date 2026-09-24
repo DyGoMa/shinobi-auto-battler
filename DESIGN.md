@@ -77,7 +77,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
   * **Before a node:** the node panel lists every enemy nature, including boss specials and element swaps.
   * **Team Builder:** a live matchup rating (1–5 ★, from "Bad" to "Great"), and ▲/▼ markers on each ninja.
 * Natures follow canon (NAMING.md explains the rule for each character).
-* Because the multiplier applies to both offense and defense, a counter team is roughly 2.6× stronger than a countered one. That's by design: `npm run sim` checks it ("Nature check": 98% vs 0%).
+* Because the multiplier applies to both offense and defense, a counter team is roughly 2.6× stronger than a countered one. That's by design: `npm run sim` checks it ("Nature check": 98% vs 0%; BALANCE.md §6 has the 3-of-4 case and the Session 3 measurements).
 
 ---
 
@@ -94,7 +94,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 |---|---|---|
 | **OVERPOWER** | your nature beats theirs | Their jutsu is cancelled, your ult resolves at ×1.35, the caster is stunned for 2 s, and you get 25 chakra back |
 | **STANDOFF** | neutral / no nature | Both cancel; your ult still resolves at ×0.5 |
-| **OVERWHELMED** | their nature beats yours | Your ult is spent; their jutsu lands at ×0.55 (blunted) |
+| **OVERWHELMED** | their nature beats yours | Your ult is cancelled (no damage) and their jutsu lands at ×0.55 (blunted); you get 50 chakra back |
 
 4. **Roles:**
    * **Taijutsu** specialists can never be Overwhelmed (their worst case is Standoff).

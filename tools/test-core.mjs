@@ -84,6 +84,21 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   psim.units.find(u => u.protected).hp = 0;
   psim._tick(psim.tick);
   ok(psim.state === 'lost' && psim.endReason === 'protectFailed', 'protect objective fails when the escort falls');
+  // Jutsu Clash: an Overwhelmed ult deals no damage, the enemy jutsu still lands
+  // (weakened), and part of the chakra comes back.
+  {
+    const wc = nodeBattleConfig(defaultState(C, B), C.node.n_waves_5, C, B, { seed: 5 });
+    const ws = new BattleSim({ ...wc, recordEvents: false });
+    const u = ws.units.find(x => x.side === 'player' && !x.protected && x.role !== 'Tank');
+    const boss = ws.units.find(x => x.side === 'enemy' && x.isBoss);
+    Object.assign(u, { natures: ['Fire'], taijutsu: false, chakra: B.combat.chakra.max });
+    const tel = { id: 9999, caster: boss.uid, side: 'enemy', name: 'Test', nature: 'Water', kind: 'jutsu', type: 'single', power: 1, powerMult: 1, startedAt: 0, endsAt: 2, target: u.uid, clashable: true, stun: 0 };
+    ws.telegraphs.push(tel);
+    const hp = boss.hp;
+    const res = ws.fireUlt(u.uid);
+    ok(res.clash === 'overwhelmed' && boss.hp === hp && ws.telegraphs.includes(tel) && tel.powerMult === B.jutsuClash.overwhelmedJutsuMult, 'Overwhelmed ult: no damage, enemy jutsu still lands weakened');
+    ok(u.chakra === B.combat.chakra.max * B.jutsuClash.overwhelmedChakraRefund && B.jutsuClash.overwhelmedChakraRefund < 1, 'Overwhelmed ult refunds part (not all) of its chakra');
+  }
   // curves
   ok(curve({ type: 'step', base: 1, table: [[10, 2], [20, 3]] }, 15) === 2, 'step curve');
   ok(curve({ type: 'exp', base: 2, growth: 2 }, 3) === 16, 'exp curve');
