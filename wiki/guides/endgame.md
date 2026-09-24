@@ -19,7 +19,7 @@ The Daily challenge opens once you clear {{arc:daily.unlockArc}}.
 - Every day it picks a boss from an arc you've already cleared, and you fight it at your current story level with a **twist**. The enemies are weaker than usual to make up for it, most of all on the twists that take something away from you:
   - **Locked nature:** every enemy fights with the day's nature.
   - **No Ultimates:** your Ultimates are sealed; the enemies still use their jutsu.
-  - **Boss rush:** several bosses back to back, and nobody heals between them.
+  - **Boss gauntlet:** several bosses back to back, and nobody heals between them.
   - **Countered:** every enemy takes the nature that beats your team's main nature.
 - You get {{num:daily.attemptsPerDay}} attempts a day. Your first clear pays {{num:daily.rewards.scrolls}} scrolls, plus Ryo that grows as you go further in the story.
 - A new challenge arrives at midnight, your local time. Everyone at the same point of the story gets the same challenge on the same day.
@@ -28,7 +28,7 @@ The Daily challenge opens once you clear {{arc:daily.unlockArc}}.
 
 ## The Boss Rush
 
-The seven Akatsuki back to back, with no healing between rounds. It opens once you clear {{arc:rush.unlockArc}}, and the [Boss Rush page](wiki:boss-rush) lists the rotation and every round's reward.
+{{num:rush.count}} Akatsuki bosses back to back, with no healing between rounds. It opens once you clear {{arc:rush.unlockArc}}, and the [Boss Rush page](wiki:boss-rush) lists the rotation and every round's reward.
 
 ## Achievements
 

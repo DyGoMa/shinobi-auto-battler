@@ -458,7 +458,7 @@ export const BALANCE = {
     // clears each twist within attemptsPerDay tries at least half the time. 0.3–1.2
     //   lockedNature   every enemy fights with the day's nature
     //   noUlts         Ultimates are sealed (enemies still use their jutsu)
-    //   bossRush       `rounds` bosses back to back, HP and chakra carried over
+    //   bossRush       "Boss gauntlet": `rounds` bosses back to back, HP and chakra carried over
     //   counteredOnly  every enemy takes the nature that beats your team's main one
     twists: [
       { id: 'lockedNature', power: 0.9 },

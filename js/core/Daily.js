@@ -11,7 +11,8 @@ import { isArcCleared, currentNode, buildNodeEnemies, buildTeamUnits, resolveTea
 export const TWIST_TEXT = {
   lockedNature: { icon: '🎯', name: 'Locked nature', text: (d) => `Every enemy fights with ${d.nature} Style today. Bring the nature that beats it.` },
   noUlts: { icon: '🚫', name: 'No Ultimates', text: () => 'Ultimates are sealed: your ninja fight with their normal attacks only. Enemies still use their jutsu.' },
-  bossRush: { icon: '☁️', name: 'Boss rush', text: (d) => `${d.rounds.length} bosses back to back. HP and chakra carry over, and nobody heals.` },
+  // Shown as "Boss gauntlet" so it isn't mistaken for the Akatsuki Boss Rush mode.
+  bossRush: { icon: '⚔️', name: 'Boss gauntlet', text: (d) => `${d.rounds.length} bosses back to back. HP and chakra carry over, and nobody heals.` },
   counteredOnly: { icon: '⬇️', name: 'Countered', text: () => "Every enemy takes the nature that beats your team's main nature. Win anyway." },
 };
 
@@ -137,7 +138,7 @@ function powerUp(spec, p) { if (spec && p !== 1) { spec.maxHp = Math.round(spec.
 /**
  * Everything to build a BattleSim for round `round` of a daily. The player's own team
  * (no story team rules); the boss node's enemies at the daily level; the twist applied.
- * carry = player HP/chakra from the previous round (boss rush).
+ * carry = player HP/chakra from the previous round (Boss gauntlet).
  */
 export function dailyBattleConfig(state, daily, round, C, B = BALANCE, { seed = 1, team = null, carry = null } = {}) {
   const t = team || resolveTeam(state, null, C);

@@ -31,6 +31,9 @@ function append(el, kids) {
 }
 
 export const fmt = (n) => Math.round(n).toLocaleString('en-US');
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+/** 7 -> "seven" ("Seven" with cap); numbers above twelve stay digits. For counts that come from content. */
+export function countWord(n, cap = false) { const w = WORDS[n] ?? fmt(n); return cap ? w.charAt(0).toUpperCase() + w.slice(1) : w; }
 /** "Episode 4" or "Episodes 4–5" / "Episodes 215–222, 243–256". */
 export const episodesLabel = (eps) => `${/[–,-]/.test(String(eps)) ? 'Episodes' : 'Episode'} ${eps}`;
 export const pctStr = (x, d = 0) => `${(x * 100).toFixed(d)}%`;

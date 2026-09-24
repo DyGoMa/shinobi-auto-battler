@@ -41,9 +41,9 @@ export function render(game, ui) {
 
     h('div.card.gap',
       h('h2', 'Audio and visuals'),
-      row('Sound', 'All sound effects.', toggle(!s.muted, (on) => { s.muted = !on; game.audio.setMuted(s.muted); game.commit('settings'); ui.refreshTop(); }, 'Sound')),
+      row('Sound', 'Turns every game sound on or off.', toggle(!s.muted, (on) => { s.muted = !on; game.audio.setMuted(s.muted); game.commit('settings'); ui.refreshTop(); }, 'Sound')),
       row('Music', 'Arrives with the soundtrack update.', toggle(s.music !== false, () => {}, 'Music (coming soon)', { disabled: true }), 'set-music'),
-      row('Sound effects', 'Separate effect volume arrives with the audio update.', toggle(s.sfx !== false, () => {}, 'Sound effects (coming soon)', { disabled: true }), 'set-sfx'),
+      row('Sound effects', 'A separate switch for effects arrives with the audio update.', toggle(s.sfx !== false, () => {}, 'Sound effects (coming soon)', { disabled: true }), 'set-sfx'),
       row('Visual effects', 'Effect detail options arrive with the visual effects update.', toggle(s.vfx !== false, () => {}, 'Visual effects (coming soon)', { disabled: true }), 'set-vfx'),
     ),
 

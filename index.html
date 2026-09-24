@@ -19,13 +19,29 @@
       <button class="icon-btn" id="ach-btn" aria-label="Achievements" title="Achievements">🏆</button>
       <button class="icon-btn" id="mute-btn" aria-label="Toggle sound">🔊</button>
     </header>
-    <main id="screen" aria-live="polite"></main>
+    <main id="screen" aria-live="polite"><div class="screen boot-loading"><div class="spinner" aria-hidden="true"></div><p class="muted center">Loading…</p></div></main>
     <nav id="tabbar" aria-label="Main"></nav>
   </div>
   <div id="battle" class="hidden" aria-label="Battle"></div>
   <div id="modal-root"></div>
   <div id="toast-root"></div>
   <noscript><p style="padding:20px;color:#fff">This game needs JavaScript (ES modules).</p></noscript>
-  <script type="module" src="js/main.js"></script>
+  <script>
+    // The game couldn't start: a game file failed to download (the module script's
+    // error event) or boot() threw (js/main.js). Plain DOM, no HTML from the error.
+    window.showBootError = function (detail) {
+      var el = document.getElementById('screen'); if (!el) return;
+      var make = function (tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
+      var card = make('div', 'card center');
+      card.append(make('h2', '', 'The game couldn’t start'),
+        make('p', '', 'Check your connection and reload the page. Your progress is saved in this browser (and online, if you use cloud save).'));
+      var reload = make('button', 'btn primary', '↻ Reload'); reload.type = 'button'; reload.onclick = function () { location.reload(); };
+      card.append(reload);
+      if (detail) card.append(make('p', 'tiny muted', 'Details: ' + detail));
+      var wrap = make('div', 'screen'); wrap.append(card);
+      el.replaceChildren(wrap);
+    };
+  </script>
+  <script type="module" src="js/main.js" onerror="showBootError('a game file failed to download')"></script>
 </body>
 </html>

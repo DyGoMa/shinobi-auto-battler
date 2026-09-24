@@ -7,7 +7,7 @@ import { tutorialLessons, nextLessonIndex, startTutorial } from '../core/Tutoria
 import { resolveTeam } from '../core/Progression.js';
 import { beatenBy } from '../core/formulas.js';
 import { leaderBuffText } from '../core/Ninja.js';
-import { helpButton } from './chrome.js';
+import { screenHead } from './chrome.js';
 
 const LESSON_TITLE = { team: 'Team building and roles', nature: 'The Nature Wheel', clash: 'Ultimates and Jutsu Clash' };
 export { LESSON_TITLE };
@@ -31,12 +31,8 @@ export function render(game, ui, params) {
   const node = lessons[index];
   const R = B.tutorial.rewards;
 
-  const header = h('div.screen-head',
-    btn('‹ Home', () => ui.go('home'), 'ghost small back-btn'),
-    h('h1', 'Tutorial'),
-    h('div.grow'),
-    done || replay ? null : btn('Skip tutorial', () => ui.skipTutorial(), 'ghost small'),
-    helpButton(ui, 'guide/how-to-play'));
+  const header = screenHead(ui, { title: 'Tutorial', back: { label: 'Home', id: 'home' }, help: 'guide/how-to-play',
+    right: [done || replay ? null : btn('Skip tutorial', () => ui.skipTutorial(), 'ghost small')] });
 
   const steps = h('ol.lesson-steps', ...lessons.map((n, i) => {
     const cls = i < index || done ? 'done' : i === index ? 'current' : 'next';

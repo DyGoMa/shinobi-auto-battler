@@ -13,9 +13,7 @@ export function screenHead(ui, { title, back = null, help = null, right = [] }) 
   return h('div.screen-head',
     back ? btn(`‹ ${back.label}`, () => ui.go(back.id, back.params || {}), 'ghost small back-btn', { 'aria-label': `Back to ${back.label}` }) : null,
     h('h1', title),
-    h('div.grow'),
-    ...right.filter(Boolean),
-    help ? helpButton(ui, help) : null);
+    h('div.head-right', ...right.filter(Boolean), help ? helpButton(ui, help) : null));
 }
 
 /** The ? button: opens the Wiki at `pageId`, remembering where the player came from. */

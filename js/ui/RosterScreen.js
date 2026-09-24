@@ -1,5 +1,5 @@
 // RosterScreen.js — every character (owned or not), details and level-ups.
-import { h, btn, fmt, avatar, natureChips, stars, roleTag, tierTag } from './dom.js';
+import { h, btn, fmt, avatar, natureChips, stars, roleTag, tierTag, pctStr } from './dom.js';
 import { characterStats, powerRating, leaderBuffText } from '../core/Ninja.js';
 import { canLevelUp, levelUp, isCharacterAvailable, levelCostFor } from '../core/Progression.js';
 import { TIERS, TIER_LABEL } from '../core/formulas.js';
@@ -33,11 +33,13 @@ export function render(game, ui) {
   return h('div.screen',
     screenHead(ui, { title: 'Roster', help: 'guide/levelling', right: [h('span.pill', `${ownedCount} / ${C.roster.length} recruited`)] }),
     tipCard(game, 'roster'),
-    h('p.small', 'Level up with Ryo. Duplicate summons add a star (+10% stats each, up to 5★); duplicates past 5★ refund Ryo. Ninja 5+ levels behind your highest level up at a catch-up discount.'),
+    h('p.small', `Level up with Ryo. Duplicate summons add a star (+${pctStr(B.stats.starBonus)} stats each, up to ${B.stats.starCap}★); duplicates past ${B.stats.starCap}★ refund Ryo. Ninja ${B.economy.catchUp.gap}+ levels behind your highest level up at a catch-up discount.`),
     chipset('show', ['all', 'owned', 'missing'], v => ({ all: 'All', owned: 'Owned', missing: 'Missing' })[v]),
     chipset('role', roles),
     chipset('tier', tiers, v => v === 'All' ? 'All tiers' : TIER_LABEL[v]),
-    h('div.char-grid', ...rows.map(d => card(game, ui, d))),
+    rows.length ? h('div.char-grid', ...rows.map(d => card(game, ui, d)))
+      : h('div.card.center', h('p.muted', filter.show === 'missing' && filter.role === 'All' && filter.tier === 'All' ? 'You have every ninja. Well done!' : 'No ninja match these filters.'),
+        btn('Show everyone', () => { filter.show = 'all'; filter.role = 'All'; filter.tier = 'All'; ui.refresh(); }, 'small')),
   );
 }
 

@@ -13,7 +13,7 @@ import { GAME_VERSION } from '../config/version.js';
 /** What the guides' {{fmt:path}} placeholders can read: balance.js, the version, and
  *  arc names (for {{arc:…}}, which shows an arc id from balance.js by name). */
 export function guideSources(B, C = null) {
-  return { balance: B, version: { current: GAME_VERSION }, rush: { unlockArc: C?.bossRush?.unlockArc }, arcNames: C ? Object.fromEntries(C.arcs.map(a => [a.id, a.name])) : {} };
+  return { balance: B, version: { current: GAME_VERSION }, rush: { unlockArc: C?.bossRush?.unlockArc, count: C?.bossRush?.order?.length }, arcNames: C ? Object.fromEntries(C.arcs.map(a => [a.id, a.name])) : {} };
 }
 
 /** Hand-written guides: wiki/guides/<slug>.md (markdown, rendered in game). */

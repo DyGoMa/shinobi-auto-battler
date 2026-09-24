@@ -2,7 +2,7 @@
 // player reaches it; "Got it" stores it in the save (state.tips.seen) so it never
 // repeats. Settings → "Show tips again" turns them back on (and resets them).
 // Every number comes from balance.js so a tip can never go stale.
-import { h, btn, pctStr } from './dom.js';
+import { h, btn, pctStr, countWord } from './dom.js';
 
 export const SCREEN_TIPS = {
   story: {
@@ -27,7 +27,7 @@ export const SCREEN_TIPS = {
   },
   rush: {
     icon: '☁️', title: 'Boss Rush',
-    text: () => 'Seven Akatsuki back to back. HP and chakra carry over and nobody heals between rounds, so bring a healer and save Ultimates for Jutsu Clashes.',
+    text: (g) => `${countWord(g.C.bossRush.order.length, true)} Akatsuki back to back. HP and chakra carry over and nobody heals between rounds, so bring a healer and save Ultimates for Jutsu Clashes.`,
   },
   wiki: {
     icon: '📚', title: 'The Wiki',
@@ -39,7 +39,7 @@ export const SCREEN_TIPS = {
   },
   hard: {
     icon: '💀', title: 'Hard mode',
-    text: (g) => `The same battles with enemies ${g.B.hardMode.levelOffset} levels higher and tougher bosses, for better rewards. It opens for each part once you clear it, and its battles unlock one after another.`,
+    text: (g) => `The same battles with enemies ${g.B.hardMode.levelOffset} levels higher and tougher bosses. Each first clear pays scrolls again, and replays pay more than the story's. It opens for each part once you clear it, and its battles unlock one after another.`,
   },
   daily: {
     icon: '📅', title: 'The Daily challenge',

@@ -190,6 +190,7 @@ export class BattleScreen {
     if (this.ended) return;
     this.paused = force == null ? !this.paused : force;
     this.pauseBtn.textContent = this.paused ? '▶' : '⏸';
+    const pl = this.paused ? 'Resume' : 'Pause'; this.pauseBtn.title = pl; this.pauseBtn.setAttribute('aria-label', pl);
     this.stage.querySelector('.pause-veil')?.remove();
     if (this.paused) {
       const veil = h('div.pause-veil', h('div.card.center', { style: { minWidth: '260px' }, role: 'dialog', 'aria-label': 'Paused' },
@@ -521,7 +522,7 @@ export class BattleScreen {
     ))));
   }
 
-  /** A daily battle ended. Boss rush dailies go round by round, carrying HP and chakra. */
+  /** A daily battle ended. Boss gauntlet dailies go round by round, carrying HP and chakra. */
   _dailyEnd(won) {
     const { game } = this; const { C, B, state } = game;
     recordBattle(state, { won, mode: 'daily', sim: this.sim, matchup: this.matchup }, B);

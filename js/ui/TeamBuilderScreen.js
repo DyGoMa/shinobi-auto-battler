@@ -147,6 +147,7 @@ export function render(game, ui, params) {
     ...warnings.map(w => h('div.warnbox', { style: { marginTop: '8px' } }, '⚠ ' + w)),
     h('div.filters', ...roles.map(r => h('button.chip' + (roleFilter === r ? '.on' : ''), { type: 'button', onclick: () => { roleFilter = r; ui.refresh(); } }, r))),
     h('p.tiny.dim', `Tap a slot, then a ninja. Sorted by power × matchup vs ${daily ? "today's challenge" : 'this node'}. ▲ = effective against these enemies, ▼ = countered.`),
+    list.length ? null : h('div.card.center', h('p.muted', `You don't have a ${roleFilter} yet. Summon to find one, or pick from another role.`), btn('Show all roles', () => { roleFilter = 'All'; ui.refresh(); }, 'small')),
     h('div.char-grid', ...list.map(x => {
       const inTeam = slotIds.includes(x.id);
       const banned = (t.banned || []).includes(x.id);

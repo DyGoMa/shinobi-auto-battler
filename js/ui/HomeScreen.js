@@ -1,6 +1,6 @@
 // HomeScreen.js — landing page: continue the story (or the tutorial), quick
 // stats, shortcuts.
-import { h, btn, fmt, avatar } from './dom.js';
+import { h, btn, fmt, avatar, countWord } from './dom.js';
 import { currentNode, isBossRushUnlocked, isArcCleared, resolveTeam, unitPower } from '../core/Progression.js';
 import { tutorialPending, nextLessonIndex, tutorialLessons } from '../core/Tutorial.js';
 import { LESSON_TITLE } from './TutorialScreen.js';
@@ -55,7 +55,7 @@ export function render(game, ui) {
     h('div.grid.two',
       dailyCard(game, ui),
       hardCard(game, ui),
-      challengeCard('☁️', C.bossRush.name, rush ? (state.bossRush.runs ? `Best: round ${state.bossRush.highestRound || 0}` : 'New! Seven Akatsuki back to back.') : `Unlocks after you clear ${C.arc[C.bossRush.unlockArc].name}.`,
+      challengeCard('☁️', C.bossRush.name, rush ? (state.bossRush.runs ? `Best: round ${state.bossRush.highestRound || 0}` : `New! ${countWord(C.bossRush.order.length, true)} Akatsuki back to back.`) : `Unlocks after you clear ${C.arc[C.bossRush.unlockArc].name}.`,
         rush ? () => ui.go('rush') : () => ui.toast(`Clear ${C.arc[C.bossRush.unlockArc].name} to unlock the Boss Rush.`), !rush, rush && !state.bossRush.runs)),
     h('div.section-title', h('h2', 'Your team')),
     h('div.card.hover', { onclick: () => ui.go('team', { nodeId: node?.id }), role: 'button', tabindex: '0', 'aria-label': 'Edit your team' },
@@ -86,7 +86,7 @@ function dailyCard(game, ui) {
 function hardCard(game, ui) {
   const { C, state } = game;
   const parts = [1, 2].filter(p => isHardUnlocked(state, p, C));
-  if (!parts.length) return challengeCard('💀', 'Hard mode', 'The story again with stronger enemies and better rewards. Opens for each part once you clear it.', () => ui.toast('Clear every battle of Part I to open Hard mode.'), true);
+  if (!parts.length) return challengeCard('💀', 'Hard mode', 'The story again with stronger enemies, and scrolls for every first clear. Opens for each part once you clear it.', () => ui.toast('Clear every battle of Part I to open Hard mode.'), true);
   const p = parts.find(x => currentHardNode(state, x, C)) || parts[parts.length - 1];
   const next = currentHardNode(state, p, C);
   const text = next ? `Next on Hard: ${next.name} (Part ${p === 1 ? 'I' : 'II'}).` : `Every Part ${p === 1 ? 'I' : 'II'} battle cleared on Hard.`;

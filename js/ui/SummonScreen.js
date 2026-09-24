@@ -84,7 +84,7 @@ export function render(game, ui, params) {
     tickets || rare ? h('div.pull-buttons.tickets',
       tickets ? h('button.btn', { type: 'button', onclick: () => doTicket('tickets') }, h('span', `🎟️ Use a summon ticket`), h('span.sub', `${tickets} left`)) : null,
       rare ? h('button.btn.primary', { type: 'button', onclick: () => doTicket('rareTickets') }, h('span', `🎫 Rare+ summon`), h('span.sub', `${rare} left · ${TIER_LABEL[B.achievements.rareTicketMinTier]} or better`)) : null) : null,
-    !canAfford(state, 1, B) ? h('p.small', { style: { marginTop: '10px', color: 'var(--warn)' } }, `You need ${fmt(single - state.currencies.scrolls)} more scrolls for a summon. Clear story battles (first clears pay the most) and Boss Rush rounds to earn more.`) : null,
+    !canAfford(state, 1, B) ? h('p.small', { style: { marginTop: '10px', color: 'var(--warn)' } }, `You need ${fmt(single - state.currencies.scrolls)} more scrolls for a summon. Story first clears pay the most; Hard mode, the Daily challenge and the Boss Rush pay scrolls too, and achievements give free summon tickets.`) : null,
   );
 
   const rateTable = h('table.rates', h('tbody', ...rates.map(r => h('tr',
@@ -120,7 +120,9 @@ function playAnimation(game, ui, results) {
   const stage = h('div.col', { style: { alignItems: 'center', gap: '18px' } });
   const scroll = h('div.scroll-unroll', h('div.scroll-paper', 'SUMMONING JUTSU'), h('div.scroll-rod.l'), h('div.scroll-rod.r'));
   stage.appendChild(scroll);
-  overlay.appendChild(stage);
+  // Particles live in their own fixed layer so they never make the overlay scroll.
+  const fx = h('div.burst-layer');
+  overlay.append(stage, fx);
   document.body.appendChild(overlay);
   game.audio.scroll();
   let skipped = false, finished = false;
@@ -137,7 +139,7 @@ function playAnimation(game, ui, results) {
     const f = h('div.flash' + (tier === 'kage' ? '.big' : ''));
     f.style.background = `radial-gradient(circle at 50% 45%, ${TIER_COLORS[tier]}, transparent 70%)`;
     document.body.appendChild(f); setTimeout(() => f.remove(), 1500);
-    if (tier === 'kage' || tier === 'jonin') burst(overlay, TIER_COLORS[tier], tier === 'kage' ? 60 : 24);
+    if (tier === 'kage' || tier === 'jonin') burst(fx, TIER_COLORS[tier], tier === 'kage' ? 60 : 24);
   };
   const reveal = () => {
     scroll.remove();

@@ -312,7 +312,7 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     const all = defaultState(C, B); for (const n of C.nodes) all.progress.cleared[n.id] = { clears: 1, best: null };
     const rush = Array.from({ length: 60 }, (_, k) => dailyFor(all, C, B, new Date(Date.UTC(2026, 0, 1 + k)).toISOString().slice(0, 10))).find(d => d.twist.id === 'bossRush');
     const rc = dailyBattleConfig(all, rush, 1, C, B, { seed: 1 });
-    ok(rush.rounds.length === B.daily.twists.find(t => t.id === 'bossRush').rounds && rc.objective.type === 'defeatBoss' && rc.enemies.every(e => e.spec.isBoss) && rc.node === rush.rounds[1], 'Boss rush: several bosses, one per round, bosses only');
+    ok(rush.rounds.length === B.daily.twists.find(t => t.id === 'bossRush').rounds && rc.objective.type === 'defeatBoss' && rc.enemies.every(e => e.spec.isBoss) && rc.node === rush.rounds[1], 'Boss gauntlet: several bosses, one per round, bosses only');
   }
   // curves
   ok(curve({ type: 'step', base: 1, table: [[10, 2], [20, 3]] }, 15) === 2, 'step curve');

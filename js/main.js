@@ -29,12 +29,12 @@ async function boot() {
     onCloudNewer: async (remote) => {
       if (!ui) return false;
       const when = (t) => (t ? new Date(t).toLocaleString() : 'unknown');
-      const r = remote.data || {};
-      const cleared = Object.keys(r.progress?.cleared || {}).length;
+      const progress = (s) => `${Object.keys(s?.progress?.cleared || {}).length} battles cleared, ${Object.keys(s?.roster || {}).length} ninja`;
       return ui.confirm('Cloud save is newer — load it?', h('div',
         h('p', 'A newer save was found in the cloud for this account.'),
-        h('dl.kv', h('dt', 'Cloud save'), h('dd', when(remote.updatedAt)), h('dt', 'This device'), h('dd', when(save.state?.updatedAt)),
-          h('dt', 'Cloud progress'), h('dd', `${cleared} battles cleared, ${Object.keys(r.roster || {}).length} ninja`))),
+        h('dl.kv', h('dt', 'Cloud save'), h('dd', `${progress(remote.data)} · ${when(remote.updatedAt)}`),
+          h('dt', 'This device'), h('dd', `${progress(save.state)} · ${when(save.state?.updatedAt)}`)),
+        h('p.small.muted', 'The save you don\'t pick is replaced by the one you do.')),
       { okText: 'Load cloud save', cancelText: 'Keep this device\'s save' });
     },
   });
@@ -78,6 +78,11 @@ async function boot() {
     if (cloud.ready && !cloud.isAnonymous && !game.state.account.googleLinked) { game.state.account.googleLinked = true; game.commit('account'); }
     if (ui.current === 'settings' && !ui.battle) ui.refresh();
   }).catch((e) => console.warn('[cloud]', e));
+  // Couldn't reach cloud save (offline at start, say): try again when the connection comes back.
+  window.addEventListener('online', () => {
+    if (save.cloudState().kind !== 'error') return;
+    save.initCloud().then(() => { if (ui.current === 'settings' && !ui.battle) ui.refresh(); }).catch((e) => console.warn('[cloud]', e));
+  });
 
   window.__game = game; // handy for debugging in the console
 }
@@ -87,6 +92,5 @@ window.addEventListener('unhandledrejection', (e) => console.error('[unhandled p
 
 boot().catch((e) => {
   console.error('[boot] failed', e);
-  const el = document.getElementById('screen');
-  if (el) el.innerHTML = `<div class="screen"><div class="card"><h2>Could not start the game</h2><p>${String(e && e.message || e)}</p><p class="small">Try reloading. If it keeps happening, reset your save from the browser's site settings.</p></div></div>`;
+  window.showBootError?.(String(e && e.message || e));   // index.html
 });

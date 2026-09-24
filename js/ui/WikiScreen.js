@@ -1,7 +1,7 @@
 // WikiScreen.js — the in-game Wiki: search, hand-written guides (wiki/guides/*.md,
 // rendered from markdown) and reference pages generated from the same content and
 // balance data the game loads. Page ids: see js/wiki/WikiData.js.
-import { h, btn, fmt, avatar, natureChip, natureChips, stars, roleTag, tierTag, describeMechanic, objectiveText, episodesLabel } from './dom.js';
+import { h, btn, fmt, avatar, natureChip, natureChips, stars, roleTag, tierTag, describeMechanic, objectiveText, episodesLabel, countWord } from './dom.js';
 import { enemyToken } from './StoryMapScreen.js';
 import { tipCard } from './tips.js';
 import { helpButton } from './chrome.js';
@@ -552,7 +552,7 @@ function bossRushPage(game, go) {
   const { C, B } = game;
   const R = C.bossRush;
   return h('div',
-    h('p', `The seven Akatsuki back to back. HP and chakra carry over between rounds and nobody heals. After round ${R.order.length} the rotation loops, and every loop multiplies the bosses' stats by ×${B.bossRush.loopMult}.`),
+    h('p', `The ${countWord(R.order.length)} Akatsuki back to back. HP and chakra carry over between rounds and nobody heals. After round ${R.order.length} the rotation loops, and every loop multiplies the bosses' stats by ×${B.bossRush.loopMult}.`),
     h('p.small', 'Unlocks after you clear ', link(go, `arc/${R.unlockArc}`, C.arc[R.unlockArc].name), '.'),
     h('div.wlist', ...R.order.map((id, i) => {
       const d = C.enemy[id]; const r = bossRushRound(i + 1, C, B); const rw = bossRushRewards(i + 1, B);

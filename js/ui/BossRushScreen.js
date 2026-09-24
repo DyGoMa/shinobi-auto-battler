@@ -1,5 +1,5 @@
 // BossRushScreen.js — Akatsuki back-to-back bosses, no healing between rounds.
-import { h, btn, fmt, avatar, natureChip, describeMechanic } from './dom.js';
+import { h, btn, fmt, avatar, natureChip, describeMechanic, countWord } from './dom.js';
 import { isBossRushUnlocked, resolveTeam, bossRushRound } from '../core/Progression.js';
 import { bossRushRewards } from '../core/formulas.js';
 import { enemyToken } from './StoryMapScreen.js';
@@ -16,9 +16,9 @@ export function render(game, ui) {
   const rating = teamMatchupRating(team.members.map(id => C.char[id]), natures, B);
 
   return h('div.screen',
-    screenHead(ui, { title: R.name, back: { label: 'Home', id: 'home' }, help: 'boss-rush', right: [unlocked ? h('span.pill.accent', `Best: round ${state.bossRush.highestRound || 0}`) : h('span.pill', '🔒 Locked')] }),
+    screenHead(ui, { title: R.name, back: { label: 'Home', id: 'home' }, help: 'boss-rush', right: [unlocked ? h('span.pill.accent', state.bossRush.highestRound ? `Best: round ${state.bossRush.highestRound}` : 'No runs yet') : h('span.pill', '🔒 Locked')] }),
     unlocked ? tipCard(game, 'rush') : null,
-    h('p', 'Seven Akatsuki members back to back. Your team keeps its HP and chakra between rounds — nobody heals. After Pain the rotation loops and every boss gets stronger. How far can you go?'),
+    h('p', `${countWord(R.order.length, true)} Akatsuki members back to back. Your team keeps its HP and chakra between rounds — nobody heals. After ${C.enemy[R.order[R.order.length - 1]].short || C.enemy[R.order[R.order.length - 1]].name} the rotation loops and every boss gets stronger. How far can you go?`),
     !unlocked ? h('div.warnbox', `Unlocks after clearing “${C.arc[R.unlockArc].name}”.`) : null,
     h('div.section-title', h('h2', 'Rotation')),
     h('div.grid.two', ...R.order.map((id, i) => {
