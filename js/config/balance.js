@@ -386,7 +386,7 @@ export const BALANCE = {
     // First clears pay the story's first-clear scrolls again but little Ryo: 32 extra
     // first clears are a lot of income, and `CAMPAIGN_HARD=1 npm run campaign` (clear
     // Part I on Hard before Part II) must not start Part II far ahead of the curve
-    // (BALANCE.md §7: +3.5 levels, down from +10.8 at 1.5/0.5). Replays pay a bit more
+    // (BALANCE.md §4: +3.5 levels, down from +10.8 at 1.5/0.5). Replays pay a bit more
     // than the same battle in the story. 0.1–3 each.
     rewards: {
       firstClear: { scrolls: 1.0, ryo: 0.15 },

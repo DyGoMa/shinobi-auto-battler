@@ -1,4 +1,4 @@
-# CONTENT_GUIDE.md — adding characters, enemies, bosses, arcs, nodes and banners
+# CONTENT_GUIDE.md — adding characters, enemies, bosses, arcs, nodes, banners, tutorial lessons, achievements and Wiki guides
 
 Adding content **never needs engine changes**: every entry is plain data in
 `js/content/`. After any change:
@@ -24,6 +24,9 @@ Two more things happen outside `js/content/`:
 | `js/content/arcs/part1.js` | Part I arcs and nodes |
 | `js/content/arcs/shippuden.js` | Part II (Shippuden) arcs and nodes |
 | `js/content/banners.js` | summon banners |
+| `js/content/tutorial.js` | the Academy tutorial's three lessons (`TUTORIAL_ARC`) |
+| `js/content/achievements.js` | achievements and their categories (numbers in `balance.achievements`) |
+| `wiki/guides/*.md` | the Wiki's hand-written guides (listed in `GUIDES`, `js/wiki/WikiData.js`) |
 | `js/content/index.js` | merges everything, computes global node order, validates |
 
 Shared vocabulary:
@@ -237,7 +240,8 @@ Round strength comes from `balance.bossRush` (`levelByRound`, `statMultByRound`,
 2. For a new file, import it in `js/content/index.js` and add it to `ARC_FILES`.
 3. Add characters and forms to `roster.js`, enemies and bosses to `enemies.js`, and banners to `banners.js`.
 4. Add every new name to `tools/naming-sources.mjs`, then run `node tools/naming.mjs --write`.
-5. Run `npm run validate`, then `npm run autotune -- --write` for the new bosses, then `npm run sim` and `npm run campaign`. Both sims cover every part with content (set `SIM_PARTS=1,2` to pick parts).
+5. Run `npm run validate`, then `npm run autotune -- --write` and `npm run autotune -- --mode=hard --write` for the new bosses (Story and Hard), then `npm run sim` and `npm run campaign`. Both sims cover every part with content (set `SIM_PARTS=1,2` to pick parts).
+   * New arcs join Hard mode (once their part is cleared) and the Daily challenge's boss pool (their final battle) automatically. A new part also needs `targets.hardMode` to cover it and, if it should count, a `partClear` / `hardPartClear` achievement (§11).
 6. Keep the last node's enemy level under `stats.levelCap`: with `levelByNode` growth 0.95, the cap is reached around node 105 (Part II ends at node 99, level 94).
 
 ## 9. The Wiki: generated pages and guides
@@ -256,7 +260,57 @@ The in-game Wiki builds its reference pages (characters, jutsu, enemies, arcs, b
 | `{{plus:stats.starBonus}}` | +10% |
 | `{{tier:gacha.pityTier}}` | Kage |
 | `{{cycle:natureWheel.cycle}}` | Fire › Wind › Lightning › Earth › Water › Fire |
+| `{{arc:daily.unlockArc}}` | Land of Waves (an arc id in config, shown by name) |
+| `{{num:rush.count}}` | 7 (the Boss Rush rotation's length; `rush.unlockArc` works with `arc:`) |
+| `{{cfg:version.current}}` | 0.9.0 (the game version) |
 
 * When a guide starts mentioning another config value, add it to `GUARDED` in `tools/wiki-check.mjs` so the check keeps it honest.
 
 > **Standing rule:** any session that changes a system must update the matching guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing.
+
+UI copy follows the same rule as guides: player-facing numbers that live in `balance.js` or come from content (a star bonus, a pity count, "seven Akatsuki") are read from there, never typed into the screen code. QA.md's audit flags `undefined`, `NaN` and unfilled placeholders on screen.
+
+## 10. Tutorial lessons (`tutorial.js`)
+
+The Academy is one arc, `TUTORIAL_ARC`, with **exactly three** lessons in this order (`LESSON_TYPES`; `npm run validate` enforces it): `team`, `nature`, `clash`. Lessons use the story's node schema plus:
+
+```js
+{
+  id: 'n_tut_2', lesson: 'nature', name: 'Transformation Jutsu', episodes: '1',   // a dub episode title
+  learn: 'The Nature Wheel: bring the ninja whose nature beats the enemy.',        // "You'll learn: …"
+  blurb: 'Mizuki uses the Transformation Jutsu to pose as Iruka…',
+  enemies: [{ id: 'e_mizuki' }],
+  objective: { type: 'defeatAll' },
+  team: { forced: ['naruto', 'sasuke', 'sakura'], leader: 'kakashi' },
+  startChakra: 'clashLessonStartChakra',   // optional, a key into balance.tutorial
+}
+```
+
+* The lesson's coach tips (Team screen and battle) key off `lesson`. The `nature` lesson's foe needs a nature the forced team counters; the `clash` lesson's foe needs a clashable jutsu (`e_mizuki_clash`).
+* Lessons are **not story nodes**: no global index, every enemy at `balance.tutorial.enemyLevel`, never in the sims, autotune or economy curves. `npm run test:core` checks each lesson is won 60 times out of 60 by the starter team without Ultimates. Keep them that easy.
+* The reward (`balance.tutorial.rewards`) is paid once, by finishing or by skipping.
+
+## 11. Achievements (`achievements.js` + `balance.achievements.list`)
+
+Content holds the words, `balance.js` holds every number:
+
+```js
+// js/content/achievements.js
+{ id: 'ach_own_25', category: 'collection', name: 'Village Roster', type: 'ownCount',
+  description: 'Recruit {target} ninja.' },
+// js/config/balance.js → achievements.list
+ach_own_25: { target: 25, reward: { tickets: 3 } },
+```
+
+* `type` is one of `ACHIEVEMENT_TYPES` (listed with what each measures at the top of `achievements.js`). `stat` achievements read a combat record (`ACHIEVEMENT_STATS`: flawless wins, countered wins, Overpowers, under-levelled boss wins, days played), recorded by `recordBattle` in `js/core/Achievements.js`.
+* `{target}` in the description is replaced by the balance.js target.
+* Rewards: `ryo`, `scrolls`, `tickets` (a free summon) and `rareTickets` (a summon of `achievements.rareTicketMinTier` or better). Keep them small next to the story's income, then re-run `npm run campaign`, which claims every achievement as it unlocks (BALANCE.md §4).
+* **No luck-only achievements:** anything a player can't reach by playing (a Kage from one summon, say) doesn't belong.
+* `rewardCharacter` gives a ninja on claim. In `roster.js` that ninja needs `notPullable: true` and `unlock: { achievement: '<id>' }`, and no banner may feature it (`npm run validate` checks all three; `npm run test:core` checks that every non-summonable ninja is some achievement's reward). Add its name to `tools/naming-sources.mjs` like any other.
+* New achievements unlock retroactively on load, so an old save that already qualifies gets them. Every achievement gets a Wiki page automatically.
+
+## 12. Hard mode and the Daily challenge
+
+Neither has content of its own; both reuse the story's battles.
+* **Hard mode** plays every node of a cleared part with `balance.hardMode` applied. After adding bosses, run `npm run autotune -- --mode=hard --write` (it writes `hardMode.nodeMult`), then `npm run sim`: every arc boss has a "Hard boss" row.
+* **The Daily challenge** picks from the final battle of every cleared arc. Twists live in `balance.daily.twists` (id, `power`, and `rounds` for the Boss gauntlet). A new twist **id** needs code: its text in `TWIST_TEXT` and its rule in `dailyBattleConfig` (`js/core/Daily.js`). Re-check with `npm run sim` (Info, "Daily challenge").

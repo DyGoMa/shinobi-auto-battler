@@ -14,7 +14,7 @@
 // Runs CAMPAIGN_PLAYERS (default 10) seeds; prints the first in detail.
 // CAMPAIGN_HARD=1: after each part (but the last), the bot plays that part on Hard
 // mode until a Hard battle beats it 3 times, then moves on: Hard mode's economy check
-// (compare the end-of-part levels and Ryo with a normal run; BALANCE.md §7).
+// (compare the end-of-part levels and Ryo with a normal run; BALANCE.md §4).
 import { C, B, runNode, teamForNode, median, seedFor, SIM_PARTS, PART_LABEL, DEFAULT_BOT } from './common.mjs';
 import { defaultState } from '../js/core/SaveManager.js';
 import { pull, canAfford, ticketPull } from '../js/core/GachaSystem.js';

@@ -68,6 +68,12 @@ across the whole campaign), an arc number, or a Boss Rush round.
 | A shorter "survive" in the Survival Test | `objectives.surviveTimeMult` | `1.0` → `0.8` | Every "survive X s" objective drops to 80% of X. |
 | A tougher Boss Rush | `bossRush.statMultByRound.base` | `0.39` → `0.45` | Every round's boss is ~15% stronger. |
 | Loops ramp harder | `bossRush.loopMult` | `1.4` → `1.6` | After Pain, each loop is +60%. |
+| **Hard mode** bosses tougher or softer | `hardMode.bossMult` | `1.5` → `1.3` | Every boss on Hard gets less extra HP and ATK. Then run `npm run autotune -- --mode=hard --write`, which re-tunes each Hard boss (`hardMode.nodeMult`). |
+| Hard enemies further above the story | `hardMode.levelOffset` | `12` → `15` | Every Hard battle is 3 levels higher. Re-run the Hard autotune. |
+| Hard mode pays more | `hardMode.rewards.firstClear` / `.replay` / `.arcClear` | first clear `ryo: 0.15` → `0.25` | Multipliers on the story's rewards for the same battle. Check with `CAMPAIGN_HARD=1 npm run campaign` that Part II doesn't start far ahead of the curve (§4). |
+| A Daily twist is too hard or too easy | `daily.twists[].power` | No Ultimates `0.5` → `0.45` | Enemies on that twist get less HP and ATK. `npm run sim` prints each twist's chance to be cleared (Info, "Daily challenge"). |
+| More Daily attempts | `daily.attemptsPerDay` | `3` → `5` | More tries per day; the reward is still paid once. |
+| Achievements pay more | `achievements.list.<id>.reward` | `ach_part1: { rareTickets: 1 }` → `2` | Re-run `npm run campaign`: it claims achievements as they unlock (§4). |
 
 ### Worked example: "make Part 1 20% harder"
 1. Find `partMult: { 1: 1.0, 2: 1.0, 3: 1.0 },` in `enemyScaling`.
@@ -100,15 +106,23 @@ The campaign report lists "Most common stuck points".
 | Each arc boss (Part I and Part II), "on-curve" team | win 50–70% (`bossWinRange`) |
 | Boss Rush, Jonin-heavy team at level 32 | median round 4–5 (`bossRushRoundRange`) |
 | Nature check: same team re-typed to counter vs be countered | gap ≥ 25% (`natureCheckMinGap`) |
+| Counter-gap scenario: the same team re-typed neutral (the baseline) | win 55–65% (`counterGapNeutralRange`) |
 | Counter-gap scenario: 3 of 4 units countered | win 25–30% (`counterGap3of4Range`) |
 | Counter-gap scenario: all 4 units countered | win 10–15% (`counterGapFullyRange`) |
 | Boss fight length | median 30–60 s (`fightLengthRange`) |
+| Each arc boss **on Hard**, Hard on-curve team | win 50–70% (`bossWinRange`) |
+| Hard nature check and Hard counter-gap scenario (neutral, 3 of 4, fully) | the same targets as the story's (§6) |
+| Daily challenge, every twist (info only, not PASS/FAIL) | cleared within `daily.attemptsPerDay` tries at least `dailyMinClearChance` (50%) of the time; ⚠ flags a twist that isn't |
 
 **"On-curve" team** (`targets.onCurve`):
 * Level = that node's enemy level.
 * Stars: Genin 3★, Chunin 2★, Jonin 1★, Kage 1★.
 * The strongest lineup of one Jonin, two Chunin and one Genin available at that point in the story, chosen **without** looking at natures, so bosses are tuned for a typical team, not a perfect counter.
 * A node's forced ninja always play. If one is outside that tier mix (a forced Kage such as Jiraiya), they take the Genin slot.
+
+**Hard on-curve team** (`targets.hardMode.onCurve`): a player who cleared the part and brings their collection. Level = the Hard enemy level; stars Genin 4★, Chunin 3★, Jonin 2★, Kage 2★; the strongest Kage, two Jonin and a Chunin among everyone unlocked by the end of that part.
+
+**Daily check** (`npm run sim`, Info): one player per arc from the Land of Waves on, with everything before that arc cleared and every ninja available by then at their story level (on-curve stars and tier mix). For each twist, two dates that roll it give the fights, and the team is auto-picked for the day's fight the way the Team screen's ✨ Auto does it. The clear chance is 1 − (1 − win rate)^`attemptsPerDay`.
 
 `npm run campaign` simulates free-to-play players (10 by default). Each one:
 * Pulls whenever they can afford to.
@@ -123,7 +137,20 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
 * Economy values were tuned by hand until 30 simulated free-to-play players all cleared Part 1 (they finish around team level 34–39 vs enemy level 30).
 * Session 3 capped the late Part II Ryo curves (`cap` on `nodeFirstClear.ryo` 8,500, `nodeReplay.ryo` 10,000, `arcClearBonus.ryo` 9,000). Part I and early Part II rewards are unchanged. Campaign sim, 10 players: end of Part I 35.5 / 11,255 Ryo (unchanged); end of Part II **99.0 → 95.5** vs enemy level 94, median Ryo **32,326 → 24,122** (the old range reached 71,697 for players stuck at the level cap). The end-of-part lines at the bottom of `npm run campaign` print these numbers.
 * Session 3b re-tuned every `nodeMult` for the clash-aware bot (§6) and re-ran the campaign sim: end of Part II **95.5 → 96.3**, median Ryo 24,122 → 23,580 (10 players, no node above 1/10 stuck).
-* If you change a global value (`statMult`, `bossMult`, `ult`, `chakra`, `natureWheel`, `jutsuClash`), re-run `npm run autotune -- --write`, then `npm run sim` and `npm run campaign`.
+* **Session 4, achievements and the tutorial.** `npm run campaign` now plays the Academy tutorial first (its three lessons never count toward the difficulty stats) and claims achievements as they unlock (Ryo on levels, tickets on summons). 10 players: end of Part I **37.0** vs enemy 30, median Ryo 11,143; end of Part II **98.0** vs 94, median Ryo 23,855. With `CAMPAIGN_ACHIEVEMENTS=0`: 36.5 / 11,137 and 96.0 / 23,103. Achievements are worth about 0.5 level by the end of Part I and 2 levels by the end of Part II. `CAMPAIGN_TUTORIAL=0` (no tutorial) had one player of ten needing 5 replays at `n_birth_4` (a different pull history; the default run passes 10/10). Watch that boss if it recurs.
+* **Session 4, Hard mode.** `hardMode.bossMult` 1.5 (at 1.4 the un-tuned Hard bosses spread from 0% to 100%), then `npm run autotune -- --mode=hard --write` set `hardMode.nodeMult` for every Hard boss (arc finals aim for 60%, other boss battles for 78%, as in the story). Every Hard arc boss lands at 57–65% in `npm run sim`. The one outlier is `n_summit_3`, at the 0.33 floor (72% vs its 78% goal).
+* **Session 4, Hard rewards** (`CAMPAIGN_HARD=1 npm run campaign`: each player clears as much of Part I on Hard as they can before starting Part II; the bot clears all 32 Hard battles first try, since it is level 37 and Part I Hard enemies are level 13–42):
+
+  | `hardMode.rewards` first clear / arc bonus (scrolls, Ryo) | Hard Part I pays | Team Lv at Kazekage Rescue (no Hard: 39.5) | Twelve Guardian (48.0) | Pain's Assault (72.3) | End of Part II (98.0) |
+  |---|---|---|---|---|---|
+  | 1.5, 0.5 / 1.5, 0.5 (first draft) | 16,181 scrolls, 54,180 Ryo | 50.3 (+10.8) | 57.0 | 77.5 | 100 (cap), Ryo 66,576 |
+  | 1.0, 0.25 / 1.0, 0.25 | 10,782 scrolls, 27,098 Ryo | 44.5 (+5.0) | 50.3 | 74.3 | 100 |
+  | 0.75, 0.15 / 0.75, 0.15 | 8,092 scrolls, 16,260 Ryo | 42.8 (+3.3) | 48.5 | 73.3 | 100 |
+  | **1.0, 0.15 / 0.5, 0.15 (final)** | **9,234 scrolls, 16,260 Ryo** | **43.0 (+3.5)** | **48.8** | **73.8** | **100** |
+
+  Finishing Part I on Hard first now starts Part II about 3.5 levels ahead, and that lead is below 2 levels by the Tenchi Bridge. A first clear on Hard pays the story's first-clear scrolls again but far less Ryo than a story replay of the same battle, so Hard is the place for scrolls, not for farming levels. Replays (1.5× scrolls, 1.25× Ryo of a story replay) stay a bit better than the same battle in the story; the story's latest battles still pay more Ryo per replay after early Part II.
+* **Session 4, the Daily challenge.** The first draft set each twist's difficulty with an enemy level offset (0 / −4 / −4 / −6). The sim's Daily check found No Ultimates and Boss gauntlet unclearable (median clear chance 0%, 23/23 and 22/23 players under 50%): N levels is a big gap at level 15 and a small one at level 70. Twists now multiply enemy HP and ATK (`daily.twists[].power`, 0.9 / 0.5 / 0.45 / 0.65), chosen as the strongest values where every sampled player clears every twist within 3 tries at least half the time (worst sample 66%). Win rates are steep, so most days are comfortable and the hardest (an old boss whose nature counters your roster) are real fights.
+* If you change a global value (`statMult`, `bossMult`, `ult`, `chakra`, `natureWheel`, `jutsuClash`), re-run `npm run autotune -- --write` and `npm run autotune -- --mode=hard --write`, then `npm run sim` and `npm run campaign`.
 
 ## 5. Safety rails
 * `npm run validate` fails if the gacha rates don't add up to 1, if any curve produces a non-number, or if enemy levels exceed `stats.levelCap` before node 90.
@@ -153,6 +180,11 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
 | 1.12 / 0.95 | 0.70 | ~98% | 27% | 7% |
 | **1.12 / 0.95 (final)** | **0.85 (final)** | **~98%** | **26%** ✅ | **14%** ✅ |
 | 1.11 / 0.96 | 0.85 | ~98% | 28% ✅ | 16% (over) |
+| **Hard mode:** 1.12 / 0.95, the story scenario's team (same members and Leader) with Hard stars, Hard level +9 | 0.85 | **~98%** | **26%** ✅ | **14%** ✅ |
+| Hard mode: 1.12 / 0.95, the Hard on-curve team (Tsunade leading) at its own ~60% level | 0.85 | 100% | 7% | 3% |
+| Story: 1.12 / 0.95, that same Tsunade-led team at its own ~60% level | 0.85 | 100% | 7% | 2% |
+
+**The Hard rows (Session 4).** `npm run sim` runs the counter-gap fight on Hard (`targets.hardMode.counterGapNode`, `n_waves_5`) with the story scenario's own team starred up like a player who cleared the part (`targets.hardMode.onCurve.stars`), `targets.hardMode.counterGapLevelOffset` (**+9**) levels above the Hard enemy level, where it wins **63%** neutral (story 60%). All three bands pass. The last two rows show why the Hard scenario keeps the story's team: **the counter-gap depends on the team, not the mode.** A Tsunade-led team (HP Leader buff, a healer) fights long, steady battles (71–74 s against 47 s). Its countered stat deficit is the same as the story team's (it needs ×1.09 stats to get back to 60% with 3 of 4 countered, ×1.12 fully countered), but a ±5% stat change swings its fights from 20% to 94% instead of 49% to 77%, so the same deficit costs far more, in the story as much as on Hard. The Hard boss multiplier isn't the cause (at `bossMult` 1.0 that team still gets 7% / 2%). Long fights generally steepen the curve: stretching the story fight to 71 s (both sides' HP ×1.6) gives 9% / 3%.
 
 **Why the counter team's win rate barely moved:** the search asked to compare counter-team rates near 70% / 75% / 80%, but at this scenario's neutral baseline (~60%) even the flattest wheel tried (1.02–1.10) still won ~95–98% with the +12–30% nature bonus stacked on top of an already-winnable fight — there's no wheel setting in the useful range that both meaningfully separates counter from neutral *and* drops counter below ~95%. The chosen wheel is already close to the flattest setting that still lands the 3-of-4 and fully-countered bands, so **~98%** is what "a clear majority" looks like at this node. The stop-condition in the brief (report the closest result if the bands can't be hit with counter ≥ 65%) never triggered — the picked setting reaches both bands with counter far above that floor.
 * Autotune was re-run after the wheel/refund change (every boss's `nodeMult`, since the flatter wheel and the clash-aware default bot both shift win rates); see §4.

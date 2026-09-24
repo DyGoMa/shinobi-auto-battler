@@ -153,6 +153,7 @@ Also noted (not changed): the Part I Boss Rush Pain (`e_br_pain`) keeps "all fiv
 | Academy | Verified (Session 4) | Article title with no separate English TV field; the dub says "the Academy". Used in the tutorial arc label "Tutorial: The Academy" |
 | Scroll of Sealing | Verified (Session 4) | English TV name of the Scroll of Seals (episode 1); used in the tutorial blurb |
 | Achievement titles | Game terms (Session 4) | "Growing Squad", "Clash Master" and the rest are plain descriptive labels, not canon names; their descriptions use dub names only |
+| Hard mode, Daily challenge; the Daily twists Locked nature, No Ultimates, Boss gauntlet, Countered | Game terms (Session 4) | Mode and twist labels invented for this game. "Boss gauntlet" is deliberately not called a boss rush, so it isn't mistaken for the Akatsuki Boss Rush |
 
 ## All names used in the game
 
