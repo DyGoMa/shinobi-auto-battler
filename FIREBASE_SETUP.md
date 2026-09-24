@@ -20,6 +20,12 @@ You need a Google account and about 10 minutes. The game side is already built. 
 5. ✅ **You should see:** "Your new project is ready". Click **Continue**, and you land on the project's **Project Overview** page.
    * The bottom-left corner shows **Spark** (no-cost). Leave it that way.
 
+> **💡 Tip: "You've reached your project limit"?** Google Cloud limits how many projects an account can have, and projects you deleted still count for 30 days. You can reuse one instead:
+> 1. Open **https://console.cloud.google.com/cloud-resource-manager** (Google Cloud console → **IAM & Admin → Manage resources**).
+> 2. Click **Resources pending deletion** at the bottom, tick a project you no longer need, and click **Restore**.
+> 3. Back in **https://console.firebase.google.com**, click **Create a project**, then the **Add Firebase to Google Cloud project** link under the name field (older consoles: pick the project from the project-name drop-down).
+> 4. Choose the restored project, click **Continue** through the steps (Analytics off), and carry on from step 5 above.
+
 ### 2. Register a web app and copy its config
 1. On **Project Overview**, click the **web icon `</>`** under "Get started by adding Firebase to your app". If you don't see it, click **+ Add app**, then **Web**.
 2. App nickname: `Shinobi web`. **Leave "Also set up Firebase Hosting" unticked** (the game is hosted on GitHub Pages). Click **Register app**.
@@ -30,9 +36,11 @@ You need a Google account and about 10 minutes. The game side is already built. 
 ### 3. Turn on Firestore (the database)
 1. Direct link: **https://console.firebase.google.com/project/_/firestore**. Pick your project if asked. Or in the left menu: **Build → Firestore Database**.
 2. Click **Create database**.
-3. Choose a **location** close to you (for example `nam5 (United States)` or `eur3 (Europe)`). This can't be changed later. Click **Next**.
-4. Choose **Start in production mode**. Click **Create**.
-5. ✅ **You should see:** the Firestore **Data** tab with an empty database ("Start collection").
+3. If the console asks for an **edition**, choose **Standard edition**. Click **Next**.
+4. If it asks for a **Database ID**, leave it as **`(default)`**. Don't type a name: the game talks to the default database, and a named one would stay empty. Click **Next**.
+5. Choose a **location** close to you (for example `nam5 (United States)` or `eur3 (Europe)`). This can't be changed later. Click **Next**.
+6. Choose **Start in production mode**. Click **Create**.
+7. ✅ **You should see:** the Firestore **Data** tab with an empty database ("Start collection"), and **(default)** as the database name at the top.
 
 ### 4. Paste the security rules
 1. Still in **Firestore Database**, open the **Rules** tab.
@@ -59,6 +67,8 @@ You need a Google account and about 10 minutes. The game side is already built. 
 2. On the **Sign-in method** tab, click **Anonymous**, switch **Enable** on, and click **Save**.
 3. Click **Add new provider → Google**. Switch **Enable** on, choose your email as the **Project support email**, and click **Save**.
 4. ✅ **You should see:** both **Anonymous** and **Google** listed with status **Enabled**.
+
+> **⚠️ Leave anonymous account Auto clean-up OFF.** Some projects show an **Auto clean-up** option for anonymous accounts (Authentication → **Settings**). If you see it, make sure it stays **off**. Every player starts as an anonymous account, and their save is stored under that account's id. Clean-up deletes old anonymous accounts, so those players would lose their cloud save for good (only Google-linked players would keep theirs).
 
 ### 6. Allow your GitHub Pages site to sign in
 1. In **Authentication**, open the **Settings** tab, then **Authorized domains**.
@@ -113,6 +123,9 @@ A Firebase **web** API key isn't a password. It only tells Google *which project
 | `permission-denied` / `Missing or insufficient permissions` | Step 4: publish the rules exactly as shown. |
 | Google popup closes immediately | Allow pop-ups for the site, then try again. |
 | Still "not configured" | Step 7: every `PASTE_…` placeholder must be replaced, and the page reloaded after GitHub Pages updates. |
+| Saves write but nothing appears under **Firestore → Data** | Step 3: the database must be the one named **(default)**. Delete a database created with a custom Database ID and create it again with `(default)`. |
+| "You've reached your project limit" when creating the project | Step 1 tip: restore a pending-deletion project and use **Add Firebase to Google Cloud project**. |
+| A guest player's cloud save disappeared after a few weeks | Step 5: turn anonymous account **Auto clean-up** off. |
 
 **Free-tier limits (Spark):**
 * Firestore: 50,000 reads and 20,000 writes per day.
