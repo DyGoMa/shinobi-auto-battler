@@ -1,0 +1,19 @@
+{
+  "name": "shinobi-auto-battler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Naruto-universe 2D auto-battler web game (fan project). No bundler: plain ES modules served from the repo root; package.json only runs Node tools.",
+  "type": "module",
+  "scripts": {
+    "validate": "node tools/validate.mjs",
+    "sim": "node tools/sim.mjs",
+    "campaign": "node tools/campaign-sim.mjs",
+    "check": "node tools/check-syntax.mjs",
+    "test": "node tools/validate.mjs && node tools/check-syntax.mjs && node tools/sim.mjs && node tools/campaign-sim.mjs",
+    "serve": "node tools/serve.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
