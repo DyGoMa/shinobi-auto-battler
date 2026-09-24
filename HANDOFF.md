@@ -1,52 +1,37 @@
-# HANDOFF.md — Session 3 → Session 4 (balance and audit pass)
+# HANDOFF.md — Session 3b → Session 4 (sim/game bot mismatch and counter-gap fix)
 
-Session 3 was a balance and audit pass on the finished Part I + Shippuden game. Every check passes: `npm test` runs validate, syntax, **41 core tests**, **29/29 battle scenarios**, and **10/10 free-to-play players** clearing Parts I–II with no node above 1 replay.
+Session 3b was a short, focused balance session: fix the sim-vs-game bot
+mismatch Session 3 left open, and properly resolve the nature-counter gap
+(Session 3 changed the refund but never reached the target bands). No new
+content, no UI. Every check passes: `npm test` runs validate, syntax, **48
+core tests**, **31/31 battle scenarios**, and **10/10 free-to-play players**
+clearing Parts I–II with no node above 1 replay.
 
 ## What changed
 
-| Step | Commit | Summary |
-|---|---|---|
-| 1. Counter gap | `16abb18` | `jutsuClash.overwhelmedChakraRefund` **0.5**: an Overwhelmed ult is still cancelled (no damage) and the enemy jutsu still lands at ×0.55, but 50 chakra comes back. In-game 🤖 Auto-ult now uses `botUlts('smart')` (clash-aware); the sim keeps `'asap'` for boss targets. `npm run sim` prints the 3-of-4 countered case. Autotune re-run (9 bosses moved 0.01–0.06). **The bands were not reached** (see below). |
-| 2. Late Part II economy | `a291299` | Caps on `nodeFirstClear.ryo` (8,500, from node 73), `nodeReplay.ryo` (10,000) and `arcClearBonus.ryo` (9,000, from arc 17 = Pain's Assault). Earlier rewards are unchanged. `npm run campaign` now prints median level and Ryo at the end of each part. |
-| 3. "Traps Activate!" | `0044e31` | **Cause:** players own Team Guy but never level them (Lv 11–13 vs enemy Lv 33), while non-owners got Lv 33 loaners. The node itself is fine (a 1★ Team Guy at Lv 33 wins 100% in 28 s; still 91% at Lv 24). **Fix:** `ownedOrLoaner` raises an owned forced ninja (or fixed Leader) to the loaner level for that battle, keeping their stars. The Team Builder says so. |
-| 4. Forced-team Leader bug | `1baa1ba` | `resolveTeam`: forced ninja always play. If four are forced, the Leader slot yields; the player's Leader leads only if they are one of the four, otherwise the first forced ninja does. The same rule is in `autoPickTeam` and the sims' `teamForNode`. The `n_kaz_3` `leader: 'guy'` workaround is removed. A core test covers it (fails on the old code). |
-| 5. Summon screen | `d617615` | Standard + the newest open arc banner sit side by side at the top (one tap on phone portrait). The rest are under a collapsible "Past banners" row with a Part I / Part II switch and a wrapping grid. Checked at 375×812 with no console errors. UI only. |
-| 6. Name and nature audit | `c325d95` | Ep 68 resolved (below). Pain/Nagato → **Water, Wind**; Kaguya's base nature → **Fire**; Minato, Konohamaru and Guren kept. Verdicts are in NAMING.md, "Session 3 nature review". |
+| Step | Summary |
+|---|---|
+| 1. Sim/game bot mismatch | The game's 🤖 Auto-ult has used the clash-aware bot (`botUlts('smart')`) since Session 3, but `npm run sim`, `npm run autotune` and `npm run campaign` still defaulted every scenario to the fire-when-ready bot. Real (clash-aware) boss win rates had drifted to 13–98%. `tools/common.mjs` now exports `DEFAULT_BOT` (clash-aware unless `SIM_BOT=asap`), and `runNode`/`runBossRush` default to it — every tool picks it up with no per-tool changes. Fire-when-ready stays available for comparison (`SIM_BOT=asap`, or an explicit `ultMode: 'asap'`) and the sim prints both bots for every boss and the counter-gap scenario. |
+| 2. Counter-gap scenario | Session 3 measured the counter/countered gap at the Land of Waves boss with **no level offset**, where even a neutral team only won 24–35% — so the 25–30%/10–15% target bands were asking a countered team to match a neutral one. `targets.counterGapNode` (`n_waves_5`) + `targets.counterGapLevelOffset` (**+1.6**) is a dedicated fight where a **neutral** re-typed team wins **~60%**, the same neighborhood as the boss-win target. `npm run sim` now measures every counter-gap number there, prints counter / 3-of-4 / fully-countered / neutral rates every run (both bots), and checks the two bands as PASS/FAIL rows (`targets.counterGap3of4Range`, `counterGapFullyRange`). The bands are narrow (5 pts), so this scenario runs at `max(N, 600)` battles to stay stable. |
+| 3. The fix — two levers | (a) **Overwhelmed now also blocks the enemy jutsu**, same as Standoff/Cancelled — before, an Overwhelmed ult dealt no damage *and* the enemy jutsu still landed weakened, a double punishment. The three outcomes stay distinct (see BALANCE.md §6); a core test (`test-core.mjs`) covers each one. (b) `natureWheel.advantage/disadvantage` **1.3/0.8 → 1.12/0.95** and `jutsuClash.overwhelmedChakraRefund` **0.5 → 0.85** (both now plain config, already were). Together: 3 of 4 countered **26%** (target 25–30%), fully countered **14%** (target 10–15%), counter team still **~98%**. Full trade-off table in BALANCE.md §6. |
+| 4. Autotune + campaign | `npm run autotune -- --write` re-ran with the clash-aware default bot and the new wheel; every boss's `nodeMult` moved (some by a lot — e.g. `n_countdown_4` 1.20 → 0.67). All 25 arc bosses now land in 50–70% **as actually played** (clash-aware). Campaign sim, 10 players: still clears Parts I–II, no node above 1/10 stuck, median final team Lv 96.3 vs enemy 94 (unchanged from Session 3 within noise). |
 
-## Final counter-gap numbers (Land of Waves boss, Water, Lv 8; same on-curve team re-typed; 200 battles per cell)
+## Final counter-gap numbers (counter-gap scenario: Land of Waves boss, Water, on-curve +1.6 levels — neutral ~60% baseline; clash-aware bot, 800–2000 battles per cell)
 
-| Bot | Counter (Earth) | Neutral (Lightning) | **3 of 4 countered** (target 25–30%) | **Fully countered** (target 10–15%) |
+| `advantage / disadvantage` | `overwhelmedChakraRefund` | Counter | 3 of 4 countered (target 25–30%) | Fully countered (target 10–15%) |
 |---|---|---|---|---|
-| Fire when ready | 98% | 24% | **1%** | **0%** |
-| Clash-aware (in-game Auto) | 98% | 25% | **0%** | **0%** |
+| 1.30 / 0.80 (old) | 0.5 (old) | ~100% | 4% | 0% |
+| **1.12 / 0.95 (final)** | **0.85 (final)** | **~98%** | **26%** ✅ | **14%** ✅ |
 
-* Sweeping the refund from 0 to 0.9 gave 0–3% for 3 of 4 countered and 0% for fully countered. So the refund is set to 0.5, and nothing else was forced.
-* Why: the clash-aware bot never fires into a losing clash, so it never gets the refund. And at this node a neutral team only wins 24–35%, so the bands ask a mostly countered team to match a neutral one.
-* **What a second lever would have to be** (BALANCE.md §6 has the full table):
-  * A much flatter wheel (~1.1 / 0.93) **plus** Overwhelmed also blocking the enemy jutsu (`overwhelmedJutsuMult` 0) gets 3 of 4 countered to 24% and fully countered to 8% (fire-when-ready). The counter team drops to 79%.
-  * Or redefine the reference: measure where a neutral team wins ~60%. At +3 levels, 3 of 4 countered gets 38% / 26% (fire-when-ready / clash-aware), but fully countered stays at 3–4%.
+See BALANCE.md §6 for the full search table and why the counter team's win rate couldn't be pulled down toward 70–80% at this scenario (its ~60% neutral baseline leaves no room: any wheel setting that still separates counter from neutral keeps counter near 95–98%). The brief's stop condition (report the closest result if the bands can't be met with counter ≥ 65%) never triggered.
 
-## Economy before / after (campaign sim, 10 players, medians)
+## Boss win-rate spread before/after (clash-aware bot, as actually played)
 
-| | Before | After |
-|---|---|---|
-| End of Part I (enemy Lv 30) | team Lv 35.5, 11,255 Ryo | team Lv 35.5, 11,255 Ryo (unchanged) |
-| End of Part II (enemy Lv 94) | team Lv 99.0, 32,326 Ryo (range up to 71,697 when stuck at the level cap) | team Lv **96.3**, **23,580** Ryo (range 22,073–24,816) |
-
-The 95.5 measured in step 2 became 96.3 after step 3 (fewer replays wasted on Team Guy). Most of the leftover Ryo is the final boss's first-clear reward plus the arc bonus, which arrive after the last battle.
-
-Stuck points: before, `n_kaz_3` 7/10; after, nothing above 1/10 (`n_sixtails_3`, `n_bell_3`, `n_countdown_1`, `n_chunin_5`, `n_kaguya_2`).
-
-## Name and nature verdicts
-* **Ep 68:** the dub title is "Zero Hour! The Destruction of the Hidden Leaf Village Begins!", as Session 1 recorded. Sources: Narutopedia's episode article ("Other names") and Tubi's listing of the dubbed episode. Wikipedia's season 2 list ("…Destruction of Leaf Begins!") is the outlier. The arc name "Destruction of the Hidden Leaf Village" is now Verified (`tools/naming-sources.mjs`).
-* **Pain/Nagato:** the rule was misapplied. Wind Style: Gale Palm is on screen in the same ep 128 flashback as Raging Waves, and Air Bullets appears in ep 253. Enemy Pains fight with their first (active) nature, so the boss fights are unchanged; the pullable Pain also hits with Wind.
-* **Kaguya:** she uses no Release jutsu on screen, so her base nature is Fire (first listed). Her lava/ice/desert dimensions stay as the Amenominaka element swap (a design mapping). The fight is unchanged.
-* **Minato, Konohamaru** (Fire, first listed) and **Guren** (Earth, Narutopedia "presumed") are kept.
+Before Session 3b's autotune re-run: 13%–98% across the 25 arc bosses (target 50–70%). After: every boss lands in 50–65%. `npm run sim`'s "Jutsu Clash" info block shows each boss's clash-aware vs fire-when-ready rate; the swings are large in both directions (e.g. Kakashi: Shadow of the ANBU Black Ops 62% clash-aware vs 21% fire-when-ready; Fourth Great Ninja War: Countdown 56% clash-aware vs 83% fire-when-ready), which is why the sim needed to match the bot the game actually uses.
 
 ## Still open
-1. **Counter-gap design decision** (above): a second lever (flatter wheel + Overwhelmed blocks the jutsu) or a new reference point. Either one needs a rule or target change, not a number.
-2. **Nagato's Earth:** Narutopedia lists Earth-Style Wall as "Nagato (Anime only)" with no episode. Add Earth if a scene is found.
-3. **Boss Rush Pain** (`e_br_pain`) still has all five natures from Session 1's infobox-list reading. The Boss Rush is still the Part I Akatsuki set.
-4. **Part II dub titles** still come mainly from Wikipedia's season lists; ep 68 showed they can differ from the dub. A second source for the others would help.
-5. **Balance texture** (unchanged): long fights in places (Kinoe median ~83 s); the sim's boss targets still use the fire-when-ready bot, while in-game Auto is clash-aware. With the clash-aware bot, boss win rates range from 36% (Countdown) to 94% (Final Valley) instead of 50–70% (the sim's info block shows both).
-6. **Non-boss nodes are easy at level** (e.g. `n_kaz_3` 100% for a level-matched team). That's by design, but a "real fight" target for non-boss nodes could be added to `npm run sim`.
+1. **Counter team stays near 98%** at the counter-gap scenario (see above) — by design, given the scenario's ~60% neutral baseline; not considered a problem, but worth knowing if a future session wants a softer counter ceiling.
+2. **Nagato's Earth:** Narutopedia lists Earth-Style Wall as "Nagato (Anime only)" with no episode. Add Earth if a scene is found. *(carried over from Session 3)*
+3. **Boss Rush Pain** (`e_br_pain`) still has all five natures from Session 1's infobox-list reading. *(carried over)*
+4. **Part II dub titles** still come mainly from Wikipedia's season lists. *(carried over)*
+5. **Non-boss nodes are easy at level** (by design); a "real fight" target for non-boss nodes could be added to `npm run sim`. *(carried over)*

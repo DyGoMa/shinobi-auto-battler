@@ -59,11 +59,11 @@ across the whole campaign), an arc number, or a Boss Rush round.
 | Stars matter more | `stats.starBonus` | `0.10` → `0.15` | +15% stats per star. A 5★ Genin then outclasses a 1★ Kage. |
 | Ultimates come faster | `combat.chakra.perAttackSecond` | `7.5` → `9` | Roughly one ult every ~10 s instead of ~12 s. |
 | Ultimates hit harder | `combat.ult.single` / `.aoe` | `4.2 / 2.3` → `5 / 2.8` | Bigger burst. Boss fights get shorter. |
-| Nature Wheel matters more | `natureWheel.advantage` / `.disadvantage` | `1.3 / 0.8` → `1.5 / 0.7` | Countering becomes decisive. Wrong teams get punished harder. |
-| Nature Wheel matters less | same | → `1.15 / 0.9` | The team's nature barely matters. |
+| Nature Wheel matters more | `natureWheel.advantage` / `.disadvantage` | `1.12 / 0.95` → `1.3 / 0.8` | Countering becomes decisive, but re-run autotune and check the counter-gap scenario (§6) — a steeper wheel over-punishes countered teams. |
+| Nature Wheel matters less | same | → `1.05 / 0.98` | The team's nature barely matters. |
 | **Turn off Jutsu Clash** | `jutsuClash.enabled` | `true` → `false` | Ults ignore enemy wind-ups (they still telegraph). |
 | Clashes are more rewarding | `jutsuClash.overpowerUltMult` | `1.35` → `1.6` | Overpowered clashes hit 60% harder. |
-| Losing a clash hurts less | `jutsuClash.overwhelmedChakraRefund` | `0.5` → `0.7` | An Overwhelmed ult gives back 70 chakra instead of 50. Keep it below 1. |
+| Losing a clash hurts less | `jutsuClash.overwhelmedChakraRefund` | `0.85` → `0.9` | An Overwhelmed ult gives back more chakra. Keep it below 1. |
 | Longer wind-ups (easier to clash) | `enemyScaling.enemyJutsu.windup`, `bossMechanics.telegraphAoE.windup` | `2 / 3` → `3 / 4` | More time to react. |
 | A shorter "survive" in the Survival Test | `objectives.surviveTimeMult` | `1.0` → `0.8` | Every "survive X s" objective drops to 80% of X. |
 | A tougher Boss Rush | `bossRush.statMultByRound.base` | `0.39` → `0.45` | Every round's boss is ~15% stronger. |
@@ -92,7 +92,7 @@ The campaign report lists "Most common stuck points".
 
 ## 3. What the checks mean
 
-`npm run sim` plays 200 seeded battles per scenario with a bot that fires every Ultimate as soon as it's ready (the in-game 🤖 Auto-ult uses the clash-aware bot instead; the sim prints both where it matters):
+`npm run sim` plays 200 seeded battles per scenario (more for the counter-gap scenario, see below) with the **clash-aware bot** — the same one the in-game 🤖 Auto-ult uses (`botUlts('smart')`): it fires counter-nature units into enemy wind-ups and holds units that would be Overwhelmed. `SIM_BOT=asap` switches every scenario to the fire-when-ready bot instead, for comparison; the sim also prints both bots' numbers for the boss and counter-gap scenarios.
 
 | Scenario | Target (in `targets`) |
 |---|---|
@@ -100,6 +100,8 @@ The campaign report lists "Most common stuck points".
 | Each arc boss (Part I and Part II), "on-curve" team | win 50–70% (`bossWinRange`) |
 | Boss Rush, Jonin-heavy team at level 32 | median round 4–5 (`bossRushRoundRange`) |
 | Nature check: same team re-typed to counter vs be countered | gap ≥ 25% (`natureCheckMinGap`) |
+| Counter-gap scenario: 3 of 4 units countered | win 25–30% (`counterGap3of4Range`) |
+| Counter-gap scenario: all 4 units countered | win 10–15% (`counterGapFullyRange`) |
 | Boss fight length | median 30–60 s (`fightLengthRange`) |
 
 **"On-curve" team** (`targets.onCurve`):
@@ -117,48 +119,41 @@ The campaign report lists "Most common stuck points".
 It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Target:** every player clears the whole story (Part I and Part II) with no node needing more than 3 replays. `SIM_PARTS=1` limits both sims to Part I.
 
 ## 4. Where the current numbers came from
-* `nodeMult` values were set by `npm run autotune` (bisection on a 200-battle sample per boss).
+* `nodeMult` values were set by `npm run autotune` (bisection on a 200-battle sample per boss, clash-aware bot since Session 3b).
 * Economy values were tuned by hand until 30 simulated free-to-play players all cleared Part 1 (they finish around team level 34–39 vs enemy level 30).
 * Session 3 capped the late Part II Ryo curves (`cap` on `nodeFirstClear.ryo` 8,500, `nodeReplay.ryo` 10,000, `arcClearBonus.ryo` 9,000). Part I and early Part II rewards are unchanged. Campaign sim, 10 players: end of Part I 35.5 / 11,255 Ryo (unchanged); end of Part II **99.0 → 95.5** vs enemy level 94, median Ryo **32,326 → 24,122** (the old range reached 71,697 for players stuck at the level cap). The end-of-part lines at the bottom of `npm run campaign` print these numbers.
-* If you change a global value (`statMult`, `bossMult`, `ult`, `chakra`), re-run `npm run autotune -- --write`, then `npm run sim` and `npm run campaign`.
+* Session 3b re-tuned every `nodeMult` for the clash-aware bot (§6) and re-ran the campaign sim: end of Part II **95.5 → 96.3**, median Ryo 24,122 → 23,580 (10 players, no node above 1/10 stuck).
+* If you change a global value (`statMult`, `bossMult`, `ult`, `chakra`, `natureWheel`, `jutsuClash`), re-run `npm run autotune -- --write`, then `npm run sim` and `npm run campaign`.
 
 ## 5. Safety rails
 * `npm run validate` fails if the gacha rates don't add up to 1, if any curve produces a non-number, or if enemy levels exceed `stats.levelCap` before node 90.
 * The debug panel's edits are **not saved**. Reload the page to go back to the file's values.
 
-## 6. Countered teams and Jutsu Clash (Session 3: change applied, bands not reached)
+## 6. Countered teams and Jutsu Clash (Session 3b: bands reached)
 
 **Goal:** at equal level and rarity, a team with 3 of 4 units countered wins 25–30%, a fully countered team wins 10–15%, and the countering team still wins a clear majority.
 
-**What Session 3 changed (design decision):**
-* An **Overwhelmed** Ultimate is still cancelled and deals no damage, and the enemy jutsu still lands at ×0.55. Now it also gives back `jutsuClash.overwhelmedChakraRefund` (**0.5** = 50 of 100 chakra). The other outcomes are unchanged, and Overwhelmed stays worse than a Standoff (a Standoff cancels their jutsu *and* hits at ×0.5).
-* The in-game 🤖 Auto-ult now uses the clash-aware bot (`botUlts('smart')`): it fires counter-nature units into wind-ups and holds units that would be Overwhelmed. `npm run sim` still uses the fire-when-ready bot (`'asap'`) for its boss targets, so autotune numbers mean the same thing as before.
-* Autotune was re-run (9 bosses moved by 0.01–0.06, including `n_waves_5` 0.98 → 1.00).
+**Session 3's mistake:** it measured the gap at the Land of Waves boss with no level offset, where even a *neutral* team only won 24–35%. Against that baseline, asking a mostly-countered team to win 25–30% was asking it to do as well as a neutral team — mathematically impossible without breaking the wheel entirely.
 
-**Result: the refund alone does not reach either band, so it was not forced.** `npm run sim` prints both cases under "Nature check detail". Same on-curve team vs the Land of Waves boss (Water, level 8), re-typed; "3 of 4" keeps one unit neutral (Lightning), rotating which one by seed. 200 seeded battles per cell:
+**Session 3b's fix — a dedicated counter-gap scenario:** the same fight (Land of Waves boss, `n_waves_5`, Water), but the on-curve team is levelled `targets.counterGapLevelOffset` (**+1.6**) above the node, where a **neutral** re-typed team wins **~60%** — the same neighborhood as the boss-win target, so "countered" and "counters" numbers are measured against a real, contested baseline. `npm run sim` uses this fight (`targets.counterGapNode`) for every counter-gap measurement, prints counter / 3-of-4 / fully-countered / neutral win rates every run (with both bots, under "Counter-gap scenario"), and checks the two bands as PASS/FAIL rows. The bands are narrow (5 points), so the sim runs this scenario at `max(N, 600)` battles per cell to keep the check stable.
 
-| Setting | Bot | Counter (Earth) | Neutral (Lightning) | 3 of 4 countered | Fully countered (Fire) |
-|---|---|---|---|---|---|
-| **Final (refund 0.5, after autotune)** | fire when ready | 98% | 24% | **1%** | **0%** |
-| **Final (refund 0.5, after autotune)** | clash-aware | 98% | 25% | **0%** | **0%** |
-| Refund 0 / 0.25 / 0.5 / 0.75 / 0.9 (before autotune) | fire when ready | 98% | 34% | 0 / 1 / 3 / 1 / 1% | 0% |
-| Refund 0 … 0.9 (before autotune) | clash-aware | 98% | 35% | 0% | 0% |
+**What Session 3b changed:**
+1. **Overwhelmed now also blocks the enemy jutsu**, same as a Standoff/Cancelled clash (`BattleSim._cancelTelegraph`, tested in `test-core.mjs`). Before, an Overwhelmed ult dealt no damage *and* the enemy jutsu still landed at ×0.55 (weakened but not blocked) — a double punishment for a team that clashed with the wrong nature. Now the three outcomes stay distinct: **Overpowered** (bonus damage, caster stunned, chakra back), **Cancelled/Standoff** (both jutsu fizzle, ult still hits at ×0.5, no chakra back), **Overwhelmed** (both jutsu fizzle, ult deals no damage, chakra back). This mainly helps a **Tank that guards** a losing clash — previously it ate a weakened hit anyway; now it takes nothing.
+2. `natureWheel.advantage` / `.disadvantage`: **1.3 / 0.8 → 1.12 / 0.95** (config, was already tunable). A flatter wheel is required because the wheel multiplies attacker-favoured damage in *both* directions: a countered team's attacks are reduced (`disadvantage`) *and* the boss's attacks on them are amplified (`advantage`, since the boss's nature now beats theirs) — so 3.3× total swing between a countered and countering matchup at the old 1.3/0.8, before Jutsu Clash even applies.
+3. `jutsuClash.overwhelmedChakraRefund`: **0.5 → 0.85**. The wheel alone could hit the 3-of-4 band but left "fully countered" a few points under its band (a fully countered team has no counter-nature unit to fall back on, so only the chakra economy helps it recover); a bigger refund was needed on top of the flatter wheel.
 
-Why the refund can't do it:
-* **The clash-aware bot never fires into a losing clash**, so it never triggers the refund; only Tank guards do. For the fire-when-ready bot, 50 chakra back is roughly one saved Ultimate per fight, which is small next to the wheel's damage swing.
-* **The neutral baseline is already low.** At this node a neutral mono-nature team wins only 24–35%, so the 25–30% band asks a mostly countered team to do as well as a neutral one.
-* The win curve is steep: +1 level takes the neutral team from 34% to 54%.
+**The trade-off table** (counter-gap scenario, clash-aware bot, 800–2000 battles per cell; counter/neutral rounded):
 
-**What a second lever would have to be** (measured with refund 0.5, before autotune; none applied):
-
-| Second lever | Bot | Counter | 3 of 4 | Fully |
+| `natureWheel.advantage / disadvantage` | `overwhelmedChakraRefund` | Counter | 3 of 4 countered (target 25–30%) | Fully countered (target 10–15%) |
 |---|---|---|---|---|
-| Softer wheel 1.15 / 0.9 | fire when ready | 85% | 10% | 0% |
-| Softer wheel 1.1 / 0.93 | fire when ready | 79% | 14% | 1% |
-| Overwhelmed also blocks the enemy jutsu (`overwhelmedJutsuMult` 0) | fire when ready | 98% | 7% | 0% |
-| Both: `overwhelmedJutsuMult` 0 + wheel 1.1 / 0.93 | fire when ready | 79% | **24%** | 8% |
-| Both | clash-aware | 93% | 13% | 3% |
-| Measure at +2 levels (neutral 78%), no rule change | fire when ready / clash-aware | 100% | 18% / 10% | 0% |
-| Measure at +3 levels (neutral 93%), no rule change | fire when ready / clash-aware | 100% | 38% / 26% | 4% / 3% |
+| 1.30 / 0.80 (old) | 0.5 (old) | ~100% | 4% | 0% |
+| 1.10 / 0.95 | 0.50 | ~98% | 33% | 10% |
+| 1.10 / 0.95 | 0.60 | ~98% | 33–34% | 10–11% |
+| 1.12 / 0.95 | 0.50 | ~98% | 30–32% | 7–8% |
+| 1.12 / 0.95 | 0.70 | ~98% | 27% | 7% |
+| **1.12 / 0.95 (final)** | **0.85 (final)** | **~98%** | **26%** ✅ | **14%** ✅ |
+| 1.11 / 0.96 | 0.85 | ~98% | 28% ✅ | 16% (over) |
 
-So reaching the bands needs **both** a much flatter wheel (about 1.1 / 0.93, down from 1.3 / 0.8) **and** a rule where an Overwhelmed clash still blocks the enemy jutsu. Even then the fully countered case stays under 10%, and the counter team drops to 79%. The other option is to redefine the reference: measure at a node or level where a neutral team wins about 60% (the boss target), not at 24–35%. Both are design decisions for Session 4.
+**Why the counter team's win rate barely moved:** the search asked to compare counter-team rates near 70% / 75% / 80%, but at this scenario's neutral baseline (~60%) even the flattest wheel tried (1.02–1.10) still won ~95–98% with the +12–30% nature bonus stacked on top of an already-winnable fight — there's no wheel setting in the useful range that both meaningfully separates counter from neutral *and* drops counter below ~95%. The chosen wheel is already close to the flattest setting that still lands the 3-of-4 and fully-countered bands, so **~98%** is what "a clear majority" looks like at this node. The stop-condition in the brief (report the closest result if the bands can't be hit with counter ≥ 65%) never triggered — the picked setting reaches both bands with counter far above that floor.
+* Autotune was re-run after the wheel/refund change (every boss's `nodeMult`, since the flatter wheel and the clash-aware default bot both shift win rates); see §4.
+* Campaign sim after the change: still 10/10 free-to-play players clear Parts I–II, no node above 1/10 stuck (median final team Lv 96.3 vs enemy 94, unchanged from before this session within noise).

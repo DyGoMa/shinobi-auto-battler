@@ -94,8 +94,8 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 | Outcome | When | Effect (balance.js `jutsuClash`) |
 |---|---|---|
 | **OVERPOWER** | your nature beats theirs | Their jutsu is cancelled, your ult resolves at ×1.35, the caster is stunned for 2 s, and you get 25 chakra back |
-| **STANDOFF** | neutral / no nature | Both cancel; your ult still resolves at ×0.5 |
-| **OVERWHELMED** | their nature beats yours | Your ult is cancelled (no damage) and their jutsu lands at ×0.55 (blunted); you get 50 chakra back |
+| **STANDOFF** (also called "Cancelled") | neutral / no nature | Both jutsu fizzle; your ult still resolves at ×0.5; no chakra comes back |
+| **OVERWHELMED** | their nature beats yours | Your ult is cancelled (no damage), but their jutsu is ALSO cancelled — same as Standoff — and you get 85 chakra back (`overwhelmedChakraRefund`), so a countered team isn't locked out of its next ult |
 
 4. **Roles:**
    * **Taijutsu** specialists can never be Overwhelmed (their worst case is Standoff).
@@ -105,8 +105,8 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 ### Why it meets the brief
 * **Naruto theme:** jutsu clashes are the series' iconic moments (Chidori vs Rasengan, Fire vs Water).
 * **Real decision:** fire now for damage and chakra tempo, or hold for a clash? And *which* ninja takes it: the counter-nature striker, or the tank to guard?
-  * The sim measures the payoff (`npm run sim`, same teams and seeds). A bot that clashes on purpose beats the fire-when-ready bot on 7 of 8 Part 1 bosses: Final Valley 58% → 93%, Kurosuki 65% → 90%, Land of Tea 66% → 85%, Chunin Exams 62% → 71%, Land of Waves 60% → 70%.
-  * The exception is the Survival Test boss (66% → 61%). Kakashi's special has no nature, so holding ults for it is rarely worth it: the decision cuts both ways.
+  * The clash-aware bot (`botUlts('smart')`) is what the in-game 🤖 Auto-ult uses, and `npm run sim` now plays every scenario with it too (Session 3b), so the boss targets mean the same thing in the sim and in the game. The sim also prints the fire-when-ready bot for comparison: clashing on purpose is worth a lot — Final Valley 60% → 29%, Kakashi: Shadow of the ANBU Black Ops 62% → 21%, Fourth Great Ninja War: Climax 56% → 24%, Land of Waves 60% → 42% (ASAP bot).
+  * A few bosses go the other way (e.g. Fourth Great Ninja War: Countdown 56% → 83% ASAP): a boss whose specials are rarely worth clashing into can make holding ults a net loss of tempo, which is also a real decision.
 * **Taps only:** one tap on a portrait. There are no combos and no gestures.
 * **Nature wheel and team composition:** the outcome *is* the wheel, and it rewards bringing counters and a Tank.
 * **Tunable, with an on/off flag:** `balance.jutsuClash` has `enabled` plus every multiplier. The enemy wind-up time is `enemyScaling.enemyJutsu.windup`, and the boss wind-up is `bossMechanics.telegraphAoE.windup`.
