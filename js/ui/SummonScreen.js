@@ -1,0 +1,133 @@
+// SummonScreen.js — banners, rates, pity counter, and the pull animation.
+import { h, btn, fmt, avatar, tierTag } from './dom.js';
+import { pull, pullCost, canAfford, bannerRates } from '../core/GachaSystem.js';
+import { isBannerUnlocked, isCharacterAvailable } from '../core/Progression.js';
+import { TIER_LABEL, RARITY_LABEL } from '../core/formulas.js';
+import { TIER_COLORS } from '../render/Renderer.js';
+
+let selected = null;
+const TIER_RANK = { genin: 0, chunin: 1, jonin: 2, kage: 3 };
+
+export function render(game, ui, params) {
+  const { C, B, state } = game;
+  const banners = C.banners;
+  if (params.bannerId) selected = params.bannerId;
+  if (!selected || !C.banner[selected] || !isBannerUnlocked(state, C.banner[selected], C)) {
+    // default: newest unlocked arc banner, else standard
+    const arcs = banners.filter(b => b.type === 'arc' && isBannerUnlocked(state, b, C));
+    selected = arcs.length ? arcs[arcs.length - 1].id : 'standard';
+  }
+  const banner = C.banner[selected];
+  const rates = bannerRates(banner, state, C, B);
+  const pityLeft = Math.max(0, B.gacha.pity - state.gacha.pity);
+
+  const tabs = h('div.banner-tabs', ...banners.map(b => {
+    const open = isBannerUnlocked(state, b, C);
+    return h('button.banner-tab' + (b.id === selected ? '.on' : '') + (open ? '' : '.locked'), {
+      type: 'button', onclick: () => { if (!open) { ui.toast(`Reach ${C.arc[b.arc].name} to open this banner.`); return; } selected = b.id; ui.refresh(); },
+    }, (open ? '' : '🔒 ') + b.name);
+  }));
+
+  const featured = (banner.featured || []).map(id => {
+    const d = C.char[id]; const avail = isCharacterAvailable(state, d, C);
+    return h('div.feat' + (avail ? '' : '.locked'), avatar(d, { size: 'sm' }), h('div.n', d.short), h('div.tiny', { style: { color: TIER_COLORS[d.tier] } }, TIER_LABEL[d.tier]),
+      avail ? null : h('div.tiny.dim', `joins after ${C.arc[d.unlock.arcCleared || d.unlock.arcReached]?.name}`));
+  });
+
+  const doPull = (count) => {
+    if (!canAfford(state, count, B)) { ui.toast(`Not enough scrolls — you need ${fmt(pullCost(count, B) - state.currencies.scrolls)} more.`, 'bad'); return; }
+    const res = pull(state, banner.id, count, C, game.rng, B);
+    if (!res.ok) { ui.toast(res.error, 'bad'); return; }
+    game.commit('pull');
+    playAnimation(game, ui, res.results);
+  };
+  const single = pullCost(1, B), ten = pullCost(10, B);
+  const hero = h('div.banner-hero',
+    h('div.row.between', h('div', h('div.tiny.muted', banner.type === 'standard' ? 'Always available' : `Arc banner · ${C.arc[banner.arc].name}`), h('h2', banner.name)), banner.type === 'arc' ? h('span.pill.accent', `Rate-up ×${Math.round(B.gacha.rateUpShare * 100)}% of tier`) : null),
+    h('p', banner.blurb),
+    featured.length ? h('div.featured', ...featured) : null,
+    h('div.pity', h('div.grow', h('div.small', 'Kage guaranteed in ', h('b', pityLeft), ' summon' + (pityLeft === 1 ? '' : 's')), h('div.bar', h('i', { style: { width: `${(state.gacha.pity / B.gacha.pity) * 100}%`, background: 'linear-gradient(90deg,#b388ff,#ffc53d)' } }))),
+      h('span.pill', `Every 10× has a ${TIER_LABEL[B.gacha.tenPullGuaranteeTier]}+`)),
+    h('div.pull-buttons',
+      pullBtn('Summon ×1', single, state, () => doPull(1)),
+      pullBtn('Summon ×10', ten, state, () => doPull(10), true)),
+    !canAfford(state, 1, B) ? h('p.small', { style: { marginTop: '10px', color: 'var(--warn)' } }, `You need ${fmt(single - state.currencies.scrolls)} more scrolls for a summon. Clear story battles (first clears pay the most) and Boss Rush rounds to earn more.`) : null,
+  );
+
+  const rateTable = h('table.rates', h('tbody', ...rates.map(r => h('tr',
+    h('td', h('span.tier.' + r.tier, `${TIER_LABEL[r.tier]} (${RARITY_LABEL[r.tier]})`)),
+    h('td', `${(r.rate * 100).toFixed(r.rate < 0.1 ? 1 : 0)}%`),
+    h('td.muted', `${r.count} in pool`),
+    h('td.small', r.featured.length ? r.featured.map(f => `${C.char[f.id].short} ${(f.rate * 100).toFixed(2)}%`).join(', ') : ''),
+  ))));
+
+  const hist = (state.gacha.history || []).slice(0, 20);
+  return h('div.screen',
+    h('div.row.between', h('h1', 'Summon'), h('span.pill', `📜 ${fmt(state.currencies.scrolls)} scrolls`)),
+    tabs,
+    hero,
+    h('div.section-title', h('h2', 'Rates')),
+    h('div.card', rateTable, h('p.tiny.dim', { style: { marginTop: '8px' } }, `Ninja only drop once they have joined (villains join after their arc is cleared). Pity counts across all banners. Duplicates: +1★ up to ${B.stats.starCap}★, then Ryo.`)),
+    hist.length ? h('div.section-title', h('h2', 'Recent summons')) : null,
+    hist.length ? h('div.row', ...hist.map(x => { const d = C.char[x.id]; return d ? avatar(d, { size: 'sm' }) : null; })) : null,
+  );
+}
+
+function pullBtn(label, cost, state, onClick, primary = false) {
+  const ok = state.currencies.scrolls >= cost;
+  return h('button.btn.big' + (primary ? '.primary' : ''), { type: 'button', onclick: onClick, disabled: !ok, title: ok ? '' : `Need ${cost} scrolls` },
+    h('span', label), h('span.sub', `📜 ${cost}`));
+}
+
+function playAnimation(game, ui, results) {
+  const { C } = game;
+  const top = results.reduce((m, r) => TIER_RANK[r.tier] > TIER_RANK[m] ? r.tier : m, 'genin');
+  const overlay = h('div.pull-overlay');
+  const stage = h('div.col', { style: { alignItems: 'center', gap: '18px' } });
+  const scroll = h('div.scroll-unroll', h('div.scroll-paper', 'SUMMONING JUTSU'), h('div.scroll-rod.l'), h('div.scroll-rod.r'));
+  stage.appendChild(scroll);
+  overlay.appendChild(stage);
+  document.body.appendChild(overlay);
+  game.audio.scroll();
+  let skipped = false, finished = false;
+  const grid = h('div.reveal-grid' + (results.length === 1 ? '.single' : ''));
+  const cards = results.map(r => {
+    const d = C.char[r.id];
+    const tag = r.isNew ? h('span.tag', 'NEW!') : r.refund ? h('span.tag.refund', `+${fmt(r.refund)} Ryo`) : h('span.tag.up', `${r.stars}★`);
+    return h('div.reveal-card.' + r.tier, tag, avatar(d, { size: r.tier === 'kage' ? 'lg' : '' }), h('div.nm', d.name), tierTag(r.tier), r.featured ? h('span.pill.accent', 'Rate-up') : null);
+  });
+  const done = btn('Continue', () => { overlay.remove(); ui.refresh(); ui.refreshTop(); }, 'primary big');
+  done.style.visibility = 'hidden';
+
+  const flash = (tier) => {
+    const f = h('div.flash' + (tier === 'kage' ? '.big' : ''));
+    f.style.background = `radial-gradient(circle at 50% 45%, ${TIER_COLORS[tier]}, transparent 70%)`;
+    document.body.appendChild(f); setTimeout(() => f.remove(), 1500);
+    if (tier === 'kage' || tier === 'jonin') burst(overlay, TIER_COLORS[tier], tier === 'kage' ? 60 : 24);
+  };
+  const reveal = () => {
+    scroll.remove();
+    stage.append(grid, done);
+    flash(top);
+    cards.forEach((c, i) => {
+      grid.appendChild(c);
+      const delay = skipped ? 0 : 160 + i * 170;
+      setTimeout(() => { c.classList.add('show'); if (!skipped || i === cards.length - 1) game.audio.pullReveal(results[i].tier); if (results[i].tier === 'kage') flash('kage'); if (i === cards.length - 1) { done.style.visibility = 'visible'; finished = true; } }, delay);
+    });
+  };
+  const t = setTimeout(reveal, 900);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === done) return;
+    if (!grid.isConnected) { clearTimeout(t); skipped = true; reveal(); }
+    else if (!finished) { skipped = true; cards.forEach(c => c.classList.add('show')); done.style.visibility = 'visible'; finished = true; }
+  });
+}
+
+function burst(parent, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, d = 200 + Math.random() * 400;
+    const p = h('div.burst', { style: { left: '50%', top: '45%', background: color } });
+    p.style.setProperty('--dx', `${Math.cos(a) * d}px`); p.style.setProperty('--dy', `${Math.sin(a) * d}px`);
+    parent.appendChild(p); setTimeout(() => p.remove(), 1200);
+  }
+}

@@ -300,7 +300,7 @@ export class BattleSim {
     tgt.hp -= dmg; tgt.lastHitBy = src.uid;
     if (nat.relation > 0) this.stats.effective++; else if (nat.relation < 0) this.stats.resisted++;
     this.stats.damageByUnit[src.uid] = (this.stats.damageByUnit[src.uid] || 0) + dmg;
-    this._emit({ type: 'damage', uid: tgt.uid, src: src.uid, amount: dmg, crit: hit.crit, relation: nat.relation, kind: opts.kind || 'auto', absorbed: hit.dmg - dmg });
+    this._emit({ type: 'damage', uid: tgt.uid, src: src.uid, amount: dmg, crit: hit.crit, relation: nat.relation, nature: nat.nature || null, kind: opts.kind || 'auto', absorbed: hit.dmg - dmg });
     // Chakra from taking hits
     if (dmg > 0) this._gainChakra(tgt, B.combat.chakra.onHitPerPctHp * (dmg / tgt.maxHp) * 100);
     // Lifesteal (mechanic)

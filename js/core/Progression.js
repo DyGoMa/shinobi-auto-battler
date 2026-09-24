@@ -54,7 +54,7 @@ export function highestLevel(state) {
 
 /** Ryo to go from the character's level to +1, including the catch-up discount. */
 export function levelCostFor(state, id, B = BALANCE) {
-  const o = state.roster[id]; if (!o) return Infinity;
+  const o = state.roster[id]; if (!o) return { cost: Infinity, discounted: false };
   const base = levelUpCost(o.level, B);
   const cu = B.economy.catchUp;
   const discounted = cu && o.level <= highestLevel(state) - cu.gap;
