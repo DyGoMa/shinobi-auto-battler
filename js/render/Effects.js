@@ -37,7 +37,7 @@ export class Effects {
   beam(x0, y0, x1, y1, c0, c1) { this._push({ kind: 'beam', x0, y0, x1, y1, c0, c1, t: 0, dur: 0.7 }); }
   say(text, color = '#fff', dur = 1.6) { this.announce = { text, color, t: 0, dur }; }
 
-  headY(u) { return this.r.unitY(u) - 34 * (u.isBoss ? 1.3 : 1) - 60; }
+  headY(u) { return this.r.unitY(u) - (34 * (u.isBoss ? 1.3 : 1) + 60) * this.r.unitScale; }
 
   /** Translate sim events into visuals. Returns nothing; audio is handled by the caller. */
   onEvents(events, sim) {
@@ -144,7 +144,8 @@ export class Effects {
         case 'text': {
           ctx.globalAlpha = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
           const sc = p < 0.12 ? 0.6 + p / 0.12 * 0.5 : 1.1 - Math.min(0.1, (p - 0.12));
-          ctx.font = `${it.weight} ${Math.round(it.size * sc)}px system-ui, sans-serif`;
+          // Floating text grows half as much as the units on phone portrait (readable, less clutter).
+          ctx.font = `${it.weight} ${Math.round(it.size * sc * (1 + (this.r.unitScale - 1) * 0.5))}px system-ui, sans-serif`;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           if (it.stroke) { ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.strokeText(it.str, it.x, it.y); }
           ctx.fillStyle = it.color; ctx.fillText(it.str, it.x, it.y);
@@ -185,13 +186,15 @@ export class Effects {
       const a = this.announce; const p = a.t / a.dur;
       ctx.save();
       ctx.globalAlpha = p < 0.1 ? p / 0.1 : p > 0.8 ? (1 - p) / 0.2 : 1;
-      ctx.font = '900 30px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const us = Math.min(this.r.unitScale, 1.8);
+      ctx.font = `900 ${Math.round(30 * us)}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const tw = Math.min(W - 40, ctx.measureText(a.text).width + 50);
+      const top = 58, bh = 50 * us;
       ctx.fillStyle = 'rgba(6,8,12,0.72)';
-      ctx.fillRect(W / 2 - tw / 2, 58, tw, 50);
-      ctx.fillStyle = a.color; ctx.fillRect(W / 2 - tw / 2, 106, tw, 3);
-      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(a.text, W / 2, 84, W - 60);
-      ctx.fillStyle = '#ffffff'; ctx.fillText(a.text, W / 2, 84, W - 60);
+      ctx.fillRect(W / 2 - tw / 2, top, tw, bh);
+      ctx.fillStyle = a.color; ctx.fillRect(W / 2 - tw / 2, top + bh - 2, tw, 3);
+      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(a.text, W / 2, top + bh / 2, W - 60);
+      ctx.fillStyle = '#ffffff'; ctx.fillText(a.text, W / 2, top + bh / 2, W - 60);
       ctx.restore();
     }
   }

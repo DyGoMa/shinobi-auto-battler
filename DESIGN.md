@@ -221,6 +221,7 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
 * **Audio:** a Web Audio synth (hit, crit, effective, ult ready, ult fire, clash, pull reveal pitched by rarity, victory, defeat). The context unlocks on the first tap, and mute is saved.
 * **Layout:**
   * Portrait: canvas on top, a nature-wheel/foe panel, and a thumb-reach ult grid.
+  * Phone portrait (portrait viewport, canvas under 700 CSS px): the whole lane stays visible at ~0.3×, so units are drawn bigger instead. A unit's head is kept ~30 CSS px wide (up to 2.4× size), its bars, labels and wind-up banner scale with it (floating text half as much), and each side alternates between two rows so neighbours don't cover each other. The front row's bars sit under its feet. Desktop, landscape and tablets are unchanged.
   * Landscape: a large canvas with a portrait strip.
   * Tap targets are at least 44 px, transitions are 0.2 s, and reduced motion is respected.
 * **Game loop:** rAF with delta clamped to 50 ms and a fixed 1/30 s sim tick. It pauses when the tab is hidden.

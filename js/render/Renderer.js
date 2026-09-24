@@ -5,6 +5,10 @@ export const GROUND_Y = 560;
 export const NATURE_COLORS = { Fire: '#ff5a36', Wind: '#5fd38a', Lightning: '#ffd43b', Earth: '#c08a52', Water: '#3fa9f5' };
 export const NEUTRAL_COLOR = '#d7dde5';
 export const TIER_COLORS = { genin: '#a3aebb', chunin: '#4dabf7', jonin: '#b388ff', kage: '#ffc53d' };
+// Phone portrait: the whole 1280-wide lane must stay visible, so it renders at ~0.3x.
+// Units (and their bars, labels and floating text) are drawn bigger instead: a unit's
+// head is kept about this many CSS px wide, and allies alternate between two rows.
+const PHONE_HEAD_PX = 30, PHONE_MAX_CANVAS_PX = 700, MAX_UNIT_SCALE = 2.4;
 
 export function natureColor(n) { return NATURE_COLORS[n] || NEUTRAL_COLOR; }
 
@@ -29,6 +33,7 @@ export class Renderer {
     this.bg = null;
     this.vis = new Map(); // uid -> visual state
     this.t = 0;
+    this.unitScale = 1;   // > 1 only on phone portrait (see resize)
   }
 
   setTheme(theme) { this.theme = theme; this.bg = null; }
@@ -44,11 +49,27 @@ export class Renderer {
     if (this.canvas.width !== pw || this.canvas.height !== ph) { this.canvas.width = pw; this.canvas.height = ph; }
     this.scale = pw / W;
     this.cssScale = s;
+    const phonePortrait = window.innerHeight > window.innerWidth && cssW < PHONE_MAX_CANVAS_PX;
+    this.unitScale = phonePortrait ? Math.max(1, Math.min(MAX_UNIT_SCALE, PHONE_HEAD_PX / (48 * s))) : 1;
+  }
+
+  /** Vertical offset of a unit from the ground line. Phone portrait: allies alternate
+   *  between two rows, and each side's front unit starts on a different row. */
+  depthOf(u) {
+    const v = this._vis(u);
+    if (this.unitScale <= 1) return v.depth;
+    const front = (v.slot % 2 === 0) === (u.side === 'player');
+    return (front ? 1 : -1) * 24 * this.unitScale;
   }
 
   _vis(u) {
     let v = this.vis.get(u.uid);
-    if (!v) { v = { lunge: 0, flash: 0, fade: 1, bob: Math.random() * 6.28, dir: u.side === 'player' ? 1 : -1, depth: ((u.uid * 37) % 3 - 1) * 7, lastX: u.x, walk: 0 }; this.vis.set(u.uid, v); }
+    if (!v) {
+      // slot = order of appearance on its side (used for the phone-portrait rows)
+      let slot = 0; for (const o of this.vis.values()) if (o.side === u.side) slot++;
+      v = { lunge: 0, flash: 0, fade: 1, bob: Math.random() * 6.28, dir: u.side === 'player' ? 1 : -1, depth: ((u.uid * 37) % 3 - 1) * 7, lastX: u.x, walk: 0, side: u.side, slot };
+      this.vis.set(u.uid, v);
+    }
     return v;
   }
 
@@ -106,14 +127,14 @@ export class Renderer {
     if (!sim) return;
     this._drawZones(sim);
     // Units sorted back-to-front by depth
-    const units = sim.units.slice().sort((a, b) => this._vis(a).depth - this._vis(b).depth);
+    const units = sim.units.slice().sort((a, b) => this.depthOf(a) - this.depthOf(b));
     for (const u of units) this._drawUnit(u, sim, dt);
     for (const u of units) if (u.alive) this._drawHud(u, sim);
     this._drawTelegraphBars(sim);
     if (effects) effects.draw(ctx, this);
   }
 
-  unitY(u) { const v = this._vis(u); return GROUND_Y + v.depth; }
+  unitY(u) { return GROUND_Y + this.depthOf(u); }
 
   _drawZones(sim) {
     const ctx = this.ctx;
@@ -154,11 +175,12 @@ export class Renderer {
     const moved = Math.abs(u.x - v.lastX) > 0.05; v.lastX = u.x;
     if (moved) v.walk += dt * 10; else v.walk *= 0.9;
     const facing = u.side === 'player' ? 1 : -1;
-    const lunge = v.lunge > 0 ? Math.sin((v.lunge / 0.16) * Math.PI) * 12 * facing : 0;
-    const big = u.isBoss ? 1.3 : u.isAdd ? 0.85 : 1;
+    const us = this.unitScale;
+    const lunge = v.lunge > 0 ? Math.sin((v.lunge / 0.16) * Math.PI) * 12 * us * facing : 0;
+    const big = (u.isBoss ? 1.3 : u.isAdd ? 0.85 : 1) * us;
     const x = u.x + lunge;
-    const baseY = GROUND_Y + v.depth;
-    const bob = Math.abs(Math.sin(v.walk)) * 5 + Math.sin(this.t * 2 + v.bob) * 1.2;
+    const baseY = GROUND_Y + this.depthOf(u);
+    const bob = (Math.abs(Math.sin(v.walk)) * 5 + Math.sin(this.t * 2 + v.bob) * 1.2) * us;
     const sink = u.alive ? 0 : (1 - v.fade) * 20;
     ctx.save();
     ctx.globalAlpha = u.alive ? 1 : v.fade;
@@ -192,7 +214,7 @@ export class Renderer {
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.arc(x, headY, headR, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = u.side === 'player' ? 'rgba(255,255,255,0.85)' : 'rgba(20,20,26,0.85)';
-    ctx.lineWidth = u.isBoss ? 4 : 2.5;
+    ctx.lineWidth = (u.isBoss ? 4 : 2.5) * us;
     ctx.stroke();
     // generic headband plate (no symbol)
     ctx.fillStyle = '#3b4652';
@@ -223,7 +245,7 @@ export class Renderer {
       ctx.save(); ctx.fillStyle = '#ffe066';
       for (let i = 0; i < 3; i++) {
         const a = this.t * 5 + i * 2.1;
-        this._star(x + Math.cos(a) * 22 * big, headY - headR - 6 + Math.sin(a) * 5, 5);
+        this._star(x + Math.cos(a) * 22 * big, headY - headR - 6 * us + Math.sin(a) * 5 * us, 5 * us);
       }
       ctx.restore();
     }
@@ -254,10 +276,13 @@ export class Renderer {
 
   _drawHud(u, sim) {
     const ctx = this.ctx;
-    const v = this._vis(u);
-    const big = u.isBoss ? 1.3 : u.isAdd ? 0.85 : 1;
-    const top = GROUND_Y + v.depth - 34 * big - 48 * big - 22;
-    const w = u.isBoss ? 120 : 60, h = u.isBoss ? 9 : 7;
+    const us = this.unitScale;
+    const big = (u.isBoss ? 1.3 : u.isAdd ? 0.85 : 1) * us;
+    // Phone portrait: the front row's bars go under its feet so they don't cover the back row.
+    const frontRow = us > 1 && this.depthOf(u) > 0;
+    const top = frontRow ? GROUND_Y + this.depthOf(u) + 12 * us : GROUND_Y + this.depthOf(u) - 34 * big - 48 * big - 22 * us;
+    // Bars grow with the unit, but not past the gap to the next ally on the same row.
+    const w = Math.min((u.isBoss ? 120 : 60) * us, u.isBoss ? 240 : 104), h = (u.isBoss ? 9 : 7) * us;
     const x = u.x - w / 2;
     // HP
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - 1, top - 1, w + 2, h + 2);
@@ -268,21 +293,24 @@ export class Renderer {
     // nature pip
     if (u.activeNature) {
       ctx.fillStyle = natureColor(u.activeNature);
-      ctx.beginPath(); ctx.arc(x - 8, top + h / 2, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x - 8 * us, top + h / 2, 5 * us, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 1.5 * us; ctx.stroke();
     }
     // chakra (player + enemies with jutsu)
     if (u.side === 'player' && !u.protected) {
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - 1, top + h + 2, w + 2, 5);
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - 1, top + h + 2 * us, w + 2, 5 * us);
       const full = u.chakra >= sim.B.combat.chakra.max;
       ctx.fillStyle = full ? `rgba(155,227,255,${0.7 + 0.3 * Math.sin(this.t * 10)})` : '#4dabf7';
-      ctx.fillRect(x, top + h + 3, w * Math.min(1, u.chakra / sim.B.combat.chakra.max), 3);
+      ctx.fillRect(x, top + h + 3 * us, w * Math.min(1, u.chakra / sim.B.combat.chakra.max), 3 * us);
     }
     // boss name / protect label
     if (u.isBoss || u.protected) {
-      ctx.font = '800 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(u.protected ? `Protect: ${u.short || u.name}` : u.name, u.x + 1, top - 3 + 1);
-      ctx.fillStyle = u.protected ? '#baffd6' : '#ffe1e1'; ctx.fillText(u.protected ? `Protect: ${u.short || u.name}` : u.name, u.x, top - 3);
+      ctx.font = `800 ${Math.round(15 * us)}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      const label = u.protected ? `Protect: ${u.short || u.name}` : u.name;
+      const half = ctx.measureText(label).width / 2 + 6;
+      const lx = Math.max(half, Math.min(W - half, u.x)); // keep big labels on the canvas
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(label, lx + 1, top - 3 * us + 1);
+      ctx.fillStyle = u.protected ? '#baffd6' : '#ffe1e1'; ctx.fillText(label, lx, top - 3 * us);
     }
   }
 
@@ -290,21 +318,22 @@ export class Renderer {
     const ctx = this.ctx;
     for (const t of sim.telegraphs) {
       const c = sim.unit(t.caster); if (!c || !c.alive) continue;
-      const v = this._vis(c);
-      const big = c.isBoss ? 1.3 : 1;
-      const y = GROUND_Y + v.depth - 34 * big - 48 * big - (c.isBoss ? 78 : 66);
+      const us = this.unitScale;
+      const big = (c.isBoss ? 1.3 : 1) * us;
+      const y = GROUND_Y + this.depthOf(c) - 34 * big - 48 * big - (c.isBoss ? 78 : 66) * us;
       const p = Math.min(1, (sim.time - t.startedAt) / Math.max(0.01, t.endsAt - t.startedAt));
       const col = natureColor(t.nature);
-      ctx.font = '900 16px system-ui, sans-serif';
+      ctx.font = `900 ${Math.round(16 * us)}px system-ui, sans-serif`;
       const label = t.name;
-      const tw = Math.min(360, Math.max(140, ctx.measureText(label).width + 30));
+      const tw = Math.min(us > 1 ? W - 16 : 360, Math.max(140 * us, ctx.measureText(label).width + 30 * us));
       const x = Math.max(8, Math.min(W - tw - 8, c.x - tw / 2));
+      const bh = 34 * us;
       ctx.fillStyle = 'rgba(8,10,14,0.85)';
-      this._round(x, y - 26, tw, 34, 8); ctx.fill();
-      ctx.strokeStyle = col; ctx.lineWidth = 2; this._round(x, y - 26, tw, 34, 8); ctx.stroke();
-      ctx.fillStyle = col; ctx.fillRect(x + 4, y + 2, (tw - 8) * p, 3);
+      this._round(x, y + 8 - bh, tw, bh, 8 * us); ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2 * us; this._round(x, y + 8 - bh, tw, bh, 8 * us); ctx.stroke();
+      ctx.fillStyle = col; ctx.fillRect(x + 4, y + 2, (tw - 8) * p, 3 * us);
       ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText((t.clashable && sim.clashEnabled ? '⚠ ' : '') + label, x + tw / 2, y - 10);
+      ctx.fillText((t.clashable && sim.clashEnabled ? '⚠ ' : '') + label, x + tw / 2, y + 8 - bh / 2, tw - 12);
     }
   }
 
