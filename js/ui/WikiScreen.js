@@ -24,7 +24,7 @@ let charFilter = { tier: 'All', role: 'All', nature: 'All' };
 let jutsuFilter = 'All';
 let wheelSel = null;
 
-const TITLE_OF = { home: 'Home', story: 'Story', team: 'Team', roster: 'Roster', summon: 'Summon', rush: 'Boss Rush', settings: 'Settings', tutorial: 'Tutorial', achievements: 'Achievements', daily: 'Daily challenge' };
+const TITLE_OF = { home: 'Home', story: 'Story', team: 'Team', roster: 'Roster', summon: 'Summon', rush: 'Boss Rush', settings: 'Settings', tutorial: 'Tutorial', achievements: 'Achievements', daily: 'Daily challenge', start: 'Menu' };
 
 function ensureIndex(game) {
   if (!INDEX) {

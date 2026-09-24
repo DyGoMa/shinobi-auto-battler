@@ -18,7 +18,7 @@ export function render(game, ui) {
   const set = (k, v) => { s[k] = v; game.commit('settings'); ui.refresh(); };
 
   return h('div.screen',
-    screenHead(ui, { title: 'Settings', help: 'guide/how-to-play' }),
+    screenHead(ui, { title: 'Settings', help: 'guide/how-to-play', back: ui.startPending ? { label: 'Menu', id: 'start' } : null }),
     tipCard(game, 'settings'),
 
     h('div.card',
@@ -85,10 +85,11 @@ function accountCard(game, ui) {
       actions = [btn('↻ Try again', busy('Connecting…', async () => { await save.initCloud(); }), 'primary')];
       break;
     case 'signedOut':
-      status = [h('p', 'Signed out. Your progress is saved in this browser only.'), h('p.small.muted', 'Sign in with Google to load or keep your cloud save, or use cloud save as a guest on this device.')];
+      status = [h('p', 'Not signed in. Your progress is saved in this browser only.'), h('p.small.muted', 'Sign in with Google to load or keep your cloud save, or use cloud save as a guest on this device.')];
       actions = [
         btn('Sign in with Google', busy('Signing in…', async () => {
           const r = await cloud.signInWithGoogle();
+          if (r.redirecting) { ui.toast('Taking you to Google to sign in…'); return; }
           if (r.ok) { await save.afterSignIn(); game.state.account.googleLinked = true; game.commit('account'); ui.toast('Signed in: your save syncs with your Google account.', 'good'); }
           else ui.toast(r.error, 'bad');
         }), 'primary'),
@@ -104,6 +105,7 @@ function accountCard(game, ui) {
       actions = [
         btn('🔗 Link Google account', busy('Linking…', async () => {
           const r = await cloud.linkGoogle();
+          if (r.redirecting) { ui.toast('Taking you to Google to sign in…'); return; }
           if (r.ok) {
             // A Google account that already had a save elsewhere: offer to load it first.
             if (r.switched) await save.afterSignIn();

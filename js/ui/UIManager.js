@@ -11,6 +11,7 @@ import * as Tutorial from './TutorialScreen.js';
 import * as Wiki from './WikiScreen.js';
 import * as Achievements from './AchievementsScreen.js';
 import * as Daily from './DailyScreen.js';
+import * as Start from './StartScreen.js';
 import { BattleScreen } from './BattleScreen.js';
 import { canAfford } from '../core/GachaSystem.js';
 import { isBossRushUnlocked } from '../core/Progression.js';
@@ -36,7 +37,10 @@ const SCREENS = {
   rush: { mod: Rush, tab: 'home' },
   achievements: { mod: Achievements, tab: 'home' },
   daily: { mod: Daily, tab: 'home' },
+  start: { mod: Start, tab: null },   // the start menu (no tab bar while it is up)
 };
+// Screens the start menu can open before the player enters the game.
+const START_SCREENS = ['start', 'wiki', 'settings'];
 
 export class UIManager {
   constructor(game) {
@@ -48,6 +52,11 @@ export class UIManager {
     this.current = 'home';
     this.params = {};
     this.battle = null;
+    // True until the player leaves the start menu (Continue, guest or Google): only
+    // START_SCREENS are reachable, the tab bar is hidden, and a deep link waits.
+    this.startPending = false;
+    this._startTarget = null;
+    this._held = false;
   }
 
   init() {
@@ -69,8 +78,12 @@ export class UIManager {
       if (raw.startsWith('wiki/')) return { id: 'wiki', params: { page: raw.slice(5) } };
       return SCREENS[raw] && raw !== 'tutorial' ? { id: raw, params: {} } : { id: 'home', params: {} };
     };
-    const start = fromHash();
-    this.go(start.id, start.params);
+    // The start menu comes first; a deep link (#wiki/…) opens once the player enters the game.
+    this.startPending = true;
+    this._startTarget = fromHash();
+    this.go('start');
+    // Android back on the menu does nothing (the menu re-arms its history entry); on the intro it skips (Intro.js).
+    window.addEventListener('popstate', () => { this._held = false; if (this.startPending && this.current === 'start') this._holdHistory(); });
     window.addEventListener('hashchange', () => {
       const t = fromHash();
       const now = this.current === 'wiki' ? `wiki/${this.params.page || 'home'}` : this.current;
@@ -84,7 +97,12 @@ export class UIManager {
 
   go(id, params = {}) {
     if (!SCREENS[id]) id = 'home';
+    if (this.startPending && !START_SCREENS.includes(id)) id = 'start';
+    if (!this.startPending && id === 'start') id = 'home';
     this.current = id; this.params = params;
+    document.body.classList.toggle('start-mode', this.startPending && id === 'start');
+    document.body.classList.toggle('start-sub', this.startPending && id !== 'start');
+    if (this.startPending && id === 'start') this._holdHistory();
     const hash = '#' + (id === 'wiki' && params.page && params.page !== 'home' ? `wiki/${params.page}` : id);
     try { if (location.hash !== hash) history.replaceState(null, '', hash); } catch { /* file:// */ }
     this.render(true);
@@ -108,6 +126,23 @@ export class UIManager {
       if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     }
     this.refreshTop();
+  }
+
+  /** One extra history entry while the menu is up, so the back button stays on the menu. */
+  _holdHistory() {
+    if (this._held) return;
+    this._held = true;
+    try { history.pushState({ menu: true }, ''); } catch { /* file:// */ }
+  }
+
+  /** The start menu is done: show the game (a deep link, or Home) and the first-boot prompt. */
+  enterGame() {
+    this.startPending = false;
+    document.body.classList.remove('start-mode', 'start-sub');
+    const t = this._startTarget && !['start', 'home'].includes(this._startTarget.id) ? this._startTarget : { id: 'home', params: {} };
+    this._startTarget = null;
+    this.go(t.id, t.params);
+    this.welcome();
   }
 
   /** Re-render the current screen (keeps scroll position). */
@@ -169,6 +204,7 @@ export class UIManager {
   /** The save was replaced (cloud save loaded, import, reset): re-check the welcome prompt. */
   onStateReplaced() {
     if (this._welcomeClose) this._welcomeClose();
+    if (this.startPending) { this.refresh(); return; }   // still on the menu: it re-reads the save
     if (!this.battle) this.go('home');
     this.welcome();
   }

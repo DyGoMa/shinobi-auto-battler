@@ -4,6 +4,10 @@ Your ninja fight on their own. **You** choose who fights, read the enemy's natur
 
 > New here? The Academy tutorial teaches the basics in three short battles. [Replay the tutorial](action:replay-tutorial)
 
+## Starting the game
+
+The game opens on a **start menu**. **Continue as guest** starts (or continues) a save kept on this device and online under a guest account. **Sign in with Google** keeps your save on every device you sign in on; a guest can pick it later to link the guest save to a Google account. The next time you open the game, one **Continue** button takes you straight back in. Settings → Account lets you sign out or switch.
+
 ## The screens
 
 - **Home**: continue the story, check your progress, and jump into challenges like the Boss Rush.

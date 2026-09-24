@@ -46,6 +46,9 @@ async function boot() {
   await save.init();
   game.save = save;
   Object.defineProperty(game, 'state', { get: () => save.state });
+  // Cloud save: restore the session this browser already has, while the intro plays.
+  // Nothing is created here; the start menu asks the player (guest or Google).
+  const connecting = save.connectCloud();
   // Achievements unlock by themselves: on load (so existing saves unlock what they already
   // qualify for) and after every change. Claiming happens on the Achievements screen.
   const unlockNow = (s) => { recordDayPlayed(s); return checkAchievements(s, CONTENT, BALANCE); };
@@ -61,7 +64,6 @@ async function boot() {
   ui = new UIManager(game);
   game.ui = ui;
   ui.init();
-  intro.done.then(() => ui.welcome());   // the welcome prompt waits for the intro
 
   let lastState = save.state;
   save.onChange((s) => {
@@ -72,17 +74,30 @@ async function boot() {
       ui.onStateReplaced();
       if (fresh.length) ui.achievementsUnlocked(fresh, { summary: true });
     }
+    if (ui.current === 'start' && !ui.battle) ui.refresh();   // the menu follows the cloud state
     ui.refreshTop();
   });
 
-  if (retro.length) ui.achievementsUnlocked(retro, { summary: true });
-  if (debug) new DebugPanel(game, ui).mount();
-
-  // Cloud save connects in the background; never blocks or crashes the game.
-  save.initCloud().then(() => {
-    // A Google account (linked now or on another device) counts for "Linked Up".
-    if (cloud.ready && !cloud.isAnonymous && !game.state.account.googleLinked) { game.state.account.googleLinked = true; game.commit('account'); }
-    if (ui.current === 'settings' && !ui.battle) ui.refresh();
+  // Leaving the start menu: Continue, "Continue as guest" or "Sign in with Google" all end here.
+  let entered = false;
+  game.enterGame = async ({ signedIn = false, switched = false } = {}) => {
+    if (entered) return; entered = true;
+    ui.enterGame();
+    if (retro.length) ui.achievementsUnlocked(retro, { summary: true });
+    if (debug) new DebugPanel(game, ui).mount();
+    if (cloud.ready) {
+      // A Google account (linked now or on another device) counts for "Linked Up".
+      if (!cloud.isAnonymous && !game.state.account.googleLinked) { game.state.account.googleLinked = true; game.commit('account'); }
+      // A newer cloud save is offered first, then this one uploads (Settings uses the same flow after a sign-in).
+      await save.afterSignIn();
+      if (signedIn) ui.toast(switched ? 'Signed in to your existing Google save.' : cloud.displayName ? `Signed in as ${cloud.displayName}.` : 'Cloud save is on (guest).', 'good');
+      if (ui.current === 'settings' && !ui.battle) ui.refresh();
+    }
+  };
+  // Back from a Google redirect (phones): straight into the game. An error stays on the menu, which shows it.
+  connecting.then(() => {
+    const r = cloud.redirectResult;
+    if (r?.ok) { intro.skip(); game.enterGame({ signedIn: true, switched: !!r.switched }); }
   }).catch((e) => console.warn('[cloud]', e));
   // Couldn't reach cloud save (offline at start, say): try again when the connection comes back.
   window.addEventListener('online', () => {

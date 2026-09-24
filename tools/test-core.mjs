@@ -9,7 +9,8 @@ import { makeRng, curve, enemyLevelForNode, beatenBy } from '../js/core/formulas
 import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner, isHardUnlocked, isHardNodeUnlocked, isArcHardCleared, isArcCleared, nodeEnemyLevel, buildNodeEnemies, hardNodeRewards, currentNode } from '../js/core/Progression.js';
 import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, dailyReward, dailyBattleConfig, dailyEnemyNature, dailyContent } from '../js/core/Daily.js';
 import { BattleSim } from '../js/core/BattleSim.js';
-import { INTRO, introPlan, introSeen, setIntroSeen } from '../js/core/StartFlow.js';
+import { INTRO, introPlan, introSeen, setIntroSeen, menuModel } from '../js/core/StartFlow.js';
+import { FirebaseBackend } from '../js/save/FirebaseBackend.js';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -346,6 +347,60 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(introSeen() === true && store.has('shinobi-auto-battler:pref:introSeen') && !Object.keys(defaultState(C, B)).some(k => /intro/i.test(k)), 'the intro-seen flag is a device preference, not part of the save');
   setIntroSeen(false);
   ok(introSeen() === false, 'the flag can be cleared');
+  delete globalThis.localStorage;
+}
+
+// ---- Session 5: the start menu never creates a cloud session by itself ----------
+{
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  // A fake Firebase SDK: records what the backend asks it to do.
+  const fakeSdk = (user = null) => {
+    const auth = { currentUser: user }; const calls = [];
+    const sdk = {
+      initializeApp: () => ({}), getAuth: () => auth, getFirestore: () => ({}),
+      onAuthStateChanged: (a, cb) => { queueMicrotask(() => cb(a.currentUser)); return () => {}; },
+      getRedirectResult: async () => { calls.push('redirectResult'); return null; },
+      signInAnonymously: async (a) => { calls.push('anonymous'); a.currentUser = { uid: 'guest1', isAnonymous: true }; return { user: a.currentUser }; },
+      signInWithPopup: async () => { calls.push('popup'); const e = new Error('blocked'); e.code = 'auth/popup-blocked'; throw e; },
+      signInWithRedirect: async () => { calls.push('redirect'); },
+      linkWithRedirect: async () => { calls.push('linkRedirect'); },
+      signOut: async (a) => { a.currentUser = null; },
+      GoogleAuthProvider: class { static credentialFromError() { return null; } },
+    };
+    return { calls, sdk, auth };
+  };
+  const cfg = { apiKey: 'k', authDomain: 'a', projectId: 'p', storageBucket: 's', messagingSenderId: 'm', appId: 'i' };
+  const f1 = fakeSdk(); const fb = new FirebaseBackend(cfg, { sdk: f1.sdk, useRedirect: false });
+  ok(await fb.init() === false && fb.phase === 'signedOut' && !f1.calls.includes('anonymous'), 'loading the game restores a session but never creates a guest account');
+  const g = await fb.continueAsGuest();
+  ok(g.ok && fb.ready && fb.isAnonymous && f1.calls.filter(c => c === 'anonymous').length === 1, '"Continue as guest" is what creates the anonymous session');
+  const f2 = fakeSdk({ uid: 'u2', isAnonymous: false, email: 'ninja@leaf.example', displayName: 'Naruto' }); const fb2 = new FirebaseBackend(cfg, { sdk: f2.sdk, useRedirect: false });
+  ok(await fb2.init() === true && !fb2.isAnonymous && fb2.displayName === 'Naruto' && !f2.calls.includes('anonymous'), 'a returning player\'s session is restored as it is');
+  // phones: Google sign-in goes by redirect and leaves a marker for the way back
+  const f3 = fakeSdk(); const fb3 = new FirebaseBackend(cfg, { sdk: f3.sdk, useRedirect: true }); await fb3.init();
+  const r3 = await fb3.signInWithGoogle();
+  ok(r3.ok && r3.redirecting && f3.calls.includes('redirect') && !f3.calls.includes('popup') && store.get('shinobi-auto-battler:pref:authRedirect') === '"signIn"', 'on phones Google sign-in uses the redirect flow');
+  // back from the redirect: the sign-in is picked up and the marker cleared
+  const f5 = fakeSdk(); f5.sdk.getRedirectResult = async (a) => { a.currentUser = { uid: 'u5', isAnonymous: false, email: 'e@x' }; return { user: a.currentUser }; };
+  const fb5 = new FirebaseBackend(cfg, { sdk: f5.sdk, useRedirect: true });
+  ok(await fb5.init() === true && fb5.redirectResult?.ok === true && fb5.redirectResult.kind === 'signIn' && store.get('shinobi-auto-battler:pref:authRedirect') === 'null', 'back from the redirect, the sign-in is picked up and the marker cleared');
+  // desktop: a blocked popup falls back to the redirect
+  const f4 = fakeSdk(); const fb4 = new FirebaseBackend(cfg, { sdk: f4.sdk, useRedirect: false }); await fb4.init();
+  const r4 = await fb4.signInWithGoogle();
+  ok(r4.redirecting && f4.calls.includes('popup') && f4.calls.includes('redirect'), 'a blocked sign-in popup falls back to the redirect');
+  // what the menu shows for each cloud state
+  const sOut = menuModel({ kind: 'signedOut' });
+  ok(sOut.guest && sOut.google === 'signIn' && !sOut.primary, 'no session: the menu offers guest and Google, and no Continue');
+  const sG = menuModel({ kind: 'guest', account: 'Guest (anonymous)' });
+  ok(sG.primary?.sub === 'Guest save' && sG.google === 'link' && !sG.guest, 'a guest gets Continue and can still sign in with Google to link');
+  const sN = menuModel({ kind: 'google', account: 'ninja@leaf.example', name: 'Naruto' });
+  ok(sN.primary?.sub === 'Signed in as Naruto' && !sN.google && !sN.guest, 'a Google player gets one Continue button');
+  ok(menuModel({ kind: 'off' }, { hasProgress: true }).primary?.label === '▶ Continue' && menuModel({ kind: 'off' }).primary?.label === '▶ Play', 'without cloud save the menu goes straight to the game');
+  const sE = menuModel({ kind: 'error' });
+  ok(sE.primary?.label === '▶ Play offline' && sE.retry && sE.message, 'when cloud save is unreachable the menu says so and offers to play offline');
+  ok(menuModel({ kind: 'connecting' }).busy && !menuModel({ kind: 'connecting' }).primary, 'while the session is being checked the menu waits');
+  ok(menuModel({ kind: 'signedOut' }, { redirectError: 'nope' }).message === 'nope', 'a failed Google redirect is reported on the menu');
   delete globalThis.localStorage;
 }
 

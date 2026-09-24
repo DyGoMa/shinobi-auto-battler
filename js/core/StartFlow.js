@@ -30,3 +30,42 @@ export function introPlan({ seen = false, reducedMotion = false, full = false } 
   const sceneMs = effects ? INTRO.run + INTRO.slam : INTRO.reducedTitle;
   return { splashMs: INTRO.splashFirst, scene: true, effects, totalMs: INTRO.splashFirst + sceneMs };
 }
+
+/**
+ * What the start menu offers for a cloud-save state (SaveManager.cloudState()).
+ *   primary   one Continue/Play button: { label, sub }, or null
+ *   guest     offer "Continue as guest" (creates the anonymous session)
+ *   google    'signIn' (no session yet) | 'link' (a guest can link) | null
+ *   retry     offer "Try again" (cloud save could not be reached)
+ *   busy      a status line while the session is being checked (buttons wait)
+ *   message   a line under the buttons (an error, say)
+ * Nothing is created until the player picks guest or Google: a browser with no
+ * session gets those two and no Continue.
+ */
+export function menuModel(cs, { hasProgress = false, redirectError = null } = {}) {
+  const m = { primary: null, guest: false, google: null, retry: false, busy: null, message: redirectError || null };
+  switch (cs.kind) {
+    case 'off':        // cloud save not configured: local saves only
+      m.primary = { label: hasProgress ? '▶ Continue' : '▶ Play', sub: hasProgress ? 'Saved on this device' : 'A new game, saved on this device' };
+      break;
+    case 'connecting':
+      m.busy = 'Checking your account…';
+      break;
+    case 'error':
+      m.primary = { label: '▶ Play offline', sub: 'Saved on this device only' };
+      m.retry = true;
+      m.message = m.message || 'Couldn’t reach cloud save. You can play now; your progress uploads once you sign in.';
+      break;
+    case 'guest':
+      m.primary = { label: '▶ Continue', sub: 'Guest save' };
+      m.google = 'link';
+      break;
+    case 'google':
+      m.primary = { label: '▶ Continue', sub: `Signed in as ${cs.name || cs.account}` };
+      break;
+    default:           // signedOut: no session on this browser yet
+      m.guest = true;
+      m.google = 'signIn';
+  }
+  return m;
+}

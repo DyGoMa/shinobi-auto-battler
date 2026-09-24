@@ -172,19 +172,23 @@ export class SaveManager {
     return this.state;
   }
 
-  /** Connect the cloud backend (never throws). Offers the cloud save if newer. */
+  /** Connect the cloud backend and, with a session, offer a newer cloud save then upload (never throws). */
   async initCloud() {
-    if (!this.cloud) { this.cloudStatus = 'not configured'; return; }
-    try {
-      const ok = await this.cloud.init();
-      this.cloudStatus = this.cloud.status;
-      if (!ok) return;
-      await this.checkCloudNewer();
-    } catch (e) {
-      console.warn('[save] cloud init failed', e);
-      this.cloudStatus = 'error';
-    }
+    const ok = await this.connectCloud();
+    if (ok) await this.afterSignIn();
+  }
+
+  /**
+   * Load the SDK and restore the session this browser already has. Never creates
+   * one (the start menu does that) and never throws. Resolves true with a session.
+   */
+  async connectCloud() {
+    if (!this.cloud) { this.cloudStatus = 'not configured'; return false; }
+    let ok = false;
+    try { ok = await this.cloud.init(); this.cloudStatus = this.cloud.status; }
+    catch (e) { console.warn('[save] cloud init failed', e); this.cloudStatus = 'error'; }
     this._notify();
+    return ok;
   }
 
   async checkCloudNewer() {
@@ -244,7 +248,7 @@ export class SaveManager {
     if (c.phase === 'connecting') return { kind: 'connecting' };
     if (c.phase === 'error') return { kind: 'error', error: c.error };
     if (c.phase === 'signedOut' || !c.ready) return { kind: 'signedOut' };
-    return { kind: c.isAnonymous ? 'guest' : 'google', account: c.accountLabel, lastSync: this.lastCloudSave, syncError: this.cloudError };
+    return { kind: c.isAnonymous ? 'guest' : 'google', account: c.accountLabel, name: c.displayName || null, lastSync: this.lastCloudSave, syncError: this.cloudError };
   }
 
   /** After signing in (Google or guest): offer a newer cloud save, then upload this one. */

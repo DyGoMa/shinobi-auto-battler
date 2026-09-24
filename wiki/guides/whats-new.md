@@ -2,6 +2,7 @@
 
 ## Version {{cfg:version.current}}
 
+- **A start menu.** The game opens on a menu: **Continue as guest** keeps your save on this device and online as a guest, **Sign in with Google** keeps it on every device, and the Wiki and Settings are a tap away. Nothing is stored online until you choose. Come back later and one **Continue** button remembers which you picked.
 - **An opening scene.** A short splash and intro the first time the game loads (tap anywhere to skip it). Later visits show only the splash; Settings → Replay the intro plays it again.
 
 ## Version 0.9
