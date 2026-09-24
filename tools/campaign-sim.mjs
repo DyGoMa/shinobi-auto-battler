@@ -1,4 +1,4 @@
-// tools/campaign-sim.mjs — a free-to-play player plays Part 1 in order. `npm run campaign`
+// tools/campaign-sim.mjs — a free-to-play player plays the story in order (Part I, then Part II). `npm run campaign`
 // The bot:
 //   * pulls whenever it can afford it (10-pulls first) on the current arc banner
 //     (or Standard), exactly like a player would;
@@ -10,9 +10,9 @@
 //   * when it loses, it REPLAYS the most recent cleared node for Ryo (max
 //     balance.targets.campaignMaxReplaysPerNode replays per stuck node), then retries.
 // Report: team level at each arc, pulls, stuck points, scroll/Ryo balance over time.
-// Target: all of Part 1 cleared, no node needing more than the max replays.
+// Target: every part in SIM_PARTS cleared, no node needing more than the max replays.
 // Runs CAMPAIGN_PLAYERS (default 10) seeds; prints the first in detail.
-import { C, B, runNode, teamForNode, median, seedFor } from './common.mjs';
+import { C, B, runNode, teamForNode, median, seedFor, SIM_PARTS, PART_LABEL } from './common.mjs';
 import { defaultState } from '../js/core/SaveManager.js';
 import { pull, canAfford } from '../js/core/GachaSystem.js';
 import { completeNode, canLevelUp, levelUp, isBannerUnlocked, ownedOrLoaner } from '../js/core/Progression.js';
@@ -26,7 +26,7 @@ const HARD_CAP = 12; // give up on a node after this many replays (reported as F
 function playCampaign(playerSeed, verbose) {
   const state = defaultState(C, B);
   const rng = makeRng(playerSeed);
-  const nodes = C.nodes.filter(n => n.part === 1);
+  const nodes = C.nodes.filter(n => SIM_PARTS.includes(n.part));
   const log = { arcs: [], stuck: [], fails: [], timeline: [], battles: 0, replays: 0 };
   let battleSeed = playerSeed * 7919;
 
@@ -125,7 +125,7 @@ function print(log, state) {
   console.log(`Total pulls: ${state.gacha.totalPulls}   battles: ${log.battles}   farm replays: ${log.replays}`);
 }
 
-console.log(`Shinobi Auto-Battler — free-to-play campaign sim, Part 1 (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node)`);
+console.log(`Shinobi Auto-Battler — free-to-play campaign sim, ${PART_LABEL()} (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node)`);
 const logs = [];
 const VERBOSE = Number(process.env.CAMPAIGN_VERBOSE || 1);
 for (let p = 0; p < PLAYERS; p++) logs.push(playCampaign(seedFor('campaign', p + 1), p + 1 === VERBOSE));
@@ -142,6 +142,6 @@ const allStuck = logs.flatMap(l => l.stuck.map(s => s.node));
 const freq = {}; for (const n of allStuck) freq[n] = (freq[n] || 0) + 1;
 const hot = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 6);
 console.log(`\nMost common stuck points: ${hot.length ? hot.map(([n, c]) => `${n} (${c}/${PLAYERS})`).join(', ') : 'none'}`);
-console.log(`Median final team level: ${median(logs.map(l => l.arcs[l.arcs.length - 1]?.teamLevel || 0)).toFixed(1)}  (last enemy level ${enemyLevelForNode(C.nodes.filter(n => n.part === 1).slice(-1)[0].globalIndex, B)})`);
-console.log(`\n${failed ? 'FAIL' : 'PASS'} — ${PLAYERS - failed}/${PLAYERS} free-to-play players cleared Part 1 with no node needing more than ${MAX_REPLAYS} replays.`);
+console.log(`Median final team level: ${median(logs.map(l => l.arcs[l.arcs.length - 1]?.teamLevel || 0)).toFixed(1)}  (last enemy level ${enemyLevelForNode(C.nodes.filter(n => SIM_PARTS.includes(n.part)).slice(-1)[0].globalIndex, B)})`);
+console.log(`\n${failed ? 'FAIL' : 'PASS'} — ${PLAYERS - failed}/${PLAYERS} free-to-play players cleared ${PART_LABEL()} with no node needing more than ${MAX_REPLAYS} replays.`);
 process.exit(failed ? 1 : 0);

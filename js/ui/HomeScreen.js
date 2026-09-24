@@ -6,8 +6,7 @@ export function render(game, ui) {
   const { C, state } = game;
   const node = currentNode(state, C);
   const arc = node ? C.arc[node.arcId] : null;
-  const part1 = C.nodes.filter(n => n.part === 1);
-  const cleared = part1.filter(n => state.progress.cleared[n.id]).length;
+  const cleared = C.nodes.filter(n => state.progress.cleared[n.id]).length;
   const team = resolveTeam(state, null, C);
   const power = team.members.reduce((s, id) => s + (state.roster[id] ? unitPower(C.char[id], state.roster[id], game.B) : 0), 0);
   const rush = isBossRushUnlocked(state, C);
@@ -16,19 +15,19 @@ export function render(game, ui) {
   return h('div.screen',
     h('div.hero',
       h('div.kanji', { 'aria-hidden': 'true' }, '忍'),
-      h('div.pill.accent', 'Part I — The Hidden Leaf Village'),
+      h('div.pill.accent', (node?.part ?? 2) === 1 ? 'Part I — The Hidden Leaf Village' : 'Part II — Shippuden'),
       h('h1', { style: { marginTop: '10px' } }, 'Shinobi Auto-Battler'),
       h('p', { style: { maxWidth: '620px' } }, 'Your ninja fight on their own — you choose the team, read the Nature Wheel, and decide when to unleash each Ultimate. Fire one into an enemy\'s wind-up to trigger a ', h('b', 'Jutsu Clash'), '.'),
       h('div.cta',
         node
           ? btn(h('span', '▶ Continue: ', h('b', node.name), h('span.sub', ` · ${arc.name}`)), () => ui.go('story', { arcId: node.arcId, nodeId: node.id }), 'primary big')
-          : btn('✓ Part I complete — replay any node', () => ui.go('story'), 'good big'),
+          : btn('✓ Story complete — replay any node', () => ui.go('story'), 'good big'),
         btn('👥 Team', () => ui.go('team', { nodeId: node?.id }), 'big'),
         btn('📜 Summon', () => ui.go('summon'), 'big'),
       ),
     ),
     h('div.stat-tiles',
-      tile('Story progress', `${cleared} / ${part1.length}`, arc ? arc.name : 'All arcs cleared'),
+      tile('Story progress', `${cleared} / ${C.nodes.length}`, arc ? arc.name : 'All arcs cleared'),
       tile('Team power', fmt(power), team.members.map(id => C.char[id]?.short).join(' · ')),
       tile('Ninja recruited', `${owned} / ${C.roster.length}`, `${state.gacha.totalPulls} summons`),
       tile('Kage pity', `${Math.max(0, game.B.gacha.pity - state.gacha.pity)}`, 'summons to a guaranteed Kage'),
@@ -40,7 +39,7 @@ export function render(game, ui) {
         h('div.grow'), h('span.muted.small', 'Edit team ›'))),
     h('div.section-title', h('h2', 'How to play')),
     h('div.grid.three',
-      how('🗺️', 'Story', 'Fight through Part I in anime order. Each arc ends with a boss that has its own special mechanics.'),
+      how('🗺️', 'Story', 'Fight through Part I and Part II (Shippuden) in anime order. Each arc ends with a boss that has its own special mechanics.'),
       how('🔥', 'Nature Wheel', 'Fire > Wind > Lightning > Earth > Water > Fire. Effective hits deal ×1.3, resisted ones ×0.8. Check the enemy natures before each fight.'),
       how('⚡', 'Jutsu Clash', 'When an enemy telegraphs a jutsu (⚠ bar), fire a ready Ultimate into it. Beat its nature to OVERPOWER it; lose and you only blunt it.'),
       how('📜', 'Summon & level', 'Scrolls summon ninja (Genin → Kage). Ryo levels them up. Duplicates add stars; every tier stays useful.'),

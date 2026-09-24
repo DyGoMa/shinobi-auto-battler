@@ -1,15 +1,14 @@
 // content/index.js — merges every content file into one CONTENT object,
 // computes derived data (global node indices, lookups) and validates it.
-// Session 2: add `import { SHIPPUDEN_ARCS } from './arcs/shippuden.js'`, put it
-// in ARC_FILES and drop PART2_PLACEHOLDERS. No engine changes needed.
+// A new part = one more arcs/*.js file in ARC_FILES. No engine changes needed.
 import { ROSTER, TAGS } from './roster.js';
 import { ENEMIES, BOSS_RUSH } from './enemies.js';
 import { PART1_ARCS } from './arcs/part1.js';
-import { PART2_PLACEHOLDERS } from './arcs/part2-placeholders.js';
+import { SHIPPUDEN_ARCS } from './arcs/shippuden.js';
 import { BANNERS } from './banners.js';
 import { NATURES, TIERS, ROLES } from '../core/formulas.js';
 
-const ARC_FILES = [PART1_ARCS, PART2_PLACEHOLDERS];
+const ARC_FILES = [PART1_ARCS, SHIPPUDEN_ARCS];
 
 export const OBJECTIVE_TYPES = ['defeatAll', 'survive', 'protect', 'defeatBoss'];
 export const MECHANIC_TYPES = ['telegraphAoE', 'summonAdds', 'shieldPhase', 'enrage', 'elementSwap', 'reflect', 'lifesteal', 'reviveOnce', 'regen', 'rally'];

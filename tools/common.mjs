@@ -10,6 +10,11 @@ import { autoPickTeam } from '../js/core/TeamPicker.js';
 export const C = CONTENT;
 export const B = BALANCE;
 
+/** Story parts the sims cover (default: every part with content). SIM_PARTS=1 for a quick Part I run. */
+export const SIM_PARTS = (process.env.SIM_PARTS || [...new Set(CONTENT.arcs.map(a => a.part))].join(',')).split(',').map(Number);
+export const PART_LABEL = (parts = SIM_PARTS) => parts.length > 1 ? `Parts ${parts.map(roman).join('–')}` : `Part ${roman(parts[0])}`;
+function roman(n) { return ['0', 'I', 'II', 'III', 'IV'][n] || String(n); }
+
 /** Characters whose unlock is satisfied once every arc BEFORE `arcIndex` is cleared. */
 export function availableBeforeArc(arcIndex) {
   const cleared = new Set(C.arcs.filter(a => !a.placeholder && a.arcIndex < arcIndex).map(a => a.id));
@@ -50,7 +55,14 @@ export function onCurveTeam(node, { levelOffset = B.targets.onCurve.levelOffset,
   const level = enemyLevelForNode(node.globalIndex, B) + levelOffset;
   const avail = availableBeforeArc(node.arcIndex);
   const cands = avail.map(c => ({ id: c.id, level, stars: typeof stars === 'number' ? stars : (stars[c.tier] ?? 1) }));
-  const pick = autoPickTeam(cands, node, C, B, { tierMix, matchupWeight: 0 });
+  // A forced ninja whose tier isn't in the mix (e.g. a forced Kage) takes the lowest
+  // slot; otherwise no lineup can match the mix and the forced ninja fights alone.
+  const mix = [...tierMix];
+  for (const id of node.team?.forced || []) {
+    const tier = C.char[id]?.tier;
+    if (tier && !mix.includes(tier)) mix[mix.length - 1] = tier;
+  }
+  const pick = autoPickTeam(cands, node, C, B, { tierMix: mix, matchupWeight: 0 });
   const team = teamForNode(node, pick);
   const owned = Object.fromEntries(cands.map(c => [c.id, { level: c.level, stars: c.stars }]));
   for (const id of team.members) if (!owned[id]) owned[id] = { level, stars: 1 };

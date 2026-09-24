@@ -2,11 +2,11 @@
 // 200 seeded battles per scenario (balance.targets.battlesPerScenario) with a
 // bot that fires every Ultimate the moment it is ready. Prints a PASS/FAIL table.
 //   1. Bell Test — starter team, level 1, NO ults: win >= targets.bellTestMinWin
-//   2. Every Part 1 arc boss — "on-curve" team: win within targets.bossWinRange
+//   2. Every arc boss (Part I and Part II; SIM_PARTS) — "on-curve" team: win within targets.bossWinRange
 //   3. Boss Rush — Jonin-heavy team at the unlock level: median round in targets.bossRushRoundRange
 //   4. Nature check — a countering team clearly beats a badly-countered one
 // Extra (info only): fight length, seconds between ults, Jutsu Clash smart-bot gain.
-import { C, B, runNode, onCurveTeam, runBossRush, availableBeforeArc, playerSpecs, pct, median, seedFor } from './common.mjs';
+import { C, B, runNode, onCurveTeam, runBossRush, availableBeforeArc, playerSpecs, pct, median, seedFor, SIM_PARTS } from './common.mjs';
 import { autoPickTeam } from '../js/core/TeamPicker.js';
 
 const N = Number(process.env.SIM_N) || B.targets.battlesPerScenario;
@@ -29,7 +29,7 @@ function add(name, value, target, pass, note = '') { rows.push({ name, value, ta
 }
 
 // ---------------------------------------------------------------- 2. Arc bosses
-for (const arc of C.arcs.filter(a => !a.placeholder && a.part === 1)) {
+for (const arc of C.arcs.filter(a => !a.placeholder && SIM_PARTS.includes(a.part))) {
   const node = arc.nodes[arc.nodes.length - 1];
   const { team, owned, level } = onCurveTeam(node);
   let w = 0; const times = []; let smartW = 0;

@@ -11,7 +11,7 @@ there. Names follow the English dub (see NAMING.md).
 
 ## 1. Core loop
 
-1. **Story**: fight through Part I in anime episode order (8 arcs, 32 nodes). Each arc ends with a boss that has data-defined mechanics.
+1. **Story**: fight through Part I and Part II (Shippuden) in anime episode order (25 arcs, 99 nodes). Each arc ends with a boss that has data-defined mechanics.
 2. **Rewards**: first clears pay scrolls and Ryo, replays pay Ryo (and a few scrolls), and clearing a whole arc pays a bonus.
 3. **Summon**: scrolls buy pulls on the Standard banner or the current arc's banner (rate-up). Villains join the pools after their arc is cleared.
 4. **Upgrade**: Ryo buys levels. Duplicate pulls add stars (+10% stats each, up to 5★), and duplicates past 5★ refund Ryo.
@@ -109,7 +109,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 * **Taps only:** one tap on a portrait. There are no combos and no gestures.
 * **Nature wheel and team composition:** the outcome *is* the wheel, and it rewards bringing counters and a Tank.
 * **Tunable, with an on/off flag:** `balance.jutsuClash` has `enabled` plus every multiplier. The enemy wind-up time is `enemyScaling.enemyJutsu.windup`, and the boss wind-up is `bossMechanics.telegraphAoE.windup`.
-* **Scales to ~30 new characters:** it reads only data that every character already has (natures, role, taijutsu flag) and every enemy jutsu/special, with no per-character code. Session 2 content gets clashes for free.
+* **Scales to new characters:** it reads only data that every character already has (natures, role, taijutsu flag) and every enemy jutsu/special, with no per-character code. The 34 Part II characters and 24 Part II bosses got clashes with no code changes.
 
 ---
 
@@ -168,14 +168,14 @@ Example: the Bell Test forces Naruto, Sakura and Sasuke with no Leader and bench
 * **Animation:** a scroll unrolls, then a flash in the rarity colour. Kage pulls get a bigger flash, particle burst and glow. Tap to skip.
 * **Tiers reflect canon power**, not just rank. The Sannin and the Third Hokage are Kage; Sakura, Ino and the other rookie genin are Genin.
   * To keep every tier viable, rarity multipliers are small (1.0 / 1.12 / 1.25 / 1.4), so a 5★ Genin (×1.4) matches a 1★ Kage.
-  * Late-game power growth is meant to come from **alternate forms** (two Part 1 examples ship now; Session 2 adds Shippuden forms).
+  * Late-game power growth comes from **alternate forms**: two Part I forms, plus seven Part II forms (Sage Mode and Six Paths Sage Mode Naruto, Eternal Mangekyo Sharingan Sasuke, Hundred Healings Sakura, Mangekyo Sharingan Kakashi, Eight Inner Gates Guy, Fifth Kazekage Gaara).
 
 ## 6. Progression and economy
 
 * **Levels** cost Ryo on a linear curve (`60 + 34 × level`); the level cap is 100.
 * **Catch-up discount:** a ninja 5 or more levels behind your best one levels up 60% cheaper, so bringing a nature counter off the bench is affordable.
 * **Starting save:** Naruto, Sakura, Sasuke, with Kakashi as Leader, plus 1,500 scrolls and 500 Ryo.
-* **Pacing** (free-to-play bots finish Part 1 at team level ~34–39, median 35.5, vs enemy level 30):
+* **Pacing:** free-to-play bots finish Part I at team level ~34–39 (median 35.5) vs enemy level 30, and Part II at or near the level cap (median 100) vs enemy level 94.
 
 | Arc | Enemy level at the end |
 |---|---|
@@ -187,6 +187,23 @@ Example: the Bell Test forces Naruto, Sakura and Sasuke with no Leader and bench
 | Land of Tea Escort Mission | 23 |
 | Sasuke Retrieval Squad | 28 |
 | Kurosuki Family Removal Mission | 30 |
+| Kazekage Rescue Mission | 35 |
+| Tenchi Bridge Reconnaissance Mission | 39 |
+| Twelve Guardian Ninja | 42 |
+| Akatsuki Suppression Mission | 46 |
+| Three-Tails' Appearance | 49 |
+| Itachi Pursuit Mission | 51 |
+| Tale of Jiraiya the Gallant | 55 |
+| Fated Battle Between Brothers | 59 |
+| Six-Tails Unleashed | 62 |
+| Pain's Assault | 67 |
+| Five Kage Summit | 70 |
+| Fourth Great Ninja War: Countdown | 74 |
+| Fourth Great Ninja War: Confrontation | 79 |
+| Fourth Great Ninja War: Climax | 84 |
+| Kakashi: Shadow of the ANBU Black Ops | 87 |
+| Birth of the Ten-Tails' Jinchuriki | 90 |
+| Kaguya Otsutsuki Strikes | 94 |
 
 ## 7. Boss Rush
 
@@ -208,9 +225,9 @@ Example: the Bell Test forces Naruto, Sakura and Sasuke with no Leader and bench
   * Tap targets are at least 44 px, transitions are 0.2 s, and reduced motion is respected.
 * **Game loop:** rAF with delta clamped to 50 ms and a fixed 1/30 s sim tick. It pauses when the tab is hidden.
 
-## 9. Notes for Sessions 2 and 3
+## 9. Notes for Session 3
 
-* Add Shippuden content as **data only**: `arcs/shippuden.js` (part 2), new roster entries (alternate forms use `formOf`), enemies with mechanic lists, and banners. Then swap the placeholder import in `content/index.js`. See CONTENT_GUIDE.md.
-* **The enemy level curve continues by global node index.** Node 90 is level 86, and the level cap is 100.
+* Shippuden content is **data only** (`arcs/shippuden.js`, roster, enemies, banners); no engine code changed for it. See CONTENT_GUIDE.md.
+* **The enemy level curve continues by global node index.** Part II ends at node 99 (level 94); the level cap is 100, reached around node 105.
 * Run `npm run autotune -- --write` after adding bosses. It tunes only `balance.enemyScaling.nodeMult`.
 * Every new name needs a source in `tools/naming-sources.mjs` (NAMING.md). `npm run validate` warns otherwise.

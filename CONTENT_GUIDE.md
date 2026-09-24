@@ -22,7 +22,7 @@ Two more things happen outside `js/content/`:
 | `js/content/roster.js` | pullable characters and alternate forms (`ROSTER`, `TAGS`) |
 | `js/content/enemies.js` | enemies, bosses, summoned adds, protect targets (`ENEMIES`), `BOSS_RUSH` |
 | `js/content/arcs/part1.js` | Part I arcs and nodes |
-| `js/content/arcs/part2-placeholders.js` | greyed-out Part II arcs (Session 2 replaces this) |
+| `js/content/arcs/shippuden.js` | Part II (Shippuden) arcs and nodes |
 | `js/content/banners.js` | summon banners |
 | `js/content/index.js` | merges everything, computes global node order, validates |
 
@@ -148,7 +148,7 @@ Every mechanic has a `type` and a `name` (shown on screen; `lifesteal`/`regen` m
 ```
 A unit only becomes a *boss* (boss stat multiplier, crown, boss HP bar) when a node lists it with `boss: true`.
 
-## 5. Arc and nodes (`arcs/part1.js`, Session 2: `arcs/shippuden.js`)
+## 5. Arc and nodes (`arcs/part1.js`, `arcs/shippuden.js`)
 
 ### Arc template
 ```js
@@ -232,9 +232,10 @@ export const BOSS_RUSH = {
 ```
 Round strength comes from `balance.bossRush` (`levelByRound`, `statMultByRound`, `loopMult`).
 
-## 8. Session 2 checklist (adding Shippuden)
-1. Create `js/content/arcs/shippuden.js` exporting `SHIPPUDEN_ARCS` (the same schema, with `part: 2`).
-2. In `js/content/index.js`, import it, add it to `ARC_FILES`, and remove `PART2_PLACEHOLDERS`.
+## 8. Checklist: adding arcs (or a whole new part)
+1. Add arcs to the part's file, or create a new `js/content/arcs/<part>.js` with the same schema (`part: 3`…).
+2. For a new file, import it in `js/content/index.js` and add it to `ARC_FILES`.
 3. Add characters and forms to `roster.js`, enemies and bosses to `enemies.js`, and banners to `banners.js`.
 4. Add every new name to `tools/naming-sources.mjs`, then run `node tools/naming.mjs --write`.
-5. Run `npm run validate`, then `npm run autotune -- --write` for the new bosses, then `npm run sim` and `npm run campaign`. Extend `campaign-sim.mjs`'s `part === 1` filter if Part II should be included.
+5. Run `npm run validate`, then `npm run autotune -- --write` for the new bosses, then `npm run sim` and `npm run campaign`. Both sims cover every part with content (set `SIM_PARTS=1,2` to pick parts).
+6. Keep the last node's enemy level under `stats.levelCap`: with `levelByNode` growth 0.95, the cap is reached around node 105 (Part II ends at node 99, level 94).

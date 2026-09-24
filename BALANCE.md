@@ -96,7 +96,7 @@ The campaign report lists "Most common stuck points".
 | Scenario | Target (in `targets`) |
 |---|---|
 | Bell Test with the starter team at level 1, **no ults** | win ≥ 80% (`bellTestMinWin`) |
-| Each Part 1 arc boss, "on-curve" team | win 50–70% (`bossWinRange`) |
+| Each arc boss (Part I and Part II), "on-curve" team | win 50–70% (`bossWinRange`) |
 | Boss Rush, Jonin-heavy team at level 32 | median round 4–5 (`bossRushRoundRange`) |
 | Nature check: same team re-typed to counter vs be countered | gap ≥ 25% (`natureCheckMinGap`) |
 | Boss fight length | median 30–60 s (`fightLengthRange`) |
@@ -105,6 +105,7 @@ The campaign report lists "Most common stuck points".
 * Level = that node's enemy level.
 * Stars: Genin 3★, Chunin 2★, Jonin 1★, Kage 1★.
 * The strongest lineup of one Jonin, two Chunin and one Genin available at that point in the story, chosen **without** looking at natures, so bosses are tuned for a typical team, not a perfect counter.
+* A node's forced ninja always play. If one is outside that tier mix (a forced Kage such as Jiraiya), they take the Genin slot.
 
 `npm run campaign` simulates free-to-play players (10 by default). Each one:
 * Pulls whenever they can afford to.
@@ -112,7 +113,7 @@ The campaign report lists "Most common stuck points".
 * Picks teams by nature matchup.
 * When they lose: farms the last cleared node (max 3 replays per stuck node), rotates in counters, and retries.
 
-It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Target:** every player clears Part 1 with no node needing more than 3 replays.
+It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Target:** every player clears the whole story (Part I and Part II) with no node needing more than 3 replays. `SIM_PARTS=1` limits both sims to Part I.
 
 ## 4. Where the current numbers came from
 * `nodeMult` values were set by `npm run autotune` (bisection on a 200-battle sample per boss).

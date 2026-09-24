@@ -7,8 +7,9 @@
 //   tier        'genin' | 'chunin' | 'jonin' | 'kage'   (gacha rarity: Common/Rare/Epic/Legendary)
 //   role        'Tank' | 'Striker' | 'Ranged' | 'Support'
 //   natures     subset of Fire/Wind/Lightning/Earth/Water ([] = neutral). First = defensive nature.
-//               Rule (NAMING.md): natures used on-screen in Part 1; if none, the first nature
-//               Narutopedia lists; kekkei genkai -> component natures; taijutsu specialists -> [].
+//               Rule (NAMING.md): natures used on-screen in the character's part; if none, the
+//               nature Narutopedia marks as their affinity (else the first listed); kekkei genkai ->
+//               component natures; taijutsu specialists -> [].
 //   taijutsu    true for taijutsu specialists (neutral, never "resisted", pierce some DEF)
 //   stats       RELATIVE weights vs the role template in balance.js (1 = average)
 //   ult         { name (dub jutsu), type, nature?, stun? }  type by role:
@@ -22,10 +23,12 @@
 //   starter     part of the first-load team (starterLeader = the starting Leader)
 //   color       unique #rrggbb; initials/emoji are the only "art" (no official designs)
 
+// Village labels use the dub's short forms ("Hidden Leaf", "Hidden Sand"…; see NAMING.md).
 export const TAGS = {
   team7: 'Team 7', team8: 'Team 8', team10: 'Team 10', teamguy: 'Team Guy',
-  sand: 'Sand Siblings', sound: 'Sound ninja', sannin: 'the Legendary Sannin', mist: 'Mist ninja',
+  sand: 'Hidden Sand ninja', sound: 'Hidden Sound ninja', sannin: 'the Legendary Sannin', mist: 'Hidden Mist ninja',
   hokage: 'Hokage', leaf: 'Hidden Leaf ninja', medic: 'medical ninja',
+  akatsuki: 'Akatsuki', taka: 'Taka', cloud: 'Hidden Cloud ninja', stone: 'Hidden Stone ninja',
 };
 
 export const ROSTER = [
@@ -319,6 +322,295 @@ export const ROSTER = [
     leader: { stat: 'atk', scope: { nature: 'Lightning' } },
     tags: ['team7', 'sound'], unlock: { arcCleared: 'arc_sasuke_recovery' },
     color: '#4c1d95', initials: 'SU', emoji: '🌑',
+  },
+
+  // =========================================================================
+  // PART II (Shippuden). Same rules; natures = natures used on screen in Part II,
+  // else Narutopedia's affinity / first listed (NAMING.md). Villains join after
+  // their arc is cleared; allies and forms when the story gives them the power.
+  // =========================================================================
+
+  // ============================ GENIN (Common) ============================
+  {
+    id: 'konohamaru', name: 'Konohamaru Sarutobi', short: 'Konohamaru', tier: 'genin', role: 'Striker', natures: ['Fire'],
+    stats: { hp: 0.95, atk: 1.05, def: 0.95 },
+    ult: { name: 'Rasengan', type: 'single' },
+    leader: { stat: 'startChakra', scope: { tag: 'leaf' } },
+    tags: ['leaf'], unlock: { arcCleared: 'arc_pain' },
+    color: '#fbbf24', initials: 'KS', emoji: '🧣',
+  },
+  {
+    id: 'karin', name: 'Karin', short: 'Karin', tier: 'genin', role: 'Support', natures: ['Earth'],
+    stats: { hp: 0.95, atk: 0.9, def: 0.95 },
+    ult: { name: 'Heal Bite', type: 'heal' },
+    leader: { stat: 'chakra', scope: { tag: 'taka' } },
+    tags: ['taka', 'sound'], unlock: { arcCleared: 'arc_itachi' },
+    color: '#e0457b', initials: 'KR', emoji: '📡',
+  },
+  {
+    id: 'jugo', name: 'Jugo', short: 'Jugo', tier: 'genin', role: 'Tank', natures: ['Wind'],
+    stats: { hp: 1.15, atk: 1.05, def: 1.0, speed: 0.9 },
+    ult: { name: 'Sage Transformation', type: 'taunt' },
+    leader: { stat: 'hp', scope: { tag: 'taka' } },
+    tags: ['taka', 'sound'], unlock: { arcCleared: 'arc_itachi' },
+    color: '#d97706', initials: 'JU', emoji: '🐦',
+  },
+  {
+    id: 'omoi', name: 'Omoi', short: 'Omoi', tier: 'genin', role: 'Striker', natures: ['Lightning'],
+    stats: { hp: 1.0, atk: 1.02, def: 0.95 },
+    ult: { name: 'Cloud Style: Crescent Moon Slice', type: 'single', nature: 'Lightning' },
+    leader: { stat: 'crit', scope: { tag: 'cloud' } },
+    tags: ['cloud'], unlock: { arcCleared: 'arc_summit' },
+    color: '#9ca3af', initials: 'OM', emoji: '🍭',
+  },
+  {
+    id: 'chojuro', name: 'Chojuro', short: 'Chojuro', tier: 'genin', role: 'Striker', natures: ['Water'],
+    stats: { hp: 1.0, atk: 1.03, def: 0.95 },
+    ult: { name: 'Hiramekarei', type: 'aoe', nature: 'Water' },
+    leader: { stat: 'def', scope: { tag: 'mist' } },
+    tags: ['mist'], unlock: { arcCleared: 'arc_summit' },
+    color: '#60a5fa', initials: 'CJ', emoji: '🗡️',
+  },
+
+  // ============================ CHUNIN (Rare) =============================
+  {
+    id: 'sai', name: 'Sai', short: 'Sai', tier: 'chunin', role: 'Ranged', natures: ['Earth'],
+    stats: { hp: 0.95, atk: 1.05, def: 0.95 },
+    ult: { name: 'Ninja Art: Super Beast Scroll', type: 'aoe' },
+    leader: { stat: 'crit', scope: { tag: 'team7' } },
+    tags: ['team7', 'leaf'], unlock: { arcCleared: 'arc_tenchi' },
+    color: '#1f2937', initials: 'SA', emoji: '🖌️',
+  },
+  {
+    id: 'suigetsu', name: 'Suigetsu Hozuki', short: 'Suigetsu', tier: 'chunin', role: 'Striker', natures: ['Water'],
+    stats: { hp: 1.05, atk: 1.03, def: 0.95 },
+    ult: { name: 'Water Style: Great Water Arm', type: 'single', nature: 'Water' },
+    leader: { stat: 'atk', scope: { tag: 'taka' } },
+    tags: ['taka', 'mist'], unlock: { arcCleared: 'arc_itachi' },
+    color: '#a5f3fc', initials: 'SH', emoji: '💧',
+  },
+  {
+    id: 'kurotsuchi', name: 'Kurotsuchi', short: 'Kurotsuchi', tier: 'chunin', role: 'Ranged', natures: ['Fire', 'Earth'],
+    stats: { hp: 1.0, atk: 1.02, def: 1.0 },
+    ult: { name: 'Lava Style: Quicklime Jutsu', type: 'single', nature: 'Earth', stun: true },
+    leader: { stat: 'def', scope: { tag: 'stone' } },
+    tags: ['stone'], unlock: { arcCleared: 'arc_summit' },
+    color: '#881337', initials: 'KT', emoji: '🌋',
+  },
+
+  // ============================ JONIN (Epic) ==============================
+  {
+    id: 'yamato', name: 'Yamato', short: 'Yamato', tier: 'jonin', role: 'Tank', natures: ['Earth', 'Water'],
+    stats: { hp: 1.1, atk: 1.0, def: 1.1 },
+    ult: { name: 'Wood Style: Four Pillar Prison Jutsu', type: 'taunt', nature: 'Earth' },
+    leader: { stat: 'def', scope: { tag: 'team7' } },
+    tags: ['team7', 'leaf'], unlock: { arcCleared: 'arc_tenchi' },
+    color: '#92400e', initials: 'YA', emoji: '🌲',
+  },
+  {
+    id: 'chiyo', name: 'Chiyo', short: 'Chiyo', tier: 'jonin', role: 'Support', natures: [],
+    stats: { hp: 0.95, atk: 1.05, def: 1.0 },
+    ult: { name: "Secret White Move: Chikamatsu's 10 Puppets", type: 'buff' },
+    leader: { stat: 'atk', scope: { tag: 'sand' } },
+    tags: ['sand', 'medic'], unlock: { arcCleared: 'arc_kazekage' },
+    color: '#a8a29e', initials: 'CH', emoji: '👵',
+  },
+  {
+    id: 'deidara', name: 'Deidara', short: 'Deidara', tier: 'jonin', role: 'Ranged', natures: ['Earth', 'Lightning'],
+    stats: { hp: 0.95, atk: 1.08, def: 0.95 },
+    ult: { name: 'C4 Karura', type: 'aoe', nature: 'Earth' },
+    leader: { stat: 'nature', scope: { tag: 'akatsuki' } },
+    tags: ['akatsuki', 'stone'], unlock: { arcCleared: 'arc_kazekage' },
+    color: '#fde68a', initials: 'DE', emoji: '💥',
+  },
+  {
+    id: 'sasori', name: 'Sasori', short: 'Sasori', tier: 'jonin', role: 'Ranged', natures: [],
+    stats: { hp: 1.0, atk: 1.05, def: 1.0 },
+    ult: { name: 'Secret Red Move: Performance of a Hundred Puppets', type: 'aoe' },
+    leader: { stat: 'crit', scope: { tag: 'akatsuki' } },
+    tags: ['akatsuki', 'sand'], unlock: { arcCleared: 'arc_kazekage' },
+    color: '#9f1239', initials: 'SS', emoji: '🦂',
+  },
+  {
+    id: 'hidan', name: 'Hidan', short: 'Hidan', tier: 'jonin', role: 'Striker', natures: [],
+    stats: { hp: 1.1, atk: 1.05, def: 0.9 },
+    ult: { name: 'Curse Jutsu', type: 'single' },
+    leader: { stat: 'hp', scope: { tag: 'akatsuki' } },
+    tags: ['akatsuki'], unlock: { arcCleared: 'arc_hidan' },
+    color: '#d1d5db', initials: 'HI', emoji: '🔱',
+  },
+  {
+    id: 'kakuzu', name: 'Kakuzu', short: 'Kakuzu', tier: 'jonin', role: 'Tank', natures: ['Earth', 'Water', 'Fire', 'Wind', 'Lightning'],
+    stats: { hp: 1.1, atk: 1.0, def: 1.1, speed: 0.9 },
+    ult: { name: 'Earth Style: Iron Skin', type: 'taunt', nature: 'Earth' },
+    leader: { stat: 'def', scope: { tag: 'akatsuki' } },
+    tags: ['akatsuki'], unlock: { arcCleared: 'arc_hidan' },
+    color: '#365314', initials: 'KK', emoji: '🧵',
+  },
+  {
+    id: 'kisame', name: 'Kisame Hoshigaki', short: 'Kisame', tier: 'jonin', role: 'Striker', natures: ['Water'],
+    stats: { hp: 1.15, atk: 1.0, def: 1.0 },
+    ult: { name: 'Water Style: Super Shark Bomb Jutsu', type: 'aoe', nature: 'Water' },
+    leader: { stat: 'chakra', scope: { nature: 'Water' } },
+    tags: ['akatsuki', 'mist'], unlock: { arcCleared: 'arc_countdown' },
+    color: '#155e75', initials: 'KH', emoji: '🦈',
+  },
+  {
+    id: 'konan', name: 'Konan', short: 'Konan', tier: 'jonin', role: 'Ranged', natures: ['Wind'],
+    stats: { hp: 0.95, atk: 1.05, def: 1.0 },
+    ult: { name: 'Sacred Paper Emissary Jutsu', type: 'aoe', nature: 'Wind' },
+    leader: { stat: 'startChakra', scope: { tag: 'akatsuki' } },
+    tags: ['akatsuki'], unlock: { arcCleared: 'arc_pain' },
+    color: '#c084fc', initials: 'KO', emoji: '📄',
+  },
+  {
+    id: 'darui', name: 'Darui', short: 'Darui', tier: 'jonin', role: 'Ranged', natures: ['Lightning', 'Water'],
+    stats: { hp: 1.0, atk: 1.05, def: 1.0 },
+    ult: { name: 'Gale Style: Laser Circus', type: 'aoe', nature: 'Lightning' },
+    leader: { stat: 'atk', scope: { tag: 'cloud' } },
+    tags: ['cloud'], unlock: { arcCleared: 'arc_summit' },
+    color: '#fef3c7', initials: 'DA', emoji: '🌩️',
+  },
+  {
+    id: 'killer_bee', name: 'Killer Bee', short: 'Killer Bee', tier: 'jonin', role: 'Striker', natures: ['Lightning'],
+    stats: { hp: 1.1, atk: 1.05, def: 1.0 },
+    ult: { name: 'Tailed Beast Bomb', type: 'aoe' },
+    leader: { stat: 'speed', scope: { tag: 'cloud' } },
+    tags: ['cloud'], unlock: { arcCleared: 'arc_brothers' },
+    color: '#eab308', initials: 'KB', emoji: '🐙',
+  },
+
+  // ============================ KAGE (Legendary) ==========================
+  {
+    id: 'itachi', name: 'Itachi Uchiha', short: 'Itachi', tier: 'kage', role: 'Ranged', natures: ['Fire', 'Water', 'Wind'],
+    stats: { hp: 1.0, atk: 1.08, def: 1.0 },
+    ult: { name: 'Tsukuyomi', type: 'single', stun: true },
+    leader: { stat: 'chakra', scope: { tag: 'akatsuki' } },
+    tags: ['akatsuki', 'leaf'], unlock: { arcCleared: 'arc_brothers' },
+    color: '#7f1d1d', initials: 'IU', emoji: '🌙',
+  },
+  {
+    id: 'pain', name: 'Pain', short: 'Pain', tier: 'kage', role: 'Ranged', natures: ['Water'],
+    stats: { hp: 1.05, atk: 1.05, def: 1.0 },
+    ult: { name: 'Almighty Push', type: 'aoe', stun: true },
+    leader: { stat: 'atk', scope: { tag: 'akatsuki' } },
+    tags: ['akatsuki'], unlock: { arcCleared: 'arc_pain' },
+    color: '#fb923c', initials: 'PA', emoji: '🌀',
+  },
+  {
+    id: 'ay', name: 'Ay', short: 'Ay', tier: 'kage', role: 'Striker', natures: ['Lightning'],
+    stats: { hp: 1.1, atk: 1.08, def: 1.0, speed: 1.1 },
+    ult: { name: 'Liger Bomb', type: 'single', nature: 'Lightning', stun: true },
+    leader: { stat: 'atk', scope: { nature: 'Lightning' } },
+    tags: ['cloud'], unlock: { arcCleared: 'arc_summit' },
+    color: '#d4d4d8', initials: 'AY', emoji: '💪',
+  },
+  {
+    id: 'onoki', name: 'Onoki', short: 'Onoki', tier: 'kage', role: 'Ranged', natures: ['Earth', 'Wind', 'Fire'],
+    stats: { hp: 0.95, atk: 1.1, def: 1.0 },
+    ult: { name: 'Particle Style: Atomic Dismantling Jutsu', type: 'single', nature: 'Earth' },
+    leader: { stat: 'def', scope: { tag: 'stone' } },
+    tags: ['stone'], unlock: { arcCleared: 'arc_summit' },
+    color: '#78350f', initials: 'ON', emoji: '⛰️',
+  },
+  {
+    id: 'mei', name: 'Mei Terumi', short: 'Mei', tier: 'kage', role: 'Ranged', natures: ['Water', 'Fire', 'Earth'],
+    stats: { hp: 1.0, atk: 1.06, def: 1.0 },
+    ult: { name: 'Lava Style: Lava Monster Jutsu', type: 'aoe', nature: 'Fire' },
+    leader: { stat: 'nature', scope: { tag: 'mist' } },
+    tags: ['mist'], unlock: { arcCleared: 'arc_summit' },
+    color: '#2563eb', initials: 'MT', emoji: '🫧',
+  },
+  {
+    id: 'minato', name: 'Minato Namikaze', short: 'Minato', tier: 'kage', role: 'Striker', natures: ['Fire'],
+    stats: { hp: 1.0, atk: 1.08, def: 1.0, interval: 0.9 },
+    ult: { name: 'Flying Raijin Jutsu', type: 'single' },
+    leader: { stat: 'speed' },
+    tags: ['leaf', 'hokage'], unlock: { arcCleared: 'arc_climax' },
+    color: '#fef08a', initials: 'MN', emoji: '🌠',
+  },
+  {
+    id: 'hashirama', name: 'Hashirama Senju', short: 'Hashirama', tier: 'kage', role: 'Tank', natures: ['Earth', 'Water'],
+    stats: { hp: 1.15, atk: 1.02, def: 1.1 },
+    ult: { name: 'Wood Style: Wood Dragon Jutsu', type: 'taunt', nature: 'Earth' },
+    leader: { stat: 'def', scope: { tag: 'leaf' } },
+    tags: ['leaf', 'hokage'], unlock: { arcCleared: 'arc_climax' },
+    color: '#166534', initials: 'HS', emoji: '🌳',
+  },
+  {
+    id: 'madara', name: 'Madara Uchiha', short: 'Madara', tier: 'kage', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
+    stats: { hp: 1.08, atk: 1.1, def: 1.0 },
+    ult: { name: 'Fire Style: Majestic Destroyer Flame', type: 'aoe', nature: 'Fire' },
+    leader: { stat: 'atk', scope: { nature: 'Fire' } },
+    tags: ['leaf'], unlock: { arcCleared: 'arc_birth' },
+    color: '#450a0a', initials: 'MU', emoji: '☄️',
+  },
+  {
+    id: 'obito', name: 'Obito Uchiha', short: 'Obito', tier: 'kage', role: 'Ranged', natures: ['Fire', 'Earth', 'Water'],
+    stats: { hp: 1.05, atk: 1.06, def: 1.0 },
+    ult: { name: 'Wood Style: Cutting Sprigs Jutsu', type: 'aoe', nature: 'Earth' },
+    leader: { stat: 'crit' },
+    tags: ['akatsuki', 'leaf'], unlock: { arcCleared: 'arc_birth' },
+    color: '#312e81', initials: 'OU', emoji: '🕳️',
+  },
+
+  // ======================= PART II ALTERNATE FORMS =========================
+  {
+    id: 'sakura_hundred', formOf: 'sakura', name: 'Sakura Haruno (Hundred Healings)', short: 'Sakura★', tier: 'jonin', role: 'Support', natures: ['Earth'],
+    stats: { hp: 1.1, atk: 1.05, def: 1.05 },
+    ult: { name: 'Mitotic Regeneration: The Hundred Healings', type: 'heal' },
+    leader: { stat: 'hp', scope: { tag: 'team7' } },
+    tags: ['team7', 'leaf', 'medic'], unlock: { arcCleared: 'arc_climax' },
+    color: '#ec4899', initials: 'SH', emoji: '💮',
+  },
+  {
+    id: 'gaara_kazekage', formOf: 'gaara', name: 'Gaara (Fifth Kazekage)', short: 'Kazekage', tier: 'kage', role: 'Tank', natures: ['Wind', 'Earth'],
+    stats: { hp: 1.1, atk: 1.05, def: 1.15, speed: 0.9 },
+    ult: { name: "Ultimate Defence: Shukaku's Shield", type: 'taunt' },
+    leader: { stat: 'def', scope: { tag: 'sand' } },
+    tags: ['sand'], unlock: { arcCleared: 'arc_kazekage' },
+    color: '#9a3412', initials: 'GA', emoji: '🏜️',
+  },
+  {
+    id: 'kakashi_mangekyo', formOf: 'kakashi', name: 'Kakashi Hatake (Mangekyo Sharingan)', short: 'Kakashi★', tier: 'kage', role: 'Striker', natures: ['Lightning', 'Earth', 'Water'],
+    stats: { hp: 1.0, atk: 1.08, def: 1.0 },
+    ult: { name: 'Kamui', type: 'single', stun: true },
+    leader: { stat: 'atk', scope: { tag: 'team7' } },
+    tags: ['team7', 'leaf'], unlock: { arcCleared: 'arc_kazekage' },
+    color: '#64748b', initials: 'KH', emoji: '🌪️',
+  },
+  {
+    id: 'naruto_sage', formOf: 'naruto', name: 'Naruto Uzumaki (Sage Mode)', short: 'Sage Naruto', tier: 'kage', role: 'Striker', natures: ['Wind'],
+    stats: { hp: 1.1, atk: 1.08, def: 1.0 },
+    ult: { name: 'Wind Style: Rasen Shuriken', type: 'aoe', nature: 'Wind' },
+    leader: { stat: 'chakra', scope: { tag: 'team7' } },
+    tags: ['team7', 'leaf'], unlock: { arcCleared: 'arc_pain' },
+    color: '#f59e0b', initials: 'NU', emoji: '🐸',
+  },
+  {
+    id: 'sasuke_ems', formOf: 'sasuke', name: 'Sasuke Uchiha (Eternal Mangekyo Sharingan)', short: 'Sasuke★★', tier: 'kage', role: 'Striker', natures: ['Fire', 'Lightning'],
+    stats: { hp: 1.0, atk: 1.12, def: 0.98 },
+    ult: { name: 'Inferno Style: Flame Control', type: 'aoe', nature: 'Fire' },
+    leader: { stat: 'atk', scope: { tag: 'taka' } },
+    tags: ['team7', 'taka'], unlock: { arcCleared: 'arc_climax' },
+    color: '#1e1b4b', initials: 'SU', emoji: '🦅',
+  },
+  {
+    id: 'guy_eightgates', formOf: 'guy', name: 'Might Guy (Eight Inner Gates)', short: 'Guy★', tier: 'kage', role: 'Striker', natures: [], taijutsu: true,
+    canonNatures: ['Fire', 'Lightning'],
+    stats: { hp: 1.05, atk: 1.12, def: 0.95, interval: 0.85 },
+    ult: { name: 'Night Guy', type: 'single' },
+    leader: { stat: 'atk', scope: { tag: 'teamguy' } },
+    tags: ['teamguy', 'leaf'], unlock: { arcCleared: 'arc_birth' },
+    color: '#22c55e', initials: 'MG', emoji: '🐘',
+  },
+  {
+    id: 'naruto_sixpaths', formOf: 'naruto', name: 'Naruto Uzumaki (Six Paths Sage Mode)', short: 'Naruto★★', tier: 'kage', role: 'Striker', natures: ['Wind', 'Earth', 'Fire', 'Water'],
+    stats: { hp: 1.15, atk: 1.1, def: 1.05 },
+    ult: { name: 'Sage Art: Super Tailed Beast Rasen-Shuriken', type: 'aoe', nature: 'Wind' },
+    leader: { stat: 'atk' },
+    tags: ['team7', 'leaf'], unlock: { arcCleared: 'arc_birth' },
+    color: '#fdba74', initials: 'NU', emoji: '☀️',
   },
 ];
 

@@ -4,7 +4,7 @@ A fan-made, Naruto-universe **2D lane auto-battler** for the web.
 
 * Build a team of 3 plus a Leader, read the **Nature Wheel**, and time your Ultimates.
 * Fire an Ultimate into an enemy's wind-up to trigger a **Jutsu Clash**.
-* Part I is complete: 8 arcs in anime order, 35 pullable ninja, and an Akatsuki Boss Rush.
+* Part I and Part II (Shippuden) are complete: 25 arcs in anime order (99 battles, from the Survival Test to the final battle at the Valley of the End), 69 pullable ninja and alternate forms, and an Akatsuki Boss Rush.
 
 **Play:** https://dygoma.github.io/shinobi-auto-battler/ (add `?debug=1` for the balance debug panel)
 **Repo:** https://github.com/DyGoMa/shinobi-auto-battler
@@ -39,16 +39,18 @@ Then open http://localhost:8080. Any static server works: there is no bundler, j
 | `npm run validate` | Content schema check (fields, natures, references, duplicate ids) plus balance sanity and naming-source coverage |
 | `npm run check` | `node --check` on every JS file, and verifies every relative import resolves |
 | `npm run test:core` | Save migration, corrupted saves, gacha guarantees, objectives and curves |
-| `npm run sim` | 200 seeded battles per scenario, with a PASS/FAIL table (Bell Test, every arc boss, Boss Rush, nature check, fight length) |
-| `npm run campaign` | Free-to-play players play all of Part I (pull, level, pick by matchup, replay when stuck) |
+| `npm run sim` | 200 seeded battles per scenario, with a PASS/FAIL table (Survival Test, every arc boss of both parts, Boss Rush, nature check, fight length) |
+| `npm run campaign` | Free-to-play players play the whole story, Part I then Part II (pull, level, pick by matchup, replay when stuck) |
 | `npm run autotune -- --write` | Re-tunes per-boss difficulty (`enemyScaling.nodeMult`) toward the sim targets |
 | `npm test` | Runs all of the above except autotune |
+
+Both sims cover every part by default; `SIM_PARTS=1 npm run sim` runs Part I only.
 
 ## Project layout
 ```
 index.html, css/style.css, js/main.js
 js/config/balance.js        every tunable number and curve (the only place to rebalance)
-js/content/                 roster, enemies (+ Boss Rush), arcs/part1.js, part2-placeholders.js, banners, index.js (merge + validate)
+js/content/                 roster, enemies (+ Boss Rush), arcs/part1.js, arcs/shippuden.js, banners, index.js (merge + validate)
 js/core/                    formulas (curve evaluator), BattleSim (pure, seeded, no DOM), Ninja, GachaSystem,
                             Progression, SaveManager, TeamPicker
 js/save/                    LocalBackend, FirebaseBackend, firebase-config.js (placeholder)
@@ -64,11 +66,11 @@ firestore.rules
 ## Docs
 * **DESIGN.md**: game design, combat rules, and the Jutsu Clash system.
 * **BALANCE.md**: a plain-English rebalancing guide with worked examples.
-* **CONTENT_GUIDE.md**: templates and worked examples for every content type (for Session 2's Shippuden content).
+* **CONTENT_GUIDE.md**: templates and worked examples for every content type.
 * **NAMING.md**: every name in the game, the Narutopedia source checked, and its verification status.
 * **FIREBASE_SETUP.md**: step-by-step cloud-save setup (free Spark plan only).
 
 ## Roadmap
-* **Session 1 (this):** the engine, every system, Part I, and deployment.
-* **Session 2:** Shippuden arcs, ~30 more characters and alternate forms.
+* **Session 1:** the engine, every system, Part I, and deployment.
+* **Session 2 (this):** all Shippuden arcs (13 canon + 4 filler), 34 more characters and alternate forms, the Nature Wheel counter-gap fix, bigger units on phone portrait.
 * **Session 3:** full-campaign balance and canon audit.

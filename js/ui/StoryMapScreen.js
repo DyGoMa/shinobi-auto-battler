@@ -8,10 +8,10 @@ import { inkFor } from '../render/Renderer.js';
 export function render(game, ui, params) {
   const { C, state } = game;
   const cur = currentNode(state, C);
-  const part = params.part || (params.arcId ? C.arc[params.arcId]?.part : 1) || 1;
+  const part = params.part || (params.arcId ? C.arc[params.arcId]?.part : cur?.part) || 1;
   const arcs = C.arcs.filter(a => a.part === part);
   const arcId = params.arcId && C.arc[params.arcId]?.part === part ? params.arcId
-    : (part === 1 ? (cur ? cur.arcId : arcs[arcs.length - 1]?.id) : null);
+    : (cur && cur.part === part ? cur.arcId : arcs[arcs.length - 1]?.id);
   const arc = arcId ? C.arc[arcId] : null;
 
   const seg = h('div.seg',
@@ -22,7 +22,7 @@ export function render(game, ui, params) {
 
   return h('div.screen',
     h('div.row.between', h('h1', 'Story'), seg),
-    part === 2 ? h('p', 'Shippuden arcs arrive in Part II. They are shown here so you can see what is coming.') : null,
+    part === 2 ? h('p.small.muted', 'Part II — Naruto: Shippuden. The story and enemy levels continue from Part I.') : null,
     list,
     arc && !arc.placeholder ? arcDetail(game, ui, arc, params.nodeId) : null,
   );
