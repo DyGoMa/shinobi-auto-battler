@@ -6,11 +6,13 @@ import { ENEMIES, BOSS_RUSH } from './enemies.js';
 import { PART1_ARCS } from './arcs/part1.js';
 import { SHIPPUDEN_ARCS } from './arcs/shippuden.js';
 import { BANNERS } from './banners.js';
+import { TUTORIAL_ARC } from './tutorial.js';
 import { NATURES, TIERS, ROLES } from '../core/formulas.js';
 
 const ARC_FILES = [PART1_ARCS, SHIPPUDEN_ARCS];
 
 export const OBJECTIVE_TYPES = ['defeatAll', 'survive', 'protect', 'defeatBoss'];
+export const LESSON_TYPES = ['team', 'nature', 'clash'];
 export const MECHANIC_TYPES = ['telegraphAoE', 'summonAdds', 'shieldPhase', 'enrage', 'elementSwap', 'reflect', 'lifesteal', 'reviveOnce', 'regen', 'rally'];
 export const ULT_TYPES = ['single', 'aoe', 'taunt', 'heal', 'buff'];
 export const LEADER_STATS = ['atk', 'hp', 'def', 'speed', 'crit', 'chakra', 'startChakra', 'nature'];
@@ -18,7 +20,7 @@ export const ENEMY_ROLES = [...ROLES, 'Civilian'];
 export const TARGET_MODES = ['all', 'front', 'back', 'random'];
 export const TARGETING = ['nearest', 'backline', 'protected'];
 
-export function buildContent({ roster, enemies, arcs, banners, bossRush, tags = TAGS }) {
+export function buildContent({ roster, enemies, arcs, banners, bossRush, tutorial = null, tags = TAGS }) {
   for (const c of roster) if (c.leader?.scope?.tag && !c.leader.scope.tagLabel) c.leader.scope.tagLabel = tags[c.leader.scope.tag] || c.leader.scope.tag;
   const sortedArcs = arcs.slice().sort((a, b) => (a.part - b.part) || (a.order - b.order));
   let g = 0;
@@ -31,12 +33,24 @@ export function buildContent({ roster, enemies, arcs, banners, bossRush, tags = 
     });
   });
   const nodes = sortedArcs.flatMap(a => a.nodes || []);
+  // The tutorial sits outside the story: its nodes have no global index (-1) and are
+  // not in `nodes`/`node`, so no curve, sim, autotune or reward table ever sees them.
+  if (tutorial) {
+    tutorial.part = 1; tutorial.arcIndex = -1;
+    (tutorial.nodes || []).forEach((n, i) => {
+      n.arcId = tutorial.id; n.part = 1; n.indexInArc = i; n.arcIndex = -1; n.globalIndex = -1;
+      n.tutorial = true; n.isBossNode = (n.enemies || []).some(e => e.boss);
+    });
+  }
   const byId = (arr) => Object.fromEntries(arr.map(x => [x.id, x]));
   return {
-    roster, enemies, arcs: sortedArcs, banners, bossRush, nodes,
+    roster, enemies, arcs: sortedArcs, banners, bossRush, nodes, tutorial,
     char: byId(roster), enemy: byId(enemies), arc: byId(sortedArcs), node: byId(nodes), banner: byId(banners),
   };
 }
+
+/** The arc a node belongs to (story arc, or the tutorial arc for tutorial nodes). */
+export function arcOf(node, C) { return node?.tutorial ? C.tutorial : C.arc[node?.arcId] || null; }
 
 /** Returns an array of error strings (empty = valid). */
 export function validateContent(C) {
@@ -139,6 +153,28 @@ export function validateContent(C) {
   }
 
   // Arcs & nodes
+  const checkNode = (n) => {
+    const nw = `node ${n.id}`;
+    uniq(n.id, 'node');
+    for (const f of ['name', 'enemies', 'objective']) if (n[f] == null) err(nw, `missing required field "${f}"`);
+    if (!Array.isArray(n.enemies) || !n.enemies.length) err(nw, 'needs at least one enemy');
+    for (const e of n.enemies || []) {
+      if (!C.enemy[e.id]) err(nw, `unknown enemy "${e.id}"`);
+      else if (C.enemy[e.id].role === 'Civilian') err(nw, `civilian "${e.id}" belongs in objective.protect, not enemies`);
+    }
+    const o = n.objective || {};
+    if (!OBJECTIVE_TYPES.includes(o.type)) err(nw, `invalid objective.type "${o.type}"`);
+    if (o.type === 'survive' && !(o.seconds > 0)) err(nw, 'survive objective needs seconds');
+    if (o.type === 'protect') {
+      if (!o.protect || !C.enemy[o.protect]) err(nw, `protect objective needs a valid civilian id (got "${o.protect}")`);
+      else if (C.enemy[o.protect].role !== 'Civilian') err(nw, `protect target "${o.protect}" must have role Civilian`);
+    }
+    if (o.type === 'defeatBoss' && !n.isBossNode) err(nw, 'defeatBoss objective needs an enemy with boss: true');
+    const t = n.team || {};
+    for (const k of ['forced', 'recommended', 'banned']) for (const id of t[k] || []) if (!C.char[id]) err(nw, `team.${k} references unknown character "${id}"`);
+    if (t.leader && t.leader !== 'none' && !C.char[t.leader]) err(nw, `team.leader references unknown character "${t.leader}"`);
+    if ((t.forced || []).length > 4) err(nw, 'team.forced can hold at most 4 characters');
+  };
   for (const a of C.arcs) {
     const w = `arc ${a.id}`;
     uniq(a.id, 'arc');
@@ -148,27 +184,19 @@ export function validateContent(C) {
     const last = a.nodes?.[a.nodes.length - 1];
     if (last && !last.isBossNode) err(w, 'last node must be a boss node (an enemy with boss: true)');
     if (a.banner && !C.banner[a.banner]) err(w, `banner "${a.banner}" not found`);
-    for (const n of a.nodes || []) {
-      const nw = `node ${n.id}`;
-      uniq(n.id, 'node');
-      for (const f of ['name', 'enemies', 'objective']) if (n[f] == null) err(nw, `missing required field "${f}"`);
-      if (!Array.isArray(n.enemies) || !n.enemies.length) err(nw, 'needs at least one enemy');
-      for (const e of n.enemies || []) {
-        if (!C.enemy[e.id]) err(nw, `unknown enemy "${e.id}"`);
-        else if (C.enemy[e.id].role === 'Civilian') err(nw, `civilian "${e.id}" belongs in objective.protect, not enemies`);
-      }
-      const o = n.objective || {};
-      if (!OBJECTIVE_TYPES.includes(o.type)) err(nw, `invalid objective.type "${o.type}"`);
-      if (o.type === 'survive' && !(o.seconds > 0)) err(nw, 'survive objective needs seconds');
-      if (o.type === 'protect') {
-        if (!o.protect || !C.enemy[o.protect]) err(nw, `protect objective needs a valid civilian id (got "${o.protect}")`);
-        else if (C.enemy[o.protect].role !== 'Civilian') err(nw, `protect target "${o.protect}" must have role Civilian`);
-      }
-      if (o.type === 'defeatBoss' && !n.isBossNode) err(nw, 'defeatBoss objective needs an enemy with boss: true');
-      const t = n.team || {};
-      for (const k of ['forced', 'recommended', 'banned']) for (const id of t[k] || []) if (!C.char[id]) err(nw, `team.${k} references unknown character "${id}"`);
-      if (t.leader && t.leader !== 'none' && !C.char[t.leader]) err(nw, `team.leader references unknown character "${t.leader}"`);
-      if ((t.forced || []).length > 4) err(nw, 'team.forced can hold at most 4 characters');
+    for (const n of a.nodes || []) checkNode(n);
+  }
+
+  // Tutorial (outside the story; one lesson of each type, in order)
+  if (C.tutorial) {
+    const T = C.tutorial;
+    uniq(T.id, 'arc');
+    if (!T.name) err(`tutorial ${T.id}`, 'missing name');
+    const lessons = (T.nodes || []).map(n => n.lesson);
+    if (JSON.stringify(lessons) !== JSON.stringify(LESSON_TYPES)) err(`tutorial ${T.id}`, `needs exactly one lesson of each type, in order: ${LESSON_TYPES.join(', ')} (got ${lessons.join(', ') || 'none'})`);
+    for (const n of T.nodes || []) {
+      checkNode(n);
+      if (!n.learn) err(`node ${n.id}`, 'tutorial lesson needs a "learn" line');
     }
   }
 
@@ -199,7 +227,7 @@ export function validateContent(C) {
 
 export const CONTENT = buildContent({
   roster: ROSTER, enemies: ENEMIES,
-  arcs: ARC_FILES.flat(), banners: BANNERS, bossRush: BOSS_RUSH,
+  arcs: ARC_FILES.flat(), banners: BANNERS, bossRush: BOSS_RUSH, tutorial: TUTORIAL_ARC,
 });
 
 export default CONTENT;

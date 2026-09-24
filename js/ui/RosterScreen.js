@@ -3,6 +3,7 @@ import { h, btn, fmt, avatar, natureChips, stars, roleTag, tierTag } from './dom
 import { characterStats, powerRating, leaderBuffText } from '../core/Ninja.js';
 import { canLevelUp, levelUp, isCharacterAvailable, levelCostFor } from '../core/Progression.js';
 import { TIERS, TIER_LABEL } from '../core/formulas.js';
+import { tipCard } from './tips.js';
 
 let filter = { show: 'all', role: 'All', tier: 'All' };
 
@@ -30,6 +31,7 @@ export function render(game, ui) {
 
   return h('div.screen',
     h('div.row.between', h('h1', 'Roster'), h('span.pill', `${ownedCount} / ${C.roster.length} recruited`)),
+    tipCard(game, 'roster'),
     h('p.small', 'Level up with Ryo. Duplicate summons add a star (+10% stats each, up to 5★); duplicates past 5★ refund Ryo. Ninja 5+ levels behind your highest level up at a catch-up discount.'),
     chipset('show', ['all', 'owned', 'missing'], v => ({ all: 'All', owned: 'Owned', missing: 'Missing' })[v]),
     chipset('role', roles),
@@ -81,6 +83,7 @@ export function openDetail(game, ui, d) {
       rerender();
     };
     return h('div',
+      tipCard(game, 'character'),
       h('div.row', avatar(d, { size: 'lg' }),
         h('div.col', { style: { gap: '4px' } },
           h('h2', { style: { margin: 0 } }, d.name),

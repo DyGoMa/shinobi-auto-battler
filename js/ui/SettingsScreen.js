@@ -2,6 +2,7 @@
 import { h, btn, toggle } from './dom.js';
 import { SAVE_VERSION } from '../core/SaveManager.js';
 import { FIREBASE_SDK_VERSION } from '../save/FirebaseBackend.js';
+import { tipCard, tipsEnabled, resetTips } from './tips.js';
 
 export function render(game, ui) {
   const { state, save, cloud } = game;
@@ -14,13 +15,16 @@ export function render(game, ui) {
 
   return h('div.screen',
     h('h1', 'Settings'),
+    tipCard(game, 'settings'),
     h('div.card',
       h('h2', 'Game'),
       h('div.setting', h('div', h('b', 'Sound'), h('div.tiny.muted', 'Synth sound effects (saved)')), toggle(!s.muted, (on) => { s.muted = !on; game.audio.setMuted(s.muted); game.commit('settings'); ui.refreshTop(); }, 'Sound')),
       h('div.setting', h('div', h('b', 'Auto-fire Ultimates'), h('div.tiny.muted', 'Fires ults when ready, holding any that would lose a Jutsu Clash')), toggle(!!s.autoUlt, (on) => { s.autoUlt = on; game.commit('settings'); }, 'Auto ults')),
       h('div.setting', h('div', h('b', 'Battle speed'), h('div.tiny.muted', 'Default speed for new battles')),
         h('div.seg', ...[1, 2].map(v => h('button' + ((s.speed || 1) === v ? '.on' : ''), { type: 'button', onclick: () => { s.speed = v; game.commit('settings'); ui.refresh(); } }, `${v}×`)))),
-      h('div.setting', h('div', h('b', 'Replay the tutorial tips')), btn('Reset tips', () => { s.onboardingDone = false; game.commit('settings'); ui.toast('Tips will show in your next battle.'); }, 'small')),
+      h('div.setting', h('div', h('b', 'Show tips again'), h('div.tiny.muted', 'One-time tips on each screen and in your first battle. Switching this on shows every tip once more.')),
+        toggle(tipsEnabled(state), (on) => { if (on) { resetTips(game); ui.toast('Tips are back on: each screen shows its tip once more.', 'good'); } else { s.tips = false; game.commit('settings'); } }, 'Show tips again')),
+      h('div.setting', h('div', h('b', 'Replay the tutorial'), h('div.tiny.muted', 'Play the three Academy lessons again (no extra reward).')), btn('🎓 Replay', () => ui.openTutorial({ replay: true }), 'small')),
     ),
     h('div.card', { style: { marginTop: '12px' } },
       h('h2', 'Cloud save'),

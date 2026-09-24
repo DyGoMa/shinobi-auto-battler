@@ -1,7 +1,8 @@
 // tools/test-core.mjs — fast regression checks for saves, gacha and objectives.
 // `npm run test:core` (also part of `npm test`).
 import { C, B } from './common.mjs';
-import { migrate, defaultState, encodeSave, decodeSave, SAVE_VERSION } from '../js/core/SaveManager.js';
+import { migrate, defaultState, encodeSave, decodeSave, SAVE_VERSION, BATTLE_TIP_IDS } from '../js/core/SaveManager.js';
+import { startTutorial, completeLesson, skipTutorial } from '../js/core/Tutorial.js';
 import { pull } from '../js/core/GachaSystem.js';
 import { makeRng, curve, enemyLevelForNode } from '../js/core/formulas.js';
 import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner } from '../js/core/Progression.js';
@@ -146,6 +147,41 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
       ok(!ws.telegraphs.includes(tel), 'Overpowered cancels the boss jutsu');
       ok(u.chakra === B.jutsuClash.overpowerChakraRefund, 'Overpowered ult refunds its fixed chakra amount');
     }
+  }
+  // ---- Session 4: save v2 and the Academy tutorial ----
+  {
+    const f2 = defaultState(C, B);
+    ok(f2.tutorial.status === 'new' && !f2.tutorial.rewarded && f2.settings.tips && f2.settings.autoUltMode === 'smart', 'fresh save: tutorial to do, tips on, clash-aware Auto-ult mode');
+    const prologue = Object.fromEntries(C.arcs[0].nodes.map(n => [n.id, { clears: 1, best: null }]));
+    const v1 = { saveVersion: 1, currencies: { scrolls: 100, ryo: 50 }, roster: { naruto: { level: 5, stars: 1 } }, progress: { cleared: prologue }, settings: { onboardingDone: true } };
+    const m = migrate(v1, C, B);
+    ok(m.saveVersion === SAVE_VERSION && m.tutorial.status === 'done' && m.tutorial.rewarded && !m.tutorial.completed, 'v1 save past the Prologue skips the tutorial automatically');
+    ok(m.currencies.scrolls === 100 + B.tutorial.rewards.scrolls && m.currencies.ryo === 50 + B.tutorial.rewards.ryo, 'an automatically skipped tutorial pays its reward');
+    ok(BATTLE_TIP_IDS.every(id => m.tips.seen[id]) && m.settings.onboardingDone === undefined, 'the old onboardingDone flag becomes seen battle tips');
+    ok(migrate(m, C, B).currencies.scrolls === m.currencies.scrolls, 'loading a migrated save again pays nothing twice');
+    const v1b = { saveVersion: 1, currencies: { scrolls: 100, ryo: 50 }, progress: { cleared: { n_bell_1: { clears: 1, best: null } } } };
+    ok(migrate(v1b, C, B).tutorial.status === 'new', 'a v1 save that has not cleared the Prologue gets the tutorial');
+    ok(migrate({ saveVersion: 2, currencies: {}, tutorial: { status: 'bogus', lesson: 99 } }, C, B).tutorial.status === 'new', 'corrupted tutorial state is repaired');
+    const s = defaultState(C, B); startTutorial(s);
+    completeLesson(s, 0, C, B); completeLesson(s, 1, C, B);
+    ok(s.tutorial.status === 'active' && s.tutorial.lesson === 2 && !s.tutorial.rewarded, 'lessons advance in order');
+    const before = s.currencies.scrolls; const r = completeLesson(s, 2, C, B);
+    ok(r.finished && s.tutorial.status === 'done' && s.tutorial.completed && s.currencies.scrolls === before + B.tutorial.rewards.scrolls, 'winning the last lesson pays the tutorial reward');
+    ok(completeLesson(s, 2, C, B, { replay: true }).reward === null, 'a replay pays nothing');
+    const k = defaultState(C, B); const kr = skipTutorial(k, B);
+    ok(kr && k.tutorial.status === 'done' && !k.tutorial.completed && k.currencies.scrolls === B.economy.start.scrolls + B.tutorial.rewards.scrolls, 'skipping pays the same reward as finishing');
+    ok(skipTutorial(k, B) === null, 'skipping twice pays nothing');
+    ok(C.tutorial.nodes.every(n => !C.nodes.includes(n) && !C.node[n.id] && n.globalIndex === -1), 'tutorial lessons are outside the story (no node index, sims or curves)');
+    for (const node of C.tutorial.nodes) {
+      let w = 0;
+      for (let i = 0; i < 60; i++) {
+        const cfg = nodeBattleConfig(defaultState(C, B), node, C, B, { seed: 100 + i });
+        if (new BattleSim({ ...cfg, recordEvents: false, ultsEnabled: false }).runToEnd({ ultMode: 'none' }) === 'won') w++;
+      }
+      ok(w === 60, `tutorial ${node.id} is very easy: the starter team wins without Ultimates (${w}/60)`);
+    }
+    const c3 = nodeBattleConfig(defaultState(C, B), C.tutorial.nodes[2], C, B, { seed: 1 });
+    ok(c3.player.every(p => p.startChakraOverride === B.tutorial.clashLessonStartChakra), 'Lesson 3 starts the team with full chakra');
   }
   // curves
   ok(curve({ type: 'step', base: 1, table: [[10, 2], [20, 3]] }, 15) === 2, 'step curve');

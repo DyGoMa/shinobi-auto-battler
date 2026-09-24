@@ -337,5 +337,17 @@ for (const [n, [p, st, note]] of Object.entries(nodes2)) set(n, p, st, note);
 // Names that are both a node and a character/jutsu keep the combined notes set above.
 S['Obito Uchiha'] = { page: 'Obito Uchiha', status: 'V', note: 'Article title. Also the dub title of ep 385 (Wikipedia, season 18), used as a node and as the Obito banner name ("The Fourth Great Ninja War: Obito Uchiha", season 18).' };
 
+
+// =============================================================================
+// SESSION 4: the Academy tutorial (episode 1). Same Narutopedia API method.
+// =============================================================================
+set('Mizuki', 'Mizuki', 'V', 'Article title (no separate dub field). Natures: the infobox (Infobox:Mizuki) lists Earth Release and Yin Release, both anime only; his Earth Style jutsu is on screen in Part I (ep 144), so the game uses Earth.');
+set('Demon Wind Shuriken: Windmill of Shadows', 'Fūma Shuriken', 'V', 'Narutopedia "English TV" (dub) field of the Fūma Shuriken; Mizuki is a listed user (ep 1: the giant shuriken he throws at Naruto).');
+set('Tutorial: The Academy', 'Academy', 'D', 'Descriptive tutorial arc label. "Academy" is the article title with no separate English TV field (the dub keeps it: "the Academy").');
+set('Enter: Naruto Uzumaki!', 'Enter: Naruto Uzumaki!', 'V', 'Dub title of ep 1 (Narutopedia episode article, "english" field).');
+set('Transformation Jutsu', 'Transformation Technique', 'V', 'Narutopedia "English TV" (dub) field. Tutorial lesson 2: Mizuki transforms into Iruka in ep 1.');
+set('Multi Shadow Clone Jutsu', 'Multiple Shadow Clone Technique', 'V', 'Narutopedia "English TV" (dub) field; debut ep 1. Tutorial lesson 3.');
+set('Scroll of Sealing', 'Scroll of Seals', 'V', 'Narutopedia "English TV" (dub) field of the Scroll of Seals (ep 1). Used in the tutorial blurb.');
+
 export const NAME_SOURCES = S;
 export const wikiUrl = (t) => `https://naruto.fandom.com/wiki/${encodeURI(t.replace(/ /g, '_'))}`;

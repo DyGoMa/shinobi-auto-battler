@@ -111,6 +111,14 @@ export function completeBossRushRound(state, round, B = BALANCE) {
 // ---------------------------------------------------------------------------
 // Teams
 // ---------------------------------------------------------------------------
+/** Enemy level of a node: the story curve by global index; tutorial nodes use
+ *  balance.tutorial.enemyLevel. */
+export function nodeEnemyLevel(node, B = BALANCE) {
+  if (!node) return 1;
+  if (node.tutorial) return B.tutorial.enemyLevel;
+  return enemyLevelForNode(node.globalIndex, B);
+}
+
 /**
  * Owned progress for a character, or a loaner for forced units. A forced ninja
  * (or fixed Leader) never fights below the loaner level: owning an unlevelled
@@ -118,7 +126,7 @@ export function completeBossRushRound(state, round, B = BALANCE) {
  */
 export function ownedOrLoaner(state, id, node, B = BALANCE) {
   const o = state.roster[id];
-  const lvl = node ? enemyLevelForNode(node.globalIndex, B) : 1;
+  const lvl = node ? nodeEnemyLevel(node, B) : 1;
   const forced = !!node && ((node.team?.forced || []).includes(id) || node.team?.leader === id);
   if (o) return forced && o.level < lvl ? { ...o, level: lvl, loaner: false, synced: true } : { ...o, loaner: false };
   return { level: lvl, stars: 1, loaner: true };
@@ -167,7 +175,7 @@ export function buildTeamUnits(state, node, C, team, B = BALANCE, overrides = {}
 
 /** Enemy + civilian specs for a node. */
 export function buildNodeEnemies(node, C, B = BALANCE) {
-  const level = enemyLevelForNode(node.globalIndex, B);
+  const level = nodeEnemyLevel(node, B);
   const nm = B.enemyScaling.nodeMult?.[node.id] || {};
   const tune = (s) => { s.maxHp = Math.round(s.maxHp * (nm.hp ?? 1)); s.atk = Math.round(s.atk * (nm.atk ?? 1)); return s; };
   const nonBoss = node.enemies.filter(e => !e.boss).length;
@@ -190,6 +198,9 @@ export function buildNodeEnemies(node, C, B = BALANCE) {
 export function nodeBattleConfig(state, node, C, B = BALANCE, { seed = 1, team = null, overrides = {} } = {}) {
   const t = team || resolveTeam(state, node, C);
   const player = buildTeamUnits(state, node, C, t, B, overrides);
+  // Tutorial lesson 3 starts the team with full chakra (the number is in balance.tutorial).
+  const startChakra = node.startChakra != null ? B.tutorial?.[node.startChakra] : null;
+  if (startChakra != null) for (const p of player) p.startChakraOverride = startChakra;
   const { enemies, civilians, enemyFactory, level } = buildNodeEnemies(node, C, B);
   return { player, enemies, civilians, enemyFactory, objective: node.objective, seed, balance: B, enemyLevel: level, team: t };
 }

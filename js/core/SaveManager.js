@@ -3,7 +3,10 @@
 // Local saves are written immediately; cloud saves are debounced.
 import { BALANCE } from '../config/balance.js';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
+
+/** Ids of the in-battle tips the first story battle shows (the tutorial teaches them too). */
+export const BATTLE_TIP_IDS = ['battle.start', 'battle.ult', 'battle.clash'];
 
 /** A brand-new save. */
 export function defaultState(C, B = BALANCE) {
@@ -21,19 +24,56 @@ export function defaultState(C, B = BALANCE) {
     progress: { cleared: {} },
     gacha: { pity: 0, totalPulls: 0, history: [] },
     bossRush: { highestRound: 0, runs: 0 },
-    settings: { muted: false, onboardingDone: false, autoUlt: false, speed: 1 },
+    // autoUltMode: 'smart' = clash-aware (fires counter-nature ninja into wind-ups, holds
+    // any that would be Overwhelmed); 'asap' = fire when ready. tips: one-time screen tips.
+    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true },
     stats: { battles: 0, wins: 0, losses: 0 },
+    // status: 'new' (never started) | 'active' (lesson = next lesson index) | 'done'.
+    // completed = every lesson won at least once; rewarded = the one-time reward is paid.
+    tutorial: { status: 'new', lesson: 0, completed: false, rewarded: false },
+    tips: { seen: {} },
   };
 }
 
 /**
  * Step-by-step migrations. MIGRATIONS[n] upgrades a version-n save to n+1.
  * Version 0 = anything without an integer saveVersion (pre-release / corrupted).
- * Session 2+: add MIGRATIONS[1] = (s) => { ...; return s; } and bump SAVE_VERSION.
+ * Each migration gets (save, content, balance); missing keys are filled from
+ * defaultState afterwards, so a migration only has to handle what needs logic.
  */
 export const MIGRATIONS = {
   0: (s) => s, // defaults are filled below
+  // v1 -> v2 (Session 4): the Academy tutorial and one-time tips. A save that already
+  // cleared the Prologue skips the tutorial automatically and gets the tutorial reward
+  // (the same as skipping it by hand); the old first-battle "onboardingDone" flag
+  // becomes the battle tips' seen marks.
+  1: (s, C, B) => {
+    const cleared = isObj(s.progress?.cleared) ? s.progress.cleared : {};
+    const prologue = C.arcs[0];
+    const prologueDone = !!prologue && prologue.nodes.every(n => cleared[n.id]);
+    if (!isObj(s.tutorial)) {
+      s.tutorial = prologueDone
+        ? { status: 'done', lesson: 0, completed: false, rewarded: false, autoSkipped: true }
+        : { status: 'new', lesson: 0, completed: false, rewarded: false };
+      if (prologueDone) grantTutorialReward(s, B);
+    }
+    if (!isObj(s.tips)) s.tips = { seen: {} };
+    if (isObj(s.settings) && s.settings.onboardingDone) for (const id of BATTLE_TIP_IDS) s.tips.seen[id] = 1;
+    if (isObj(s.settings)) delete s.settings.onboardingDone;
+    return s;
+  },
 };
+
+/** Pays the tutorial reward once (finishing and skipping pay the same). Returns what was paid. */
+export function grantTutorialReward(s, B = BALANCE) {
+  if (!isObj(s.tutorial) || s.tutorial.rewarded) return null;
+  const r = B.tutorial.rewards;
+  if (!isObj(s.currencies)) s.currencies = {};
+  s.currencies.scrolls = (Number(s.currencies.scrolls) || 0) + r.scrolls;
+  s.currencies.ryo = (Number(s.currencies.ryo) || 0) + r.ryo;
+  s.tutorial.rewarded = true;
+  return { scrolls: r.scrolls, ryo: r.ryo };
+}
 
 function isObj(v) { return v && typeof v === 'object' && !Array.isArray(v); }
 
@@ -59,7 +99,7 @@ export function migrate(raw, C, B = BALANCE) {
     let guard = 0;
     while (v < SAVE_VERSION && guard++ < 100) {
       const m = MIGRATIONS[v];
-      if (m) s = m(s) || s;
+      if (m) s = m(s, C, B) || s;
       v++; s.saveVersion = v;
     }
     s = fillDefaults(s, fresh);
@@ -78,6 +118,10 @@ export function migrate(raw, C, B = BALANCE) {
     if (s.team.leader && !known(s.team.leader)) s.team.leader = null;
     if (!s.team.members.length) s.team = structuredClone(fresh.team);
     if (!isObj(s.progress.cleared)) s.progress.cleared = {};
+    const T = s.tutorial;
+    if (!['new', 'active', 'done'].includes(T.status)) T.status = 'new';
+    T.lesson = Math.max(0, Math.min((C.tutorial?.nodes?.length || 1) - 1, Math.floor(Number(T.lesson) || 0)));
+    if (!isObj(s.tips.seen)) s.tips.seen = {};
     s.gacha.pity = Math.max(0, Math.floor(Number(s.gacha.pity) || 0));
     s.updatedAt = Number(s.updatedAt) || 0;
     return s;

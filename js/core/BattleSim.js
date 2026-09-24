@@ -238,12 +238,15 @@ export class BattleSim {
       if (dir > 0) nx = Math.min(nx, want); else nx = Math.max(nx, want);
     }
     // Blocked by allies ahead (queue, no stacking) and by opponents (contact).
-    // Divers ignore blocking on their way to the protect target.
+    // Divers ignore blocking on their way to the protect target. The ally queue only
+    // holds while advancing: a unit turning back for a diver behind its own line may
+    // pass its allies (otherwise a back-row unit already in range froze the whole team).
     if (!this._isDiver(u)) {
       for (const o of this.units) {
         if (!o.alive || o === u || o.protected || (o.side === u.side && this._isDiver(o))) continue;
         const ahead = dir > 0 ? o.x > u.x : o.x < u.x;
         if (!ahead) continue;
+        if (o.side === u.side && dir !== sideDir) continue;
         const gap = o.side === u.side ? L.allySpacing : L.contactGap;
         if (dir > 0) nx = Math.min(nx, o.x - gap); else nx = Math.max(nx, o.x + gap);
       }
@@ -255,7 +258,9 @@ export class BattleSim {
   _resolveSpacing() {
     const L = this.B.combat.lane;
     const ps = this.units.filter(u => u.alive && u.side === 'player' && !u.protected).sort((a, b) => b.x - a.x);
-    for (let i = 1; i < ps.length; i++) if (ps[i].x > ps[i - 1].x - L.allySpacing) ps[i].x = ps[i - 1].x - L.allySpacing;
+    // Keep the queue spaced, but never push anyone off the left edge of the lane
+    // (a team chasing a diver bunches up there instead).
+    for (let i = 1; i < ps.length; i++) if (ps[i].x > ps[i - 1].x - L.allySpacing) ps[i].x = Math.max(20, ps[i - 1].x - L.allySpacing);
     const es = this.units.filter(u => u.alive && u.side === 'enemy' && !this._isDiver(u)).sort((a, b) => a.x - b.x);
     for (let i = 1; i < es.length; i++) if (es[i].x < es[i - 1].x + L.allySpacing) es[i].x = es[i - 1].x + L.allySpacing;
   }

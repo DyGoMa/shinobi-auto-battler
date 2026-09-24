@@ -12,23 +12,48 @@
 // Report: team level at each arc, pulls, stuck points, scroll/Ryo balance over time.
 // Target: every part in SIM_PARTS cleared, no node needing more than the max replays.
 // Runs CAMPAIGN_PLAYERS (default 10) seeds; prints the first in detail.
-import { C, B, runNode, teamForNode, median, seedFor, SIM_PARTS, PART_LABEL } from './common.mjs';
+import { C, B, runNode, teamForNode, median, seedFor, SIM_PARTS, PART_LABEL, DEFAULT_BOT } from './common.mjs';
 import { defaultState } from '../js/core/SaveManager.js';
 import { pull, canAfford } from '../js/core/GachaSystem.js';
-import { completeNode, canLevelUp, levelUp, isBannerUnlocked, ownedOrLoaner } from '../js/core/Progression.js';
+import { completeNode, canLevelUp, levelUp, isBannerUnlocked, ownedOrLoaner, nodeBattleConfig, resolveTeam } from '../js/core/Progression.js';
 import { autoPickTeam } from '../js/core/TeamPicker.js';
 import { makeRng, enemyLevelForNode } from '../js/core/formulas.js';
+import { BattleSim } from '../js/core/BattleSim.js';
+import { startTutorial, completeLesson, skipTutorial, tutorialLessons } from '../js/core/Tutorial.js';
 
 const PLAYERS = Number(process.env.CAMPAIGN_PLAYERS) || 10;
 const MAX_REPLAYS = B.targets.campaignMaxReplaysPerNode;
 const HARD_CAP = 12; // give up on a node after this many replays (reported as FAIL)
+// The "new player" run plays the Academy tutorial first (CAMPAIGN_TUTORIAL=0 to leave
+// it out). Its lessons never count toward the difficulty stats below.
+const TUTORIAL = process.env.CAMPAIGN_TUTORIAL !== '0';
+
+/** The three tutorial lessons with the starter team, through the game's own battle
+ *  config (nodeBattleConfig). A lesson lost three times is skipped: same reward. */
+function playTutorial(state, seed) {
+  startTutorial(state);
+  const out = { won: 0, battles: 0, reward: null };
+  for (const [i, node] of tutorialLessons(C).entries()) {
+    let won = false;
+    for (let t = 0; t < 3 && !won; t++) {
+      const sim = new BattleSim({ ...nodeBattleConfig(state, node, C, B, { seed: seed + i * 31 + t, team: resolveTeam(state, node, C) }), recordEvents: false });
+      won = sim.runToEnd({ ultMode: DEFAULT_BOT }) === 'won'; out.battles++;
+    }
+    if (!won) { out.reward = skipTutorial(state, B); break; }
+    out.won++;
+    const r = completeLesson(state, i, C, B);
+    if (r.reward) out.reward = r.reward;
+  }
+  return out;
+}
 
 function playCampaign(playerSeed, verbose) {
   const state = defaultState(C, B);
   const rng = makeRng(playerSeed);
   const nodes = C.nodes.filter(n => SIM_PARTS.includes(n.part));
-  const log = { arcs: [], stuck: [], fails: [], timeline: [], battles: 0, replays: 0 };
+  const log = { arcs: [], stuck: [], fails: [], timeline: [], battles: 0, replays: 0, tutorial: null };
   let battleSeed = playerSeed * 7919;
+  if (TUTORIAL) log.tutorial = playTutorial(state, battleSeed + 500000);
 
   const spendScrolls = (node) => {
     const arcBanner = C.banners.find(b => b.type === 'arc' && b.arc === node.arcId && isBannerUnlocked(state, b, C));
@@ -112,6 +137,7 @@ function playCampaign(playerSeed, verbose) {
 }
 
 function print(log, state) {
+  if (log.tutorial) console.log(`\nTutorial (player #1): won ${log.tutorial.won}/${tutorialLessons(C).length} lessons in ${log.tutorial.battles} battle(s), reward 📜 +${log.tutorial.reward?.scrolls ?? 0} 🪙 +${log.tutorial.reward?.ryo ?? 0} (not counted in the stats below)`);
   console.log('\nArc-by-arc (player #1):');
   console.log('  ' + 'Arc'.padEnd(40) + 'Team Lv'.padEnd(9) + 'Enemy Lv'.padEnd(10) + 'Pulls'.padEnd(7) + 'Scrolls'.padEnd(9) + 'Ryo'.padEnd(9) + 'Owned (G/C/J/K)'.padEnd(18) + 'Team');
   for (const a of log.arcs) {
@@ -125,7 +151,7 @@ function print(log, state) {
   console.log(`Total pulls: ${state.gacha.totalPulls}   battles: ${log.battles}   farm replays: ${log.replays}`);
 }
 
-console.log(`Shinobi Auto-Battler — free-to-play campaign sim, ${PART_LABEL()} (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node)`);
+console.log(`Shinobi Auto-Battler — free-to-play campaign sim, ${PART_LABEL()} (${PLAYERS} players, max ${MAX_REPLAYS} replays per stuck node${TUTORIAL ? ', new players play the tutorial first' : ', no tutorial'})`);
 const logs = [];
 const VERBOSE = Number(process.env.CAMPAIGN_VERBOSE || 1);
 for (let p = 0; p < PLAYERS; p++) logs.push(playCampaign(seedFor('campaign', p + 1), p + 1 === VERBOSE));

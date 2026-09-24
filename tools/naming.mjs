@@ -13,7 +13,7 @@ export function collectNames() {
   const add = (n, cat) => { if (!n) return; if (!uses.has(n)) uses.set(n, new Set()); uses.get(n).add(cat); };
   for (const c of C.roster) { add(c.name, 'character'); add(c.ult.name, 'jutsu'); }
   for (const e of C.enemies) { add(e.name, e.role === 'Civilian' ? 'character' : 'character'); if (e.jutsu) add(e.jutsu.name, 'jutsu'); for (const m of e.mechanics || []) add(m.name, 'jutsu'); }
-  for (const a of C.arcs) { add(a.name, 'story'); for (const n of a.nodes || []) add(n.name, 'story'); }
+  for (const a of [...C.arcs, ...(C.tutorial ? [C.tutorial] : [])]) { add(a.name, 'story'); for (const n of a.nodes || []) add(n.name, 'story'); }
   for (const b of C.banners) add(b.name, 'story');
   return uses;
 }
@@ -30,6 +30,7 @@ function usedAs(name) {
     for (const m of e.mechanics || []) if (m.name === name) out.push(`${m.type}: ${e.name}`);
   }
   for (const a of C.arcs) { if (a.name === name) out.push(a.placeholder ? 'Part II placeholder' : 'Arc'); for (const n of a.nodes || []) if (n.name === name) out.push('Node'); }
+  if (C.tutorial) { if (C.tutorial.name === name) out.push('Tutorial arc'); for (const n of C.tutorial.nodes) if (n.name === name) out.push('Tutorial lesson'); }
   for (const b of C.banners) if (b.name === name) out.push('Banner');
   return [...new Set(out)].slice(0, 6).join('; ');
 }

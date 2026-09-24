@@ -31,6 +31,8 @@ function append(el, kids) {
 }
 
 export const fmt = (n) => Math.round(n).toLocaleString('en-US');
+/** "Episode 4" or "Episodes 4–5" / "Episodes 215–222, 243–256". */
+export const episodesLabel = (eps) => `${/[–,-]/.test(String(eps)) ? 'Episodes' : 'Episode'} ${eps}`;
 export const pctStr = (x, d = 0) => `${(x * 100).toFixed(d)}%`;
 
 export function avatar(def, { size = '', unknown = false } = {}) {

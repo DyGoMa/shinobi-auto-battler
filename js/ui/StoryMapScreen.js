@@ -1,9 +1,11 @@
 // StoryMapScreen.js — arc select (Part I / Part II) and the node map for an arc.
-import { h, btn, fmt, natureChip, describeMechanic, objectiveText, avatar } from './dom.js';
+import { h, btn, fmt, natureChip, describeMechanic, objectiveText, avatar, episodesLabel } from './dom.js';
 import { isNodeUnlocked, isNodeCleared, isArcReached, isArcCleared, currentNode, resolveTeam } from '../core/Progression.js';
 import { enemyLevelForNode, nodeRewards, arcClearRewards } from '../core/formulas.js';
 import { nodeEnemyNatures, teamMatchupRating } from '../core/TeamPicker.js';
 import { inkFor } from '../render/Renderer.js';
+import { tutorialPending, tutorialLessons, nextLessonIndex } from '../core/Tutorial.js';
+import { tipCard } from './tips.js';
 
 export function render(game, ui, params) {
   const { C, state } = game;
@@ -14,18 +16,34 @@ export function render(game, ui, params) {
     : (cur && cur.part === part ? cur.arcId : arcs[arcs.length - 1]?.id);
   const arc = arcId ? C.arc[arcId] : null;
 
-  const seg = h('div.seg',
-    h('button' + (part === 1 ? '.on' : ''), { type: 'button', onclick: () => ui.go('story', { part: 1 }) }, 'Part I'),
-    h('button' + (part === 2 ? '.on' : ''), { type: 'button', onclick: () => ui.go('story', { part: 2 }) }, 'Part II'));
+  const seg = h('div.seg', { role: 'group', 'aria-label': 'Story part' },
+    h('button' + (part === 1 ? '.on' : ''), { type: 'button', 'aria-pressed': String(part === 1), onclick: () => ui.go('story', { part: 1 }) }, 'Part I'),
+    h('button' + (part === 2 ? '.on' : ''), { type: 'button', 'aria-pressed': String(part === 2), onclick: () => ui.go('story', { part: 2 }) }, 'Part II'));
 
-  const list = h('div.arc-list', ...arcs.map(a => arcCard(game, ui, a, a.id === arcId, cur)));
+  const list = h('div.arc-list', part === 1 && tutorialPending(state) ? tutorialCard(game, ui) : null, ...arcs.map(a => arcCard(game, ui, a, a.id === arcId, cur)));
 
   return h('div.screen',
     h('div.row.between', h('h1', 'Story'), seg),
+    tipCard(game, 'story'),
     part === 2 ? h('p.small.muted', 'Part II — Naruto: Shippuden. The story and enemy levels continue from Part I.') : null,
     list,
     arc && !arc.placeholder ? arcDetail(game, ui, arc, params.nodeId) : null,
   );
+}
+
+/** Part I's first card while the tutorial is still to do. */
+function tutorialCard(game, ui) {
+  const { C, state } = game;
+  const lessons = tutorialLessons(C);
+  const done = state.tutorial.status === 'active' ? nextLessonIndex(state) : 0;
+  const card = h('div.arc-card.current', { onclick: () => ui.openTutorial(), role: 'button', tabindex: '0', 'aria-label': `${C.tutorial.name}: ${done} of ${lessons.length} lessons done` },
+    h('span.lock', { 'aria-hidden': 'true' }, '🎓'),
+    h('h3', C.tutorial.name),
+    h('div.eps', `${episodesLabel(C.tutorial.episodes)} · ${lessons.length} short lessons`),
+    h('div.prog', h('div.bar', h('i', { style: { width: `${(done / lessons.length) * 100}%` } })), h('div.tiny.muted', { style: { marginTop: '4px' } }, done ? `${done} / ${lessons.length} lessons done` : 'Start here: about three minutes')),
+  );
+  card.style.setProperty('--a1', C.tutorial.theme.accent);
+  return card;
 }
 
 function arcCard(game, ui, a, selected, cur) {
@@ -39,7 +57,7 @@ function arcCard(game, ui, a, selected, cur) {
     { onclick: () => reached ? ui.go('story', { arcId: a.id }) : ui.toast(`Clear the previous arc to reach ${a.name}.`) },
     reached ? null : h('span.lock', '🔒'),
     h('h3', a.name),
-    h('div.eps', `Episodes ${a.episodes} · ${a.nodes.length} battles`),
+    h('div.eps', `${episodesLabel(a.episodes)} · ${a.nodes.length} battles`),
     h('div.prog', h('div.bar', h('i', { style: { width: `${(done / a.nodes.length) * 100}%` } })), h('div.tiny.muted', { style: { marginTop: '4px' } }, isArcCleared(state, a) ? '✓ Arc cleared' : `${done} / ${a.nodes.length} cleared`)),
   );
   card.style.setProperty('--a1', a.theme?.accent || '#555');
@@ -76,7 +94,7 @@ function arcDetail(game, ui, arc, nodeId) {
   map.append(svg, row);
 
   return h('div',
-    h('div.section-title', h('h2', arc.name), h('span.pill', `Episodes ${arc.episodes}`)),
+    h('div.section-title', h('h2', arc.name), h('span.pill', episodesLabel(arc.episodes))),
     h('p', arc.blurb),
     map,
     nodeDetail(game, ui, sel),
@@ -107,7 +125,7 @@ function nodeDetail(game, ui, node) {
 
   return h('div.card', { style: { marginTop: '4px' } },
     h('div.row.between',
-      h('div', h('h2', { style: { marginBottom: '2px' } }, (node.isBossNode ? '👑 ' : '') + node.name), h('div.tiny.muted', `Episodes ${node.episodes} · Enemy level ${level}`)),
+      h('div', h('h2', { style: { marginBottom: '2px' } }, (node.isBossNode ? '👑 ' : '') + node.name), h('div.tiny.muted', `${episodesLabel(node.episodes)} · Enemy level ${level}`)),
       cleared ? h('span.pill.good', `✓ Cleared ×${state.progress.cleared[node.id].clears}`) : unlocked ? h('span.pill.accent', 'Next battle') : h('span.pill', '🔒 Locked')),
     h('p', { style: { marginTop: '10px' } }, node.blurb),
     h('div.row', h('span.pill.warn', '🎯 ' + objectiveText(node.objective, C))),

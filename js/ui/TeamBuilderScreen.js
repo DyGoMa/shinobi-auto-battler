@@ -1,17 +1,20 @@
 // TeamBuilderScreen.js — pick 3 members + 1 Leader, with a live Nature Wheel
 // matchup rating against the selected node and lane-reach warnings.
-import { h, btn, fmt, avatar, natureChips, natureChip, stars, roleTag, tierTag } from './dom.js';
-import { currentNode, resolveTeam, isNodeUnlocked, unitPower } from '../core/Progression.js';
-import { enemyLevelForNode } from '../core/formulas.js';
+import { h, btn, fmt, avatar, natureChips, natureChip, stars, roleTag } from './dom.js';
+import { currentNode, resolveTeam, isNodeUnlocked, unitPower, nodeEnemyLevel } from '../core/Progression.js';
 import { nodeEnemyNatures, teamMatchupRating, characterMatchup, autoPickTeam } from '../core/TeamPicker.js';
 import { leaderBuffText } from '../core/Ninja.js';
+import { tutorialLessons } from '../core/Tutorial.js';
+import { tipCard } from './tips.js';
 
 let selectedSlot = 0;          // 0..2 members, 3 = leader
 let roleFilter = 'All';
 
 export function render(game, ui, params) {
   const { C, B, state } = game;
-  const node = (params.nodeId && C.node[params.nodeId]) || currentNode(state, C) || C.nodes[C.nodes.length - 1];
+  // Tutorial lesson 1 builds the team here: params.tutorialLesson = lesson index.
+  const lessonNode = params.tutorialLesson != null ? tutorialLessons(C)[params.tutorialLesson] : null;
+  const node = lessonNode || (params.nodeId && C.node[params.nodeId]) || currentNode(state, C) || C.nodes[C.nodes.length - 1];
   const enemyN = nodeEnemyNatures(node, C);
   const t = node.team || {};
   const resolved = resolveTeam(state, node, C);
@@ -73,7 +76,7 @@ export function render(game, ui, params) {
   else if (melee.length > 2) warnings.push(`Only the front fighter and one Striker right behind it can reach melee range — ${melee.slice(2).map(d => d.short).join(', ')} will mostly wait in line.`);
   if (!defs.some(d => d.role === 'Tank')) warnings.push('No Tank: your front line will take the boss\'s hits directly.');
   const unowned = (t.forced || []).filter(id => !state.roster[id]);
-  const syncLv = node ? enemyLevelForNode(node.globalIndex, B) : 1;
+  const syncLv = nodeEnemyLevel(node, B);
   const synced = (t.forced || []).filter(id => state.roster[id] && state.roster[id].level < syncLv);
 
   const owned = Object.keys(state.roster).filter(id => C.char[id]);
@@ -84,22 +87,36 @@ export function render(game, ui, params) {
     .map(x => ({ ...x, power: unitPower(x.def, x.own, B), match: characterMatchup(x.def, enemyN, B) }))
     .sort((a, b) => b.power * (1 + 0.3 * b.match) - a.power * (1 + 0.3 * a.match));
 
-  const unlocked = isNodeUnlocked(state, node, C);
+  const unlocked = lessonNode ? true : isNodeUnlocked(state, node, C);
+  const fight = () => {
+    if (!resolved.members.length) { ui.toast('Add at least one ninja to your team first.', 'bad'); return; }
+    if (lessonNode) ui.startBattle({ node, tutorial: { index: params.tutorialLesson, replay: !!params.replay } });
+    else if (unlocked) ui.startBattle({ node });
+    else ui.toast('That battle is still locked: clear the one before it first.');
+  };
+  const coach = lessonNode ? h('div.coach',
+    h('div.row.between', h('b', `🎓 Lesson ${params.tutorialLesson + 1}: team building`), params.replay ? null : btn('Skip tutorial', () => ui.skipTutorial(), 'ghost small')),
+    h('p.small', 'Tap a slot, then tap a ninja to put them there (tap a filled slot twice to empty it). The ★ Leader slot is your fourth fighter and gives the whole team a buff: try different Leaders and watch "Leader buff" change.'),
+    h('p.small', 'When you\'re happy with your team, press ', h('b', '⚔️ Fight!'), '.')) : null;
 
   return h('div.screen',
     h('div.row.between', h('h1', 'Team Builder'),
-      h('div.row', btn('✨ Auto', () => {
-        const cands = owned.map(id => ({ id, level: state.roster[id].level, stars: state.roster[id].stars }));
-        const pick = autoPickTeam(cands, node, C, B);
-        const members = pick.members.filter(id => state.roster[id] && !(t.forced || []).includes(id)).slice(0, 3);
-        for (const id of pick.all) if (members.length < 3 && state.roster[id] && id !== pick.leader && !members.includes(id)) members.push(id);
-        state.team.members = members;
-        if (pick.leader && state.roster[pick.leader]) state.team.leader = pick.leader;
-        game.commit('team'); ui.toast('Team picked by power and nature matchup.'); ui.refresh();
-      }), btn(unlocked ? '⚔️ Fight!' : '🔒', () => unlocked ? ui.startBattle({ node }) : ui.toast('That battle is still locked.'), 'primary', { disabled: !unlocked }))),
+      h('div.row',
+        lessonNode ? null : btn('✨ Auto', () => {
+          const cands = owned.map(id => ({ id, level: state.roster[id].level, stars: state.roster[id].stars }));
+          const pick = autoPickTeam(cands, node, C, B);
+          const members = pick.members.filter(id => state.roster[id] && !(t.forced || []).includes(id)).slice(0, 3);
+          for (const id of pick.all) if (members.length < 3 && state.roster[id] && id !== pick.leader && !members.includes(id)) members.push(id);
+          state.team.members = members;
+          if (pick.leader && state.roster[pick.leader]) state.team.leader = pick.leader;
+          game.commit('team'); ui.toast('Team picked by power and nature matchup.'); ui.refresh();
+        }),
+        btn(unlocked ? '⚔️ Fight!' : '🔒 Locked', fight, 'primary', { disabled: !unlocked }))),
+    coach,
+    lessonNode ? null : tipCard(game, 'team'),
     h('div.card',
       h('div.row.between',
-        h('div', h('div.tiny.muted', 'Building for'), h('b', node.name), h('span.muted.small', ` · ${C.arc[node.arcId].name}`)),
+        h('div', h('div.tiny.muted', 'Building for'), h('b', node.name), h('span.muted.small', ` · ${lessonNode ? C.tutorial.name : C.arc[node.arcId].name}`)),
         h('div.row', h('span.small.muted', 'Enemy natures'), ...[...new Set(enemyN)].map(n => natureChip(n)), enemyN.length ? null : h('span.nat.none', 'None'))),
       h('div.divider'),
       h('div.matchup-box',

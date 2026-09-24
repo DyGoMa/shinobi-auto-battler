@@ -25,6 +25,23 @@
 //   basedOn    optional roster id (for colour/initials reuse and the NAMING audit)
 
 export const ENEMIES = [
+  // ============================ Tutorial: The Academy ===========================
+  // Episode 1: Mizuki. Natures: Earth (Narutopedia infobox, anime only; his Earth
+  // Style jutsu is on screen in Part I, ep 144). Tutorial enemies are deliberately
+  // weak (tutorial.enemyLevel in balance.js).
+  {
+    id: 'e_mizuki', name: 'Mizuki', role: 'Striker', natures: ['Earth'],
+    stats: { hp: 0.8, atk: 0.42, def: 0.9 },
+    jutsu: { name: 'Demon Wind Shuriken: Windmill of Shadows', type: 'single' },
+    color: '#94a3b8', initials: 'MZ', emoji: '✴️',
+  },
+  {
+    id: 'e_mizuki_clash', name: 'Mizuki', role: 'Striker', natures: ['Earth'],
+    stats: { hp: 0.95, atk: 0.42, def: 0.9 },
+    mechanics: [{ type: 'telegraphAoE', name: 'Earth Style: Underground Move Jutsu', nature: 'Earth', target: 'random', power: 0.45, interval: 0.45 }],
+    color: '#94a3b8', initials: 'MZ', emoji: '✴️',
+  },
+
   // ========================= Prologue: Survival Test ==========================
   {
     id: 'e_kakashi_bell', name: 'Kakashi Hatake', basedOn: 'kakashi', role: 'Striker', natures: ['Earth', 'Lightning', 'Water'],

@@ -49,7 +49,7 @@ async function boot() {
 
   let lastState = save.state;
   save.onChange((s) => {
-    if (s !== lastState) { lastState = s; audio.setMuted(!!s.settings.muted); if (!ui.battle) ui.go('home'); }
+    if (s !== lastState) { lastState = s; audio.setMuted(!!s.settings.muted); ui.onStateReplaced(); }
     ui.refreshTop();
   });
 

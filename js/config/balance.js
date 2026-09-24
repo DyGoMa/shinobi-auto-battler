@@ -354,6 +354,23 @@ export const BALANCE = {
   },
 
   // ---------------------------------------------------------------------------
+  // TUTORIAL — three practice battles before the Survival Test (js/content/
+  // tutorial.js). They sit OUTSIDE the story's node list, so they never touch
+  // the enemy-level curve, the sims, autotune or the reward curves.
+  // ---------------------------------------------------------------------------
+  tutorial: {
+    // Level of every tutorial enemy (their weights in enemies.js keep them weak). 1–5
+    enemyLevel: 1,
+    // Paid once, whether the player finishes OR skips the tutorial (saves that
+    // already cleared the Prologue get it too). 300 scrolls + the 1,500 starting
+    // scrolls = two 10× summons. scrolls 0–900, ryo 0–2000.
+    rewards: { scrolls: 300, ryo: 450 },
+    // Lesson 3 (Ultimates and Jutsu Clash) starts your team at this much chakra,
+    // so an Ultimate is ready for the first wind-up. 0–100
+    clashLessonStartChakra: 100,
+  },
+
+  // ---------------------------------------------------------------------------
   // BALANCE TARGETS — checked by `npm run sim` and `npm run campaign`.
   // ---------------------------------------------------------------------------
   targets: {

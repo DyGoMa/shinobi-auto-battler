@@ -7,7 +7,12 @@ import { BattleSim } from '../core/BattleSim.js';
 import { Renderer } from '../render/Renderer.js';
 import { Effects } from '../render/Effects.js';
 import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeUnlocked } from '../core/Progression.js';
-import { hashString } from '../core/formulas.js';
+import { hashString, bestNature, beatenBy, natureRelation } from '../core/formulas.js';
+import { leaderBuffText } from '../core/Ninja.js';
+import { arcOf } from '../content/index.js';
+import { completeLesson, tutorialLessons } from '../core/Tutorial.js';
+import { tipsEnabled, tipSeen, markTipSeen } from './tips.js';
+import { LESSON_TITLE } from './TutorialScreen.js';
 
 const CLASH_LABEL = { overpower: '▲ OVERPOWER', standoff: '= STANDOFF', overwhelmed: '▼ WEAK' };
 
@@ -21,6 +26,10 @@ export class BattleScreen {
     this.ended = false;
     this.round = 1; this.rushRewards = { scrolls: 0, ryo: 0 };
     this.tips = { shown: new Set() };
+    // Tutorial lesson battles: { index, replay }. Their coach tips always show.
+    this.tutorial = opts.tutorial || null;
+    this.lessonType = this.tutorial ? opts.node?.lesson : null;
+    this.autoRevealed = !this.tutorial;
     this._onVis = this._onVis.bind(this);
     this._loop = this._loop.bind(this);
     this._onKey = this._onKey.bind(this);
@@ -31,13 +40,13 @@ export class BattleScreen {
     const { C } = this.game;
     this.isRush = !!this.opts.bossRush;
     this.node = this.opts.node || null;
-    const theme = this.isRush ? { sky: ['#3b2a3f', '#b98a8a'], ground: '#5b3a3a', far: '#3a2430', accent: '#ff4d4d' } : C.arc[this.node.arcId].theme;
+    const theme = this.isRush ? { sky: ['#3b2a3f', '#b98a8a'], ground: '#5b3a3a', far: '#3a2430', accent: '#ff4d4d' } : arcOf(this.node, C).theme;
 
     this.objEl = h('div.obj');
-    this.timerEl = h('div.timer', '0:00');
-    this.speedBtn = h('button.icon-btn', { type: 'button', title: 'Battle speed', onclick: () => { this.speed = this.speed === 1 ? 2 : 1; this.speedBtn.textContent = `${this.speed}×`; } }, `${this.speed}×`);
-    this.autoBtn = h('button.icon-btn', { type: 'button', title: 'Auto-fire Ultimates', onclick: () => { const s = this.game.state.settings; s.autoUlt = !s.autoUlt; this._syncAuto(); this.game.commit('settings'); } });
-    this.pauseBtn = h('button.icon-btn', { type: 'button', title: 'Pause', onclick: () => this.togglePause() }, '⏸');
+    this.timerEl = h('div.timer', { 'aria-label': 'Battle time' }, '0:00');
+    this.speedBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Battle speed', title: 'Battle speed', onclick: () => { this.speed = this.speed === 1 ? 2 : 1; this.speedBtn.textContent = `${this.speed}×`; } }, `${this.speed}×`);
+    this.autoBtn = h('button.icon-btn', { type: 'button', onclick: () => { const s = this.game.state.settings; s.autoUlt = !s.autoUlt; this._syncAuto(); this.game.commit('settings'); } });
+    this.pauseBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Pause', title: 'Pause', onclick: () => this.togglePause() }, '⏸');
     const hud = h('div.bhud', this.objEl, this.timerEl, this.autoBtn, this.speedBtn, this.pauseBtn);
     this.canvas = h('canvas', { 'aria-label': 'Battlefield' });
     this.stage = h('div.stage', this.canvas);
@@ -59,10 +68,21 @@ export class BattleScreen {
     document.addEventListener('keydown', this._onKey);
     this.last = performance.now();
     this.raf = requestAnimationFrame(this._loop);
-    if (this.node?.onboarding && !this.game.state.settings.onboardingDone) this._tip('start');
+    if (this.lessonType) this._tip(`lesson.${this.lessonType}.start`);
+    else this._tip('battle.start');
   }
 
-  _syncAuto() { const on = !!this.game.state.settings.autoUlt; this.autoBtn.textContent = on ? '🤖' : '👆'; this.autoBtn.title = on ? 'Auto ults ON (tap to control them yourself)' : 'Auto ults OFF (you tap portraits)'; this.autoBtn.style.borderColor = on ? 'var(--accent)' : ''; }
+  /** Auto-ult is hidden in the tutorial until Lesson 3 introduces it. */
+  _autoOn() { return this.autoRevealed && !!this.game.state.settings.autoUlt; }
+  _syncAuto() {
+    const on = this._autoOn();
+    this.autoBtn.classList.toggle('hidden', !this.autoRevealed);
+    this.autoBtn.textContent = on ? '🤖' : '👆';
+    const label = on ? 'Auto-ult is on: the game fires Ultimates for you. Tap to fire them yourself.' : 'Auto-ult is off: you tap portraits to fire Ultimates. Tap to let the game fire them.';
+    this.autoBtn.title = label; this.autoBtn.setAttribute('aria-label', label);
+    this.autoBtn.setAttribute('aria-pressed', String(on));
+    this.autoBtn.style.borderColor = on ? 'var(--accent)' : '';
+  }
 
   _resize() {
     const r = this.stage.getBoundingClientRect();
@@ -134,8 +154,11 @@ export class BattleScreen {
   _tapUlt(uid) {
     if (this.paused || this.ended) return;
     const res = this.sim.fireUlt(uid);
-    if (res.ok) { this.game.audio.ultFire(); if (this.tips.shown.has('ult') && !this.tips.shown.has('ultDone')) { this.tips.shown.add('ultDone'); } }
-    else {
+    if (res.ok) {
+      this.game.audio.ultFire();
+      // A coach tip that asked for an Ultimate ("tap Sasuke now!") closes itself.
+      if (this.tipBox?.untilUlt) this._closeTip();
+    } else {
       const u = this.sim.unit(uid);
       if (u && u.alive && u.chakra < this.game.B.combat.chakra.max) this.effects.text(u.x, 200, 'Chakra not full', { color: '#9be3ff', size: 16, dur: 0.7 });
     }
@@ -152,12 +175,23 @@ export class BattleScreen {
     this.pauseBtn.textContent = this.paused ? '▶' : '⏸';
     this.stage.querySelector('.pause-veil')?.remove();
     if (this.paused) {
-      const veil = h('div.pause-veil', h('div.card.center', { style: { minWidth: '260px' } },
+      const veil = h('div.pause-veil', h('div.card.center', { style: { minWidth: '260px' }, role: 'dialog', 'aria-label': 'Paused' },
         h('h2', 'Paused'),
         h('p.small', 'Tip: when an enemy shows a ⚠ wind-up bar, tap a ready portrait to Jutsu Clash. The badge on each portrait predicts the result.'),
-        h('div.col', btn('▶ Resume', () => this.togglePause(false), 'primary block'), btn(this.isRush ? '🏳️ End the run' : '🏳️ Retreat (counts as a loss)', () => this._forfeit(), 'danger block'))));
+        h('div.col',
+          btn('▶ Resume', () => this.togglePause(false), 'primary block'),
+          this.tutorial && !this.tutorial.replay ? btn('Skip tutorial', () => this._skipTutorial(), 'block') : null,
+          btn(this.isRush ? '🏳️ End the run' : this.tutorial ? '🏳️ Leave the lesson' : '🏳️ Retreat (counts as a loss)', () => this._forfeit(), 'danger block'))));
       this.stage.appendChild(veil);
     }
+  }
+
+  /** Skip the tutorial from inside a lesson battle: same reward as finishing it. */
+  async _skipTutorial() {
+    const skipped = await this.ui.skipTutorial({ after: () => {} });
+    if (!skipped) return;
+    this.ended = true;
+    this.close({ id: 'home' });
   }
 
   _forfeit() { this.paused = false; this.stage.querySelector('.pause-veil')?.remove(); this.sim.state = 'lost'; this.sim.endReason = 'retreat'; }
@@ -169,9 +203,11 @@ export class BattleScreen {
     this.last = ts;
     const running = !this.paused && !this.hiddenPause && !this.tipPause && !this.ended;
     if (running) {
-      if (this.game.state.settings.autoUlt) {
+      if (this._autoOn()) {
         const before = this.sim.stats.ults;
-        this.sim.botUlts('smart'); // clash-aware: holds ults that would be Overwhelmed
+        // Default 'smart' = clash-aware: fires counter-nature ninja into wind-ups and
+        // holds ults that would be Overwhelmed (Settings → Auto-ult mode).
+        this.sim.botUlts(this.game.state.settings.autoUltMode === 'asap' ? 'asap' : 'smart');
         if (this.sim.stats.ults > before) this.game.audio.ultFire();
       }
       this.sim.step(rawDt * this.speed);
@@ -232,36 +268,115 @@ export class BattleScreen {
     }
   }
 
-  // ---------------------------------------------------------------- onboarding
+  // ---------------------------------------------------------------- coach tips
+  // Tutorial lesson battles show their coach tips ('lesson.*') every time. The first
+  // story battle shows the battle tips ('battle.*') once per save, unless the player
+  // finished the tutorial (it teaches the same things) or switched tips off.
+  _battleTipsOn() {
+    const s = this.game.state;
+    return !this.tutorial && !!this.node?.onboarding && tipsEnabled(s) && !s.tutorial.completed;
+  }
   _tip(id) {
-    if (this.tips.shown.has(id) || this.game.state.settings.onboardingDone || !this.node?.onboarding || this.ended) return;
+    if (this.tips.shown.has(id) || this.ended) return;
+    const lessonTip = id.startsWith('lesson.');
+    if (!lessonTip && (!this._battleTipsOn() || tipSeen(this.game.state, id))) return;
     this.tips.shown.add(id);
+    if (!lessonTip) markTipSeen(this.game, id);
     // One tip at a time: queue the rest until "Got it".
     if (this.tipPause) { (this.tips.queue ||= []).push(id); return; }
     this._showTip(id);
   }
   _showTip(id) {
-    const text = {
-      start: [h('b', 'Welcome to the Survival Test!'), ' Your ninja walk and fight on their own. ', h('b', 'Survive 45 seconds'), ' — or defeat Kakashi outright.'],
-      ult: [h('b', 'Chakra full!'), ' A glowing portrait (below the battlefield) means that ninja\'s ', h('b', 'Ultimate'), ' is ready — tap it to fire. (Keys 1–4 work too.)'],
-      clash: [h('b', 'Kakashi is winding up a jutsu'), ' (see the ⚠ bar). Fire an Ultimate ', h('b', 'now'), ' to ', h('b', 'JUTSU CLASH'), '. The badge on each portrait predicts it: ▲ your nature beats his (Lightning beats Earth), = standoff, ▼ weak.'],
-    }[id];
-    if (!text || this.ended) return;
+    const tip = this._tipContent(id);
+    if (!tip || this.ended) { this._nextTip(); return; }
     this.tipPause = true;
-    const box = h('div.onboard', ...text, h('div.row', btn('Got it', () => {
-      box.remove(); this.tipPause = false; this.last = performance.now();
-      const next = this.tips.queue?.shift(); if (next) this._showTip(next);
-    })));
-    Object.assign(box.style, { left: '0', right: '0', margin: '0 auto', width: 'min(360px, 86vw)' });
-    box.style.top = id === 'start' ? '12%' : '6%';
+    const box = h('div.onboard', { role: 'dialog', 'aria-live': 'polite' }, ...tip.body, h('div.row', btn(tip.button || 'Got it', () => this._closeTip())));
+    box.untilUlt = !!tip.untilUlt;
+    box.style.top = tip.top || '6%';
+    this.tipBox = box;
     this.stage.appendChild(box);
+    if (tip.onShow) tip.onShow();
   }
-  _clearTips() { this.stage.querySelectorAll('.onboard').forEach(el => el.remove()); this.tipPause = false; if (this.tips.queue) this.tips.queue.length = 0; }
+  _closeTip() {
+    if (this.tipBox) { this.tipBox.remove(); this.tipBox = null; }
+    this.tipPause = false; this.last = performance.now();
+    this._nextTip();
+  }
+  _nextTip() { const next = this.tips.queue?.shift(); if (next) this._showTip(next); }
+  _clearTips() { this.stage.querySelectorAll('.onboard').forEach(el => el.remove()); this.tipBox = null; this.tipPause = false; if (this.tips.queue) this.tips.queue.length = 0; }
+
   _tipsFromEvents(events) {
-    if (!this.node?.onboarding || this.game.state.settings.onboardingDone) return;
+    const L = this.lessonType;
+    if (!L && !this._battleTipsOn()) return;
     for (const e of events) {
-      if (e.type === 'ultReady') this._tip('ult');
-      if (e.type === 'telegraph' && this.tips.shown.has('ult')) this._tip('clash');
+      const u = e.uid != null ? this.sim.unit(e.uid) : null;
+      if (L === 'team' && e.type === 'ultReady') this._tip('lesson.team.ult');
+      if (L === 'nature' && e.type === 'damage' && e.relation > 0 && this.sim.unit(e.src)?.side === 'player') { this.effectiveHit = e; this._tip('lesson.nature.effective'); }
+      if (L === 'clash' && e.type === 'telegraph' && u?.side === 'enemy') this._tip('lesson.clash.windup');
+      if (L === 'clash' && e.type === 'clash') { this.clashSeen = e; this._tip(`lesson.clash.${e.outcome}`); this._tip('lesson.clash.auto'); }
+      if (!L && e.type === 'ultReady') this._tip('battle.ult');
+      if (!L && e.type === 'telegraph' && this.tips.shown.has('battle.ult')) this._tip('battle.clash');
+    }
+  }
+
+  /** Text for a coach tip. Names, natures and numbers come from the battle and balance.js. */
+  _tipContent(id) {
+    const { C, B } = this.game;
+    const sim = this.sim;
+    const b = (t) => h('b', t);
+    const players = sim.units.filter(u => u.side === 'player' && !u.protected);
+    const foe = sim.units.find(u => u.side === 'enemy' && u.alive) || sim.units.find(u => u.side === 'enemy');
+    const fn = foe?.activeNature;
+    const J = B.jutsuClash;
+    switch (id) {
+      case 'battle.start':
+        return { top: '12%', body: [b(`Welcome to ${this.node.name}!`), ' Your ninja walk and fight on their own. Goal: ', b(objectiveText(this.node.objective, C)), '.'] };
+      case 'battle.ult':
+        return { untilUlt: true, body: [b('Chakra full!'), ' A glowing portrait (below the battlefield) means that ninja\'s ', b('Ultimate'), ' is ready: tap it to fire. Keys 1–4 work too.'] };
+      case 'battle.clash':
+        return { body: [b(`${foe?.name || 'An enemy'} is winding up a jutsu`), ' (see the ⚠ bar). Fire an Ultimate ', b('now'), ' to ', b('JUTSU CLASH'), '. The badge on each portrait predicts it: ▲ your nature beats theirs, = standoff, ▼ weak.'] };
+      case 'lesson.team.start': {
+        const leader = players.find(u => u.isLeader);
+        return { top: '10%', body: [b('Lesson 1: team building. '), 'Your ninja walk and fight on their own: Tanks and Strikers close in, Ranged and Support ninja attack from behind. ',
+          leader ? [b(`${leader.name} ★`), ` leads: ${leaderBuffText(C.char[leader.key], B)}.`] : 'No Leader this time.'] };
+      }
+      case 'lesson.team.ult':
+        return { untilUlt: true, body: [b('A portrait is glowing!'), ' That ninja\'s Ultimate is ready: tap it to fire (or press 1–4). Lesson 3 shows you when to hold it.'] };
+      case 'lesson.nature.start': {
+        const counter = beatenBy(fn, B);
+        const who = players.filter(u => bestNature(u.natures, fn, { taijutsu: u.taijutsu }, B).relation > 0).map(u => u.short);
+        return { top: '10%', body: [b('Lesson 2: the Nature Wheel. '), `${foe.name} fights with ${fn} Style. `,
+          who.length ? [b(who.join(' and ')), ` use${who.length === 1 ? 's' : ''} ${counter} Style, which beats ${fn}: watch for `, b('EFFECTIVE!')] : `${counter} Style beats it.`] };
+      }
+      case 'lesson.nature.effective': {
+        const src = sim.unit(this.effectiveHit?.src);
+        const resisters = players.filter(u => !u.taijutsu && natureRelation(u.natures[0], fn, B) > 0);
+        return { body: [b('EFFECTIVE!'), ` ${src?.short || 'Your ninja'}'s ${this.effectiveHit?.nature} Style beats ${fn}: ×${B.natureWheel.advantage} damage.`,
+          resisters.length ? ` And ${foe.name}'s hits on ${resisters.map(u => u.short).join(' and ')} are resisted (×${B.natureWheel.disadvantage}): ${resisters[0].natures[0]} Style beats ${fn} on defence too.` : ''] };
+      }
+      case 'lesson.clash.start':
+        return { top: '10%', body: [b('Lesson 3: Ultimates. '), 'Your team starts with full chakra, so every portrait is glowing. ', b('Hold your Ultimates for now:'), ` ${foe.name} is about to use a jutsu.`] };
+      case 'lesson.clash.windup': {
+        const tel = sim.clashTarget();
+        const ready = players.filter(u => sim.canUlt(u.uid));
+        const best = ready.find(u => sim.clashPreview(u.uid)?.outcome === 'overpower');
+        if (!tel) return null;
+        if (!ready.length) return { body: [b('⚠ Wind-up!'), ` ${foe.name} is winding up ${tel.name}. None of your Ultimates is ready: build chakra and meet the next one.`] };
+        return { untilUlt: true, button: 'Let it land', body: [b('⚠ Jutsu Clash! '), `${foe.name} is winding up ${tel.name}${tel.nature ? ` (${tel.nature} Style)` : ''}. Fire an Ultimate into it now. `,
+          best ? [`The badges predict the result: `, b(`${best.short} shows ▲ OVERPOWER`), ` (${bestNature(best.natures, tel.nature, {}, B).nature} beats ${tel.nature}). `, b(`Tap ${best.short}!`)] : 'The badges predict the result: tap the best one.'] };
+      }
+      case 'lesson.clash.overpower': {
+        const u = sim.unit(this.clashSeen?.uid);
+        return { body: [b('OVERPOWER! '), `${foe.name}'s jutsu is cancelled and ${foe.name} is stunned. ${u?.short || 'Your ninja'}'s Ultimate dealt ×${J.overpowerUltMult} damage, and ${J.overpowerChakraRefund} chakra came back.`] };
+      }
+      case 'lesson.clash.standoff':
+        return { body: [b('STANDOFF. '), `Both jutsu fizzled and your Ultimate still hit at ×${J.standoffUltMult}. A ninja with a ▲ badge would have overpowered it.`] };
+      case 'lesson.clash.overwhelmed':
+        return { body: [b('OVERWHELMED. '), 'The jutsu\'s nature beats your ninja\'s, so the Ultimate did no damage. It still blocked the jutsu, and most of its chakra came back.'] };
+      case 'lesson.clash.auto':
+        return { button: 'Got it', onShow: () => { this.autoRevealed = true; this._syncAuto(); },
+          body: [b('🤖 Auto-ult '), 'is now on your battle bar (top right). Tap it and the game fires Ultimates for you: it clashes when your nature wins and holds any ninja that would be Overwhelmed. Tap again to take control back.'] };
+      default: return null;
     }
   }
 
@@ -287,12 +402,56 @@ export class BattleScreen {
       return;
     }
     this.ended = true;
-    const firstNode = this.node.onboarding;
+    if (this.tutorial) {
+      // Lesson battles pay nothing themselves: the tutorial reward is paid once, when
+      // the last lesson is won (or the tutorial is skipped).
+      const res = won ? completeLesson(state, this.tutorial.index, C, B, { replay: this.tutorial.replay }) : null;
+      game.commit('tutorial');
+      won ? game.audio.victory() : game.audio.defeat();
+      setTimeout(() => this._tutorialResults(won, res), 650);
+      return;
+    }
     const result = completeNode(state, this.node, won, C, B, { time: this.sim.time });
-    if (firstNode) state.settings.onboardingDone = true;
     game.commit('battle');
     won ? game.audio.victory() : game.audio.defeat();
     setTimeout(() => this._results(won, result), 650);
+  }
+
+  _tutorialResults(won, res) {
+    const { game, ui, node } = this; const { C } = game;
+    const lessons = tutorialLessons(C);
+    const i = this.tutorial.index, replay = this.tutorial.replay;
+    const next = lessons[i + 1];
+    const cl = this.sim.stats.clashes;
+    const recap = {
+      team: 'Your team lined up by role on its own: fighters in front, ranged ninja behind.',
+      nature: `Effective hits: ${this.sim.stats.effective}. Bringing the right nature makes every fight easier.`,
+      clash: `Jutsu Clashes: ${cl.overpower} overpower, ${cl.standoff} standoff, ${cl.overwhelmed} overwhelmed.`,
+    }[node.lesson];
+    const finished = won && res?.finished;
+    const content = h('div',
+      h('div.result-hero',
+        h('div.big.' + (won ? 'win' : 'lose'), finished ? 'TUTORIAL COMPLETE' : won ? 'LESSON COMPLETE' : 'DEFEAT'),
+        h('div.muted', `Lesson ${i + 1} of ${lessons.length}: ${LESSON_TITLE[node.lesson]}`)),
+      won ? h('p.center', recap) : h('p.center', 'Even the best ninja lose sometimes. Try the lesson again, or skip the tutorial.'),
+      finished && res.reward ? h('div.reward-row', h('div.reward', `📜 +${fmt(res.reward.scrolls)}`), h('div.reward', `🪙 +${fmt(res.reward.ryo)}`), h('div.reward', '🎓 Tutorial reward')) : null,
+      finished && !replay ? h('p.center', 'Next up: the Survival Test. Summon a few ninja first with your scrolls, or head straight to the story.') : null,
+    );
+    const actions = h('div.actions');
+    const close = ui.modal(h('div', content, actions), { dismissable: false, wide: true, label: 'Lesson results' });
+    const leave = (goTo) => { close(); this.close(goTo); };
+    if (!won) {
+      if (!replay) actions.append(btn('Skip tutorial', async () => { if (await ui.skipTutorial({ after: () => {} })) leave({ id: 'home' }); }, 'ghost'));
+      actions.append(btn('↻ Try again', () => { close(); this.restart(); }, 'primary'));
+    } else if (next) {
+      if (!replay) actions.append(btn('Skip tutorial', async () => { if (await ui.skipTutorial({ after: () => {} })) leave({ id: 'home' }); }, 'ghost'));
+      actions.append(btn(`Next lesson: ${LESSON_TITLE[next.lesson]} ▶`, () => leave({ id: 'tutorial', params: { lesson: i + 1, replay } }), 'primary'));
+    } else if (replay) {
+      actions.append(btn('Done', () => leave(this.tutorial.returnTo || { id: 'home' }), 'primary'));
+    } else {
+      actions.append(btn('📜 Summon ninja', () => leave({ id: 'summon' })),
+        btn('🗺️ Survival Test ▶', () => leave({ id: 'story', params: { arcId: C.arcs[0].id, nodeId: C.nodes[0].id } }), 'primary'));
+    }
   }
 
   _intermission(rw) {
@@ -368,7 +527,15 @@ export class BattleScreen {
       btn('↻ New run', () => { close(); this.round = 1; this.rushRewards = { scrolls: 0, ryo: 0 }; this.ended = false; this._buildSim(); }, 'primary'))), { dismissable: false, wide: true });
   }
 
-  restart() { this.ended = false; this.paused = false; this.pauseBtn.textContent = '⏸'; this.effects = new Effects(this.renderer); this._buildSim(); }
+  restart() {
+    this.ended = false; this.paused = false; this.pauseBtn.textContent = '⏸';
+    this.effects = new Effects(this.renderer); this._buildSim();
+    if (this.tutorial) {
+      // A retried lesson coaches again from the start.
+      this.tips = { shown: new Set() }; this.autoRevealed = false; this._syncAuto();
+      this._tip(`lesson.${this.lessonType}.start`);
+    }
+  }
 
   /** Debug: defeat every enemy immediately. */
   debugWin() { for (const u of this.sim.units) if (u.side === 'enemy' && u.alive) { u.revived = true; u.hp = 0; } this.sim.pending = []; }
