@@ -17,9 +17,12 @@ placeholder, where it's drawn, its size, and what's still open.
 | 4. Settings | `965e2cc` | Battle speed, Auto-ult mode, tips, replay tutorial, account states, typed reset, version + What's new; audio/VFX placeholder toggles |
 | 5. Endgame | `e940bc8` | Hard mode (per part, autotuned, counter-gap bands hold), the Daily challenge (4 twists, sim-checked), Hard economy check |
 | 6. UX and copy QA | `a57500a` | `tools/ui-audit.mjs` + QA.md; 44 px targets, two dead ends fixed, landscape side rail, loading/error states, empty states, copy fixes |
-| 7. Docs | this commit | README, DESIGN (§9–13 new), BALANCE (§2–4, §6 Hard rows), CONTENT_GUIDE (§10–12 new), NAMING, this file |
+| 7. Docs | `ac69643` | README, DESIGN (§9–13 new), BALANCE (§2–4, §6 Hard rows), CONTENT_GUIDE (§10–12 new), NAMING, this file |
+| 4b. Cleanup | `2a3d020` | Hard `n_summit_3` retuned 0.33 → 0.325 (78%, its mid-arc goal); `autotune` takes per-node search overrides |
+| | `e4df7ab` | "Part II on Hard" achievement (21 in all), retroactive on load, with a core test |
+| | `bb4132b` | The no-tutorial `n_birth_4` case closed as noise (100-player runs, BALANCE.md §4) |
 
-**Checks:** `npm test` passes: validate (content, balance, names, Wiki), syntax on 59 files, **109 core tests**, **61/61 sim scenarios** (Story and Hard bosses, counter-gap bands in both modes, Boss Rush) plus the Daily info check, and **10/10** free-to-play campaign players clearing Parts I–II. The layout audit is clean at 390×844, 360×780, 844×390 and 1280×800 (QA.md).
+**Checks:** `npm test` passes: validate (content, balance, names, Wiki), syntax on 59 files, **110 core tests**, **61/61 sim scenarios** (Story and Hard bosses, counter-gap bands in both modes, Boss Rush) plus the Daily info check, and **10/10** free-to-play campaign players clearing Parts I–II. The layout audit is clean at 390×844, 360×780, 844×390 and 1280×800 (QA.md).
 
 **Live:** https://dygoma.github.io/shinobi-auto-battler/, checked after the Session 4 push (see "Live check" at the end).
 
@@ -165,14 +168,11 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 **Balance and content**
 1. **The counter-gap depends on the team more than the mode.** A Tsunade-led (HP buff, healer) team fights long, steady battles where being countered costs far more (3 of 4 countered: 7% instead of 26%), in the story as much as on Hard. The Hard scenario uses the story's team to measure the mode; see BALANCE.md §6. Worth knowing if the wheel is touched again.
 2. **Daily difficulty is bimodal.** Tuned so every sampled player clears every twist within 3 tries at least half the time, which leaves most days comfortable (median win per attempt ~100%). A per-boss adjustment would make typical days harder without making the worst ones impossible (BALANCE.md §4).
-3. **`n_birth_4`** (Madara, Birth of the Ten-Tails' Jinchuriki): one of ten players needed 5 replays in the optional `CAMPAIGN_TUTORIAL=0` run; the default run passes 10/10.
-4. **`n_summit_3` on Hard** sits at the autotune floor (0.33, 72% vs its 78% goal): a mid-arc boss, easier than intended, not a wall.
-5. **Part II on Hard has no achievement** (Part I on Hard does). An `ach_hard_part2` would be data only.
-6. **Nagato's Earth**, **Boss Rush Pain's five natures**, **Part II dub titles from Wikipedia's season lists**, **non-boss nodes are easy at level**: carried over from Session 3 (see the Session 3b handoff in git history, `025bf7f`).
+3. **Nagato's Earth**, **Boss Rush Pain's five natures**, **Part II dub titles from Wikipedia's season lists**, **non-boss nodes are easy at level**: carried over from Session 3 (see the Session 3b handoff in git history, `025bf7f`).
 
 **Platform**
-7. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md).
-8. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
+4. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md).
+5. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
 
 ## Live check
 
