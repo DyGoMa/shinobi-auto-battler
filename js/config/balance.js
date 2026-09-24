@@ -181,8 +181,8 @@ export const BALANCE = {
   natureWheel: {
     // Each nature beats the next one in this list (and the last beats the first).
     cycle: ['Fire', 'Wind', 'Lightning', 'Earth', 'Water'],
-    advantage: 1.3,     // damage mult when attacker's nature beats defender's. 1.1–1.6
-    disadvantage: 0.8,  // damage mult when defender's nature beats attacker's. 0.5–0.95
+    advantage: 1.12,    // damage mult when attacker's nature beats defender's. 1.1–1.6
+    disadvantage: 0.95, // damage mult when defender's nature beats attacker's. 0.5–0.95
   },
 
   // ---------------------------------------------------------------------------
@@ -236,41 +236,41 @@ export const BALANCE = {
       n_bell_1:    { hp: 0.85, atk: 0.85 },
       n_bell_3:    { hp: 1.55, atk: 1.55 },
       n_waves_5:   { hp: 1.00, atk: 1.00 },
-      n_chunin_5:  { hp: 1.05, atk: 1.05 },
-      n_crush_3:   { hp: 0.70, atk: 0.70 },
-      n_crush_4:   { hp: 0.88, atk: 0.88 },
+      n_chunin_5:  { hp: 1.02, atk: 1.02 },
+      n_crush_3:   { hp: 0.69, atk: 0.69 },
+      n_crush_4:   { hp: 0.86, atk: 0.86 },
       n_tsunade_4: { hp: 1.04, atk: 1.04 },
-      n_tea_3:     { hp: 1.51, atk: 1.51 },
+      n_tea_3:     { hp: 1.41, atk: 1.41 },
       n_sr_4:      { hp: 1.00, atk: 1.00 },
-      n_sr_5:      { hp: 0.98, atk: 0.98 },
-      n_kuro_3:    { hp: 1.09, atk: 1.09 },
+      n_sr_5:      { hp: 1.08, atk: 1.08 },
+      n_kuro_3:    { hp: 1.03, atk: 1.03 },
       n_kaz_4:     { hp: 1.04, atk: 1.04 },
       n_kaz_5:     { hp: 1.24, atk: 1.24 },
-      n_tenchi_4:  { hp: 1.14, atk: 1.14 },
+      n_tenchi_4:  { hp: 1.22, atk: 1.22 },
       n_twelve_3:  { hp: 1.27, atk: 1.27 },
       n_hidan_3:   { hp: 0.98, atk: 0.98 },
-      n_hidan_4:   { hp: 1.01, atk: 1.01 },
+      n_hidan_4:   { hp: 1.06, atk: 1.06 },
       n_three_2:   { hp: 1.11, atk: 1.11 },
-      n_three_3:   { hp: 1.06, atk: 1.06 },
-      n_itachi_3:  { hp: 0.93, atk: 0.93 },
-      n_jiraiya_4: { hp: 1.16, atk: 1.16 },
-      n_brothers_2:{ hp: 0.91, atk: 0.91 },
+      n_three_3:   { hp: 1.04, atk: 1.04 },
+      n_itachi_3:  { hp: 0.97, atk: 0.97 },
+      n_jiraiya_4: { hp: 1.14, atk: 1.14 },
+      n_brothers_2:{ hp: 0.97, atk: 0.97 },
       n_brothers_4:{ hp: 0.81, atk: 0.81 },
       n_sixtails_3:{ hp: 1.20, atk: 1.20 },
       n_pain_5:    { hp: 0.97, atk: 0.97 },
-      n_summit_3:  { hp: 1.04, atk: 1.04 },
-      n_summit_4:  { hp: 0.78, atk: 0.78 },
-      n_countdown_2:{ hp: 0.71, atk: 0.71 },
-      n_countdown_4:{ hp: 0.63, atk: 0.63 },
+      n_summit_3:  { hp: 1.01, atk: 1.01 },
+      n_summit_4:  { hp: 0.83, atk: 0.83 },
+      n_countdown_2:{ hp: 0.78, atk: 0.78 },
+      n_countdown_4:{ hp: 0.67, atk: 0.67 },
       n_confront_4:{ hp: 0.87, atk: 0.87 },
       n_confront_5:{ hp: 1.01, atk: 1.01 },
-      n_climax_3:  { hp: 1.03, atk: 1.03 },
-      n_climax_5:  { hp: 0.72, atk: 0.72 },
-      n_anbu_3:    { hp: 0.92, atk: 0.92 },
-      n_birth_2:   { hp: 0.75, atk: 0.75 },
-      n_birth_4:   { hp: 0.86, atk: 0.86 },
-      n_kaguya_2:  { hp: 1.35, atk: 1.35 },
-      n_kaguya_4:  { hp: 0.96, atk: 0.96 },
+      n_climax_3:  { hp: 1.06, atk: 1.06 },
+      n_climax_5:  { hp: 0.77, atk: 0.77 },
+      n_anbu_3:    { hp: 0.93, atk: 0.93 },
+      n_birth_2:   { hp: 0.80, atk: 0.80 },
+      n_birth_4:   { hp: 0.89, atk: 0.89 },
+      n_kaguya_2:  { hp: 1.36, atk: 1.36 },
+      n_kaguya_4:  { hp: 1.07, atk: 1.07 },
     },
     // Adds summoned by boss mechanics are this fraction of a normal enemy. 0.3–1
     addMult: 0.6,
@@ -332,13 +332,12 @@ export const BALANCE = {
     overpowerChakraRefund: 25, // chakra given back to the clasher. 0–60
     // Neutral: both jutsu cancel; your ult still resolves at this power.
     standoffUltMult: 0.5,    // 0–1
-    // Their nature beats yours: your ult is cancelled (no damage) and theirs
-    // lands weakened...
-    overwhelmedJutsuMult: 0.55, // 0–1
-    // ...but this share of the ult's chakra cost comes back, so a countered
-    // team isn't locked out of its next ult. Keep it below 1 so Overwhelmed
-    // stays worse than a Standoff. 0–0.8
-    overwhelmedChakraRefund: 0.5,
+    // Their nature beats yours: your ult is cancelled (no damage) and their
+    // jutsu is ALSO blocked (same as Standoff/Cancelled) — but this share of
+    // the ult's chakra cost comes back, so a countered team isn't locked out
+    // of its next ult. Keep it below 1 so Overwhelmed still costs the ult's
+    // damage even though both jutsu fizzle. 0–0.9
+    overwhelmedChakraRefund: 0.85,
     // Taijutsu specialists can never be Overwhelmed (worst case = Standoff).
     taijutsuNeverOverwhelmed: true,
     // A Tank that clashes always pulls the enemy jutsu onto itself with extra DR.
@@ -363,6 +362,14 @@ export const BALANCE = {
     bossWinRange: [0.50, 0.70],        // each arc boss, on-curve team, ult bot
     bossRushRoundRange: [4, 5],        // median highest round, Jonin-heavy team
     natureCheckMinGap: 0.25,           // win-rate gap countered vs countering team
+    // Counter-gap scenario (BALANCE.md §6): the fight used for every "countered
+    // team" measurement. n_waves_5 (Land of Waves boss, Water) at this level offset
+    // is where a neutral, on-curve team wins ~60% — a real, contested fight, not a
+    // near-guaranteed win or a near-guaranteed loss.
+    counterGapNode: 'n_waves_5',
+    counterGapLevelOffset: 1.6,
+    counterGap3of4Range: [0.25, 0.30],   // 3-of-4 units countered, clash-aware bot
+    counterGapFullyRange: [0.10, 0.15],  // all 4 units countered, clash-aware bot
     fightLengthRange: [30, 60],        // s, median of won boss fights (reported)
     campaignMaxReplaysPerNode: 3,
     // "On-curve" team used by the boss sims: level = node enemy level + offset,

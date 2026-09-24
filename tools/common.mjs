@@ -12,6 +12,11 @@ export const B = BALANCE;
 
 /** Story parts the sims cover (default: every part with content). SIM_PARTS=1 for a quick Part I run. */
 export const SIM_PARTS = (process.env.SIM_PARTS || [...new Set(CONTENT.arcs.map(a => a.part))].join(',')).split(',').map(Number);
+
+/** Default Ultimate bot for every scenario: the clash-aware bot the in-game 🤖
+ *  Auto-ult uses. SIM_BOT=asap switches every default back to fire-when-ready,
+ *  for comparison only. */
+export const DEFAULT_BOT = process.env.SIM_BOT === 'asap' ? 'asap' : 'smart';
 export const PART_LABEL = (parts = SIM_PARTS) => parts.length > 1 ? `Parts ${parts.map(roman).join('–')}` : `Part ${roman(parts[0])}`;
 function roman(n) { return ['0', 'I', 'II', 'III', 'IV'][n] || String(n); }
 
@@ -45,7 +50,7 @@ export function playerSpecs(team, owned, node) {
 }
 
 /** Run one story-node battle. Returns { state, time, sim }. */
-export function runNode(node, team, owned, seed, { ultMode = 'asap', ultsEnabled = true, specsOverride = null } = {}) {
+export function runNode(node, team, owned, seed, { ultMode = DEFAULT_BOT, ultsEnabled = true, specsOverride = null } = {}) {
   const { enemies, civilians, enemyFactory } = buildNodeEnemies(node, C, B);
   const player = specsOverride || playerSpecs(team, owned, node);
   const sim = new BattleSim({ player, enemies, civilians, enemyFactory, objective: node.objective, seed, balance: B, recordEvents: false, ultsEnabled });
@@ -75,7 +80,7 @@ export function onCurveTeam(node, { levelOffset = B.targets.onCurve.levelOffset,
 }
 
 /** Run a full Boss Rush with a team (no healing between rounds). Returns highest round cleared. */
-export function runBossRush(team, owned, seed, { ultMode = 'asap', maxRounds = 30 } = {}) {
+export function runBossRush(team, owned, seed, { ultMode = DEFAULT_BOT, maxRounds = 30 } = {}) {
   let carry = null;
   let cleared = 0;
   for (let round = 1; round <= maxRounds; round++) {

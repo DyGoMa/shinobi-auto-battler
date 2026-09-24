@@ -398,7 +398,7 @@ export class BattleSim {
       this._cancelTelegraph(t, 'standoff');
       this._executeUlt(u, JC.standoffUltMult);
     } else {
-      t.powerMult *= JC.overwhelmedJutsuMult;
+      this._cancelTelegraph(t, 'overwhelmed');
       u.chakra = this.B.combat.chakra.max * (JC.overwhelmedChakraRefund || 0);
     }
     this._emit({ type: 'clash', uid: u.uid, caster: t.caster, outcome, name: t.name, nature: t.nature });

@@ -101,20 +101,51 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     ok(lee.level === lvl && lee.stars === 4 && !lee.loaner, 'owned forced ninja below the node level fight at it, keeping stars');
     ok(ownedOrLoaner(fs, 'naruto', k3, B).level === fs.roster.naruto.level, 'non-forced ninja keep their own level');
   }
-  // Jutsu Clash: an Overwhelmed ult deals no damage, the enemy jutsu still lands
-  // (weakened), and part of the chakra comes back.
+  // Jutsu Clash: the three outcomes stay distinct. Water beats Fire, Earth beats
+  // Water, and Wind vs Water is unrelated (standoff/"Cancelled").
   {
-    const wc = nodeBattleConfig(defaultState(C, B), C.node.n_waves_5, C, B, { seed: 5 });
-    const ws = new BattleSim({ ...wc, recordEvents: false });
-    const u = ws.units.find(x => x.side === 'player' && !x.protected && x.role !== 'Tank');
-    const boss = ws.units.find(x => x.side === 'enemy' && x.isBoss);
-    Object.assign(u, { natures: ['Fire'], taijutsu: false, chakra: B.combat.chakra.max });
-    const tel = { id: 9999, caster: boss.uid, side: 'enemy', name: 'Test', nature: 'Water', kind: 'jutsu', type: 'single', power: 1, powerMult: 1, startedAt: 0, endsAt: 2, target: u.uid, clashable: true, stun: 0 };
-    ws.telegraphs.push(tel);
-    const hp = boss.hp;
-    const res = ws.fireUlt(u.uid);
-    ok(res.clash === 'overwhelmed' && boss.hp === hp && ws.telegraphs.includes(tel) && tel.powerMult === B.jutsuClash.overwhelmedJutsuMult, 'Overwhelmed ult: no damage, enemy jutsu still lands weakened');
-    ok(u.chakra === B.combat.chakra.max * B.jutsuClash.overwhelmedChakraRefund && B.jutsuClash.overwhelmedChakraRefund < 1, 'Overwhelmed ult refunds part (not all) of its chakra');
+    const freshClashSim = () => {
+      const wc = nodeBattleConfig(defaultState(C, B), C.node.n_waves_5, C, B, { seed: 5 });
+      const ws = new BattleSim({ ...wc, recordEvents: false });
+      const u = ws.units.find(x => x.side === 'player' && !x.protected && x.role !== 'Tank');
+      const boss = ws.units.find(x => x.side === 'enemy' && x.isBoss);
+      const tel = { id: 9999, caster: boss.uid, side: 'enemy', name: 'Test', nature: 'Water', kind: 'jutsu', type: 'single', power: 1, powerMult: 1, startedAt: 0, endsAt: 2, target: u.uid, clashable: true, stun: 0 };
+      ws.telegraphs.push(tel);
+      Object.assign(u, { taijutsu: false, chakra: B.combat.chakra.max });
+      return { ws, u, boss, tel };
+    };
+    // Overwhelmed: ult deals no damage, the boss's jutsu is ALSO blocked (cancelled,
+    // not just weakened), and part of the chakra comes back.
+    {
+      const { ws, u, boss, tel } = freshClashSim();
+      u.natures = ['Fire'];
+      const hp = boss.hp;
+      const res = ws.fireUlt(u.uid);
+      ok(res.clash === 'overwhelmed' && boss.hp === hp, 'Overwhelmed ult deals no damage');
+      ok(!ws.telegraphs.includes(tel), "Overwhelmed also cancels the boss's jutsu");
+      ok(u.chakra === B.combat.chakra.max * B.jutsuClash.overwhelmedChakraRefund && B.jutsuClash.overwhelmedChakraRefund < 1, 'Overwhelmed ult refunds part (not all) of its chakra');
+    }
+    // Cancelled (Standoff): both jutsu fizzle, ult still resolves at a reduced
+    // multiplier, and no chakra comes back.
+    {
+      const { ws, u, boss, tel } = freshClashSim();
+      u.natures = ['Wind'];
+      const hp = boss.hp;
+      const res = ws.fireUlt(u.uid);
+      ok(res.clash === 'standoff' && boss.hp < hp, 'Cancelled/Standoff ult still deals some damage');
+      ok(!ws.telegraphs.includes(tel), 'Cancelled/Standoff cancels the boss jutsu');
+      ok(u.chakra === 0, 'Cancelled/Standoff gives no chakra refund');
+    }
+    // Overpowered: unchanged — bonus damage, caster stunned, chakra refunded.
+    {
+      const { ws, u, boss, tel } = freshClashSim();
+      u.natures = ['Earth'];
+      const hp = boss.hp;
+      const res = ws.fireUlt(u.uid);
+      ok(res.clash === 'overpower' && boss.hp < hp, 'Overpowered ult deals bonus damage');
+      ok(!ws.telegraphs.includes(tel), 'Overpowered cancels the boss jutsu');
+      ok(u.chakra === B.jutsuClash.overpowerChakraRefund, 'Overpowered ult refunds its fixed chakra amount');
+    }
   }
   // curves
   ok(curve({ type: 'step', base: 1, table: [[10, 2], [20, 3]] }, 15) === 2, 'step curve');
