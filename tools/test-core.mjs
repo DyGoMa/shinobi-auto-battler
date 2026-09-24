@@ -10,7 +10,7 @@ import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, owned
 import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, dailyReward, dailyBattleConfig, dailyEnemyNature, dailyContent } from '../js/core/Daily.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 import { INTRO, introPlan, introSeen, setIntroSeen, menuModel } from '../js/core/StartFlow.js';
-import { FirebaseBackend } from '../js/save/FirebaseBackend.js';
+import { FirebaseBackend, REDIRECT_FLAG, POPUP_UNAVAILABLE, POPUP_CANCELLED, EMPTY_REDIRECT_ERROR } from '../js/save/FirebaseBackend.js';
 import { formatBuild, loadBuildInfo, DEV_LABEL } from '../js/core/Version.js';
 
 let fails = 0, passes = 0;
@@ -352,57 +352,126 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
 }
 
 // ---- Session 5: the start menu never creates a cloud session by itself ----------
+// Google sign-in is popup first on every device; the redirect is only a fallback.
 {
-  const store = new Map();
-  globalThis.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-  // A fake Firebase SDK: records what the backend asks it to do.
-  const fakeSdk = (user = null) => {
+  const realWarn = console.warn; console.warn = () => {};   // the error paths below warn on purpose
+  const store = new Map(), session = new Map();
+  const fakeStorage = (m) => ({ getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) });
+  globalThis.localStorage = fakeStorage(store);
+  globalThis.sessionStorage = fakeStorage(session);
+  const authError = (code) => { const e = new Error(code); e.code = code; return e; };
+  // A fake Firebase SDK: records what the backend asks it to do. popup / linkPopup: what
+  // signInWithPopup / linkWithPopup do ('ok' or an auth error code); redirect: what
+  // getRedirectResult returns after a round trip ('user', 'empty' or an error code).
+  const fakeSdk = ({ user = null, popup = 'ok', linkPopup = 'ok', redirect = 'empty' } = {}) => {
     const auth = { currentUser: user }; const calls = [];
+    const google = { uid: 'g1', isAnonymous: false, email: 'ninja@leaf.example', displayName: 'Naruto' };
     const sdk = {
       initializeApp: () => ({}), getAuth: () => auth, getFirestore: () => ({}),
       onAuthStateChanged: (a, cb) => { queueMicrotask(() => cb(a.currentUser)); return () => {}; },
-      getRedirectResult: async () => { calls.push('redirectResult'); return null; },
+      getRedirectResult: async (a) => {
+        calls.push('redirectResult');
+        if (redirect === 'user') { a.currentUser = google; return { user: google }; }
+        if (redirect === 'empty') return null;
+        throw authError(redirect);
+      },
       signInAnonymously: async (a) => { calls.push('anonymous'); a.currentUser = { uid: 'guest1', isAnonymous: true }; return { user: a.currentUser }; },
-      signInWithPopup: async () => { calls.push('popup'); const e = new Error('blocked'); e.code = 'auth/popup-blocked'; throw e; },
+      signInWithPopup: async (a) => { calls.push('popup'); if (popup !== 'ok') throw authError(popup); a.currentUser = google; return { user: google }; },
+      linkWithPopup: async (u) => { calls.push('linkPopup'); if (linkPopup !== 'ok') throw authError(linkPopup); const linked = { ...u, isAnonymous: false, email: google.email }; auth.currentUser = linked; return { user: linked }; },
       signInWithRedirect: async () => { calls.push('redirect'); },
       linkWithRedirect: async () => { calls.push('linkRedirect'); },
+      signInWithCredential: async (a) => { calls.push('credential'); a.currentUser = google; return { user: google }; },
       signOut: async (a) => { a.currentUser = null; },
-      GoogleAuthProvider: class { static credentialFromError() { return null; } },
+      GoogleAuthProvider: class { static credentialFromError() { return { providerId: 'google.com' }; } },
     };
     return { calls, sdk, auth };
   };
   const cfg = { apiKey: 'k', authDomain: 'a', projectId: 'p', storageBucket: 's', messagingSenderId: 'm', appId: 'i' };
-  const f1 = fakeSdk(); const fb = new FirebaseBackend(cfg, { sdk: f1.sdk, useRedirect: false });
-  ok(await fb.init() === false && fb.phase === 'signedOut' && !f1.calls.includes('anonymous'), 'loading the game restores a session but never creates a guest account');
+  const backend = async (opts, { init = true } = {}) => { const f = fakeSdk(opts); const b = new FirebaseBackend(cfg, { sdk: f.sdk }); if (init) await b.init(); return { f, b }; };
+  const guestUser = { uid: 'guest1', isAnonymous: true };
+
+  // sessions: nothing is created on load
+  const { f: f1, b: fb } = await backend();
+  ok(fb.phase === 'signedOut' && !f1.calls.includes('anonymous'), 'loading the game restores a session but never creates a guest account');
   const g = await fb.continueAsGuest();
   ok(g.ok && fb.ready && fb.isAnonymous && f1.calls.filter(c => c === 'anonymous').length === 1, '"Continue as guest" is what creates the anonymous session');
-  const f2 = fakeSdk({ uid: 'u2', isAnonymous: false, email: 'ninja@leaf.example', displayName: 'Naruto' }); const fb2 = new FirebaseBackend(cfg, { sdk: f2.sdk, useRedirect: false });
-  ok(await fb2.init() === true && !fb2.isAnonymous && fb2.displayName === 'Naruto' && !f2.calls.includes('anonymous'), 'a returning player\'s session is restored as it is');
-  // phones: Google sign-in goes by redirect and leaves a marker for the way back
-  const f3 = fakeSdk(); const fb3 = new FirebaseBackend(cfg, { sdk: f3.sdk, useRedirect: true }); await fb3.init();
-  const r3 = await fb3.signInWithGoogle();
-  ok(r3.ok && r3.redirecting && f3.calls.includes('redirect') && !f3.calls.includes('popup') && store.get('shinobi-auto-battler:pref:authRedirect') === '"signIn"', 'on phones Google sign-in uses the redirect flow');
-  // back from the redirect: the sign-in is picked up and the marker cleared
-  const f5 = fakeSdk(); f5.sdk.getRedirectResult = async (a) => { a.currentUser = { uid: 'u5', isAnonymous: false, email: 'e@x' }; return { user: a.currentUser }; };
-  const fb5 = new FirebaseBackend(cfg, { sdk: f5.sdk, useRedirect: true });
-  ok(await fb5.init() === true && fb5.redirectResult?.ok === true && fb5.redirectResult.kind === 'signIn' && store.get('shinobi-auto-battler:pref:authRedirect') === 'null', 'back from the redirect, the sign-in is picked up and the marker cleared');
-  // desktop: a blocked popup falls back to the redirect
-  const f4 = fakeSdk(); const fb4 = new FirebaseBackend(cfg, { sdk: f4.sdk, useRedirect: false }); await fb4.init();
-  const r4 = await fb4.signInWithGoogle();
-  ok(r4.redirecting && f4.calls.includes('popup') && f4.calls.includes('redirect'), 'a blocked sign-in popup falls back to the redirect');
+  const { f: f2, b: fb2 } = await backend({ user: { uid: 'u2', isAnonymous: false, email: 'ninja@leaf.example', displayName: 'Naruto' } });
+  ok(fb2.ready && !fb2.isAnonymous && fb2.displayName === 'Naruto' && !f2.calls.includes('anonymous'), 'a returning player\'s session is restored as it is');
+  ok(!f1.calls.includes('redirectResult') && fb.redirectResult === null, 'a normal load (no redirect started here) never reads or reports a redirect result');
+
+  // sign in: popup first on every device, phones included (no user-agent decision)
+  const realNav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8a) Chrome/140 Mobile' }, configurable: true });
+  globalThis.window = { matchMedia: () => ({ matches: true }) };   // a touch screen
+  const { f: p1, b: pb1 } = await backend();
+  const s1 = await pb1.signInWithGoogle();
+  ok(s1.ok && !s1.redirecting && pb1.ready && !pb1.isAnonymous && p1.calls.includes('popup') && !p1.calls.includes('redirect') && !session.size, 'Google sign-in opens a popup first, even on an Android phone');
+  delete globalThis.window;
+  if (realNav) Object.defineProperty(globalThis, 'navigator', realNav); else delete globalThis.navigator;
+  for (const code of POPUP_UNAVAILABLE) {
+    const { f, b } = await backend({ popup: code });
+    const r = await b.signInWithGoogle();
+    ok(r.ok && r.redirecting && f.calls.join() === 'popup,redirect' && session.get(REDIRECT_FLAG) === 'signIn', `sign-in falls back to the redirect on ${code} (and flags it in sessionStorage)`);
+    session.clear();
+  }
+  for (const code of POPUP_CANCELLED) {
+    const { f, b } = await backend({ popup: code });
+    const r = await b.signInWithGoogle();
+    ok(!r.ok && r.cancelled && !r.error && !f.calls.includes('redirect') && !b.ready && !session.size, `${code} is a quiet cancel: no error, no redirect, still no session`);
+  }
+  const { f: pN, b: bN } = await backend({ popup: 'auth/network-request-failed' });
+  const sN1 = await bN.signInWithGoogle();
+  ok(!sN1.ok && !sN1.cancelled && /connection/i.test(sN1.error) && !pN.calls.includes('redirect'), 'any other popup error is shown, and does not fall back to the redirect');
+
+  // link a guest: the same popup-first rule, through the existing link paths
+  const { f: l1, b: lb1 } = await backend({ user: guestUser });
+  const k1 = await lb1.linkGoogle();
+  ok(k1.ok && !k1.switched && !lb1.isAnonymous && lb1.user.uid === 'guest1' && l1.calls.includes('linkPopup') && !l1.calls.includes('linkRedirect'), 'linking a guest save uses linkWithPopup and keeps the same account');
+  const { f: l2, b: lb2 } = await backend({ user: guestUser, linkPopup: 'auth/credential-already-in-use' });
+  const k2 = await lb2.linkGoogle();
+  ok(k2.ok && k2.switched && lb2.user.uid === 'g1' && l2.calls.join().endsWith('linkPopup,credential'), 'a Google account that already has a save: the popup signs into it instead (switched, so the newer cloud save is offered)');
+  const { f: l3, b: lb3 } = await backend({ user: guestUser, linkPopup: 'auth/popup-blocked' });
+  const k3 = await lb3.linkGoogle();
+  ok(k3.redirecting && l3.calls.join().endsWith('linkPopup,linkRedirect') && session.get(REDIRECT_FLAG) === 'link', 'a blocked link popup falls back to linkWithRedirect');
+  session.clear();
+  const { f: l4, b: lb4 } = await backend({ user: guestUser, linkPopup: 'auth/popup-closed-by-user' });
+  const k4 = await lb4.linkGoogle();
+  ok(k4.cancelled && !k4.error && lb4.isAnonymous && !l4.calls.includes('linkRedirect'), 'closing the link popup is a quiet cancel; the guest save stays as it was');
+
+  // back from a redirect this page started: every outcome is reported, and the flag is cleared
+  const back = async (kind, opts) => { session.set(REDIRECT_FLAG, kind); const r = await backend(opts); return r; };
+  const { b: r1 } = await back('signIn', { redirect: 'user' });
+  ok(r1.ready && r1.redirectResult?.ok && r1.redirectResult.kind === 'signIn' && !session.has(REDIRECT_FLAG), 'back from the redirect with a user: signed in, flag cleared');
+  const { b: r2 } = await back('link', { user: guestUser, redirect: 'empty' });
+  ok(r2.redirectResult?.ok === false && r2.redirectResult.empty && r2.redirectResult.error === EMPTY_REDIRECT_ERROR && /third-party cookies/.test(r2.redirectResult.error) && r2.isAnonymous && !session.has(REDIRECT_FLAG), 'back from the redirect with NO user (third-party storage blocked): an error, not a silent guest menu; flag cleared');
+  const { b: r3 } = await back('link', { user: guestUser, redirect: 'auth/credential-already-in-use' });
+  ok(r3.redirectResult?.ok && r3.redirectResult.switched && r3.user.uid === 'g1' && !session.has(REDIRECT_FLAG), 'a redirect link to an account that already has a save signs into it (switched); flag cleared');
+  const { b: r4 } = await back('signIn', { redirect: 'auth/network-request-failed' });
+  ok(r4.redirectResult?.ok === false && /connection/i.test(r4.redirectResult.error) && !session.has(REDIRECT_FLAG), 'a redirect that fails with an error reports it; flag cleared');
+  session.set(REDIRECT_FLAG, 'signIn');
+  const broken = new FirebaseBackend(cfg, { sdk: { initializeApp: () => { throw new Error('SDK failed to load'); } } });
+  ok(await broken.init() === false && broken.phase === 'error' && !session.has(REDIRECT_FLAG), 'the flag is cleared even if the SDK fails to load');
+  store.set('shinobi-auto-battler:pref:authRedirect', '"link"');
+  await backend();
+  ok(!store.has('shinobi-auto-battler:pref:authRedirect'), 'the old localStorage redirect marker (0.10.0) is removed');
+
   // what the menu shows for each cloud state
   const sOut = menuModel({ kind: 'signedOut' });
-  ok(sOut.guest && sOut.google === 'signIn' && !sOut.primary, 'no session: the menu offers guest and Google, and no Continue');
+  ok(sOut.guest && sOut.google === 'signIn' && !sOut.primary && !sOut.retryGoogle, 'no session: the menu offers guest and Google, and no Continue');
   const sG = menuModel({ kind: 'guest', account: 'Guest (anonymous)' });
   ok(sG.primary?.sub === 'Guest save' && sG.google === 'link' && !sG.guest, 'a guest gets Continue and can still sign in with Google to link');
   const sN = menuModel({ kind: 'google', account: 'ninja@leaf.example', name: 'Naruto' });
   ok(sN.primary?.sub === 'Signed in as Naruto' && !sN.google && !sN.guest, 'a Google player gets one Continue button');
   ok(menuModel({ kind: 'off' }, { hasProgress: true }).primary?.label === '▶ Continue' && menuModel({ kind: 'off' }).primary?.label === '▶ Play', 'without cloud save the menu goes straight to the game');
   const sE = menuModel({ kind: 'error' });
-  ok(sE.primary?.label === '▶ Play offline' && sE.retry && sE.message, 'when cloud save is unreachable the menu says so and offers to play offline');
+  ok(sE.primary?.label === '▶ Play offline' && sE.retry && sE.message && sE.warn, 'when cloud save is unreachable the menu says so and offers to play offline');
   ok(menuModel({ kind: 'connecting' }).busy && !menuModel({ kind: 'connecting' }).primary, 'while the session is being checked the menu waits');
-  ok(menuModel({ kind: 'signedOut' }, { redirectError: 'nope' }).message === 'nope', 'a failed Google redirect is reported on the menu');
+  const sR = menuModel({ kind: 'guest' }, { redirectError: EMPTY_REDIRECT_ERROR });
+  ok(sR.message === EMPTY_REDIRECT_ERROR && sR.warn && sR.retryGoogle && sR.google === 'link' && sR.primary, 'an empty redirect return: the menu shows the third-party-cookie message with a Try again button');
+  ok(menuModel({ kind: 'signedOut' }, { redirectError: 'nope' }).retryGoogle && menuModel({ kind: 'signedOut' }, { redirectError: 'nope' }).guest, 'a failed sign-in redirect keeps "Continue as guest" next to Try again');
   delete globalThis.localStorage;
+  delete globalThis.sessionStorage;
+  console.warn = realWarn;
 }
 
 // ---- Session 5: the build stamp ---------------------------------------------------

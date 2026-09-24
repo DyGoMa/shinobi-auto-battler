@@ -13,26 +13,43 @@
 // redirect). The start menu is the one place that creates one, through
 // continueAsGuest() or signInWithGoogle(); Settings offers the same two after a
 // sign-out. Tests inject a fake SDK ({ sdk }) to check that (tools/test-core.mjs).
+//
+// Google sign-in is POPUP FIRST on every device, phones included. The redirect
+// flow is only a fallback for when a popup can't open (auth/popup-blocked,
+// auth/operation-not-supported-in-this-environment): on GitHub Pages it needs
+// third-party storage for the authDomain, which Chrome blocks by default, and
+// then it comes back with no user (FIREBASE_SETUP.md §9). That empty return is
+// reported on the menu, never silent. Closing the popup is a cancel, not an error.
 import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
-import { LocalBackend } from './LocalBackend.js';
 
 export const FIREBASE_SDK_VERSION = '12.19.0';
 const SDK = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}`;
-// Set before a Google redirect ('signIn' or 'link') so the page knows, when it
-// comes back, that the player was in the middle of signing in.
-const REDIRECT_PREF = 'authRedirect';
 
-/** Phones and tablets: sign in with Google by redirect (popups are unreliable on mobile browsers). */
-export function prefersRedirect() {
-  try {
-    if (window.matchMedia('(pointer: coarse)').matches) return true;
-    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-  } catch { return false; }
-}
+// sessionStorage flag set just before this page calls signInWithRedirect /
+// linkWithRedirect ('signIn' or 'link'). It survives the round trip in the same
+// tab and tells init() that a redirect result is expected. Cleared in all cases.
+export const REDIRECT_FLAG = 'shinobi-auto-battler:authRedirect';
+const LEGACY_REDIRECT_PREF = 'shinobi-auto-battler:pref:authRedirect';   // 0.10.0 kept it in localStorage
+const redirectFlag = {
+  get() { try { return globalThis.sessionStorage?.getItem(REDIRECT_FLAG) || null; } catch { return null; } },
+  set(kind) { try { globalThis.sessionStorage?.setItem(REDIRECT_FLAG, kind); } catch { /* storage blocked */ } },
+  clear() {
+    try { globalThis.sessionStorage?.removeItem(REDIRECT_FLAG); } catch { /* ignore */ }
+    try { globalThis.localStorage?.removeItem(LEGACY_REDIRECT_PREF); } catch { /* ignore */ }
+  },
+};
+
+// Popup errors that mean "a popup can't work here": fall back to the redirect.
+export const POPUP_UNAVAILABLE = ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'];
+// Popup errors that mean the player closed it (or tapped twice): back to the menu, no message.
+export const POPUP_CANCELLED = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'];
+
+/** Shown when this page started a redirect and it came back with no user (third-party storage blocked). */
+export const EMPTY_REDIRECT_ERROR = 'Google sign-in didn’t complete. Chrome may be blocking third-party cookies for this site — allow them for dygoma.github.io or try again.';
 
 export class FirebaseBackend {
-  /** opts.sdk: a preloaded (or fake) SDK; opts.useRedirect: force the redirect or popup flow (default: prefersRedirect()). */
-  constructor(config = firebaseConfig, { sdk = null, useRedirect = null } = {}) {
+  /** opts.sdk: a preloaded (or fake) SDK, for tests. */
+  constructor(config = firebaseConfig, { sdk = null } = {}) {
     this.name = 'firebase';
     this.config = config;
     this.ready = false;
@@ -42,8 +59,8 @@ export class FirebaseBackend {
     this.user = null;
     this.m = null;
     this._sdk = sdk;
-    this._useRedirect = useRedirect;
-    // Set by init() when the page came back from a Google redirect: { ok, switched, error, kind }.
+    // Set by init() when this page started a Google redirect and came back:
+    // { ok: true, switched, kind } or { ok: false, error, kind, empty? } (empty: no user came back).
     this.redirectResult = null;
   }
 
@@ -52,7 +69,6 @@ export class FirebaseBackend {
   get accountLabel() { return this.user ? (this.user.isAnonymous ? 'Guest (anonymous)' : (this.user.email || 'Google account')) : 'signed out'; }
   /** The name to greet a Google player with. */
   get displayName() { return this.user && !this.user.isAnonymous ? (this.user.displayName || this.user.email || 'Google account') : null; }
-  get useRedirect() { return this._useRedirect ?? prefersRedirect(); }
 
   async _loadSdk() {
     if (this.m) return;
@@ -84,16 +100,19 @@ export class FirebaseBackend {
   }
 
   /**
-   * Load the SDK, finish a Google redirect if one is pending, and restore the
+   * Load the SDK, finish a Google redirect if this page started one, and restore the
    * session this browser already has. Never creates an account and never throws.
    * Resolves true when a session is ready.
    */
   async init() {
     if (!this.configured) { this.phase = 'off'; this.status = 'not configured'; return false; }
     this.phase = 'connecting'; this.error = null;
+    // Read and clear the redirect flag first, so it is cleared even if the SDK fails to load.
+    const redirectKind = redirectFlag.get();
+    redirectFlag.clear();
     try {
       await this._loadSdk();
-      await this._finishRedirect();
+      if (redirectKind) await this._finishRedirect(redirectKind);
       const existing = await new Promise((resolve) => {
         const unsub = this.m.onAuthStateChanged(this.auth, (u) => { unsub(); resolve(u); }, () => resolve(null));
       });
@@ -106,19 +125,23 @@ export class FirebaseBackend {
     }
   }
 
-  /** The page came back from signInWithRedirect / linkWithRedirect: collect the result. */
-  async _finishRedirect() {
-    const kind = LocalBackend.getPref(REDIRECT_PREF, null);
-    if (!kind || !this.m.getRedirectResult) return;
-    LocalBackend.setPref(REDIRECT_PREF, null);
+  /**
+   * This page started signInWithRedirect / linkWithRedirect (kind) and is back:
+   * collect the result. No user back means the round trip lost its state (third-party
+   * storage blocked for the authDomain): say so instead of silently showing the menu.
+   */
+  async _finishRedirect(kind) {
     try {
       const res = await this.m.getRedirectResult(this.auth);
-      if (res?.user) this.redirectResult = { ok: true, switched: false, kind };
+      this.redirectResult = res?.user
+        ? { ok: true, switched: false, kind }
+        : { ok: false, empty: true, error: EMPTY_REDIRECT_ERROR, kind };
     } catch (e) {
       // Linking a guest to a Google account that already has a save: sign into that account instead.
       const r = await this._signInWithCredentialFromError(e);
       this.redirectResult = r.ok ? { ...r, kind } : { ok: false, error: r.error, kind };
     }
+    if (!this.redirectResult.ok) console.warn('[FirebaseBackend] Google redirect sign-in did not complete', this.redirectResult);
   }
 
   async _signInWithCredentialFromError(e) {
@@ -140,9 +163,26 @@ export class FirebaseBackend {
 
   /** Leaves the page for Google's sign-in; the result arrives in init() after the redirect. */
   async _redirect(kind, fn) {
-    LocalBackend.setPref(REDIRECT_PREF, kind);
+    redirectFlag.set(kind);
     try { await fn(); return { ok: true, redirecting: true }; }
-    catch (e) { LocalBackend.setPref(REDIRECT_PREF, null); console.warn('[FirebaseBackend] redirect failed', e); return { ok: false, error: friendlyAuthError(e) }; }
+    catch (e) { redirectFlag.clear(); console.warn('[FirebaseBackend] redirect failed', e); return { ok: false, error: friendlyAuthError(e) }; }
+  }
+
+  /**
+   * Popup first. A popup that can't open falls back to the redirect; a closed popup
+   * is a quiet cancel ({ ok: false, cancelled: true }); any other error goes to onError.
+   */
+  async _popupFirst(kind, popup, redirect, onError) {
+    try {
+      const res = await popup();
+      this._setUser(res.user);
+      return { ok: true, switched: false };
+    } catch (e) {
+      const code = String(e?.code || '');
+      if (POPUP_UNAVAILABLE.includes(code)) return this._redirect(kind, redirect);
+      if (POPUP_CANCELLED.includes(code)) return { ok: false, cancelled: true };
+      return onError(e);
+    }
   }
 
   _ref() { return this.m.doc(this.db, 'users', this.user.uid, 'save', 'main'); }
@@ -186,43 +226,29 @@ export class FirebaseBackend {
   save(state) { return this.saveToCloud(state); }
 
   /**
-   * Link the guest account to Google. If that Google account is already linked
-   * elsewhere (another device), sign into it instead so both devices share one
-   * save. Popup on desktop; redirect on phones (and when the popup is blocked).
-   * Returns { ok, switched, error } or { ok: true, redirecting: true }.
+   * Link the guest account to Google (popup first, redirect fallback). If that Google
+   * account is already linked elsewhere (another device), sign into it instead so both
+   * devices share one save (switched: true; the caller then offers the newer cloud save).
+   * Returns { ok, switched } | { ok: false, error } | { ok: false, cancelled: true } | { ok: true, redirecting: true }.
    */
   async linkGoogle() {
     if (!this.ready) return { ok: false, error: 'Cloud save is not connected.' };
     const provider = new this.m.GoogleAuthProvider();
-    if (this.useRedirect) return this._redirect('link', () => this.m.linkWithRedirect(this.auth.currentUser, provider));
-    try {
-      const res = await this.m.linkWithPopup(this.auth.currentUser, provider);
-      this._setUser(res.user);
-      return { ok: true, switched: false };
-    } catch (e) {
-      if (String(e?.code).includes('popup-blocked')) return this._redirect('link', () => this.m.linkWithRedirect(this.auth.currentUser, provider));
-      return this._signInWithCredentialFromError(e);
-    }
+    return this._popupFirst('link',
+      () => this.m.linkWithPopup(this.auth.currentUser, provider),
+      () => this.m.linkWithRedirect(this.auth.currentUser, provider),
+      (e) => this._signInWithCredentialFromError(e));
   }
 
-  /** No session: sign in with Google. Returns { ok, error } or { ok: true, redirecting: true }. */
+  /** No session: sign in with Google (popup first, redirect fallback). Same results as linkGoogle(). */
   async signInWithGoogle() {
-    try {
-      await this._loadSdk();
-      const provider = new this.m.GoogleAuthProvider();
-      if (this.useRedirect) return this._redirect('signIn', () => this.m.signInWithRedirect(this.auth, provider));
-      try {
-        const res = await this.m.signInWithPopup(this.auth, provider);
-        this._setUser(res.user);
-        return { ok: true };
-      } catch (e) {
-        if (String(e?.code).includes('popup-blocked')) return this._redirect('signIn', () => this.m.signInWithRedirect(this.auth, provider));
-        throw e;
-      }
-    } catch (e) {
-      console.warn('[FirebaseBackend] Google sign-in failed', e);
-      return { ok: false, error: friendlyAuthError(e) };
-    }
+    try { await this._loadSdk(); }
+    catch (e) { this._fail(e, 'Google sign-in'); return { ok: false, error: friendlyAuthError(e) }; }
+    const provider = new this.m.GoogleAuthProvider();
+    return this._popupFirst('signIn',
+      () => this.m.signInWithPopup(this.auth, provider),
+      () => this.m.signInWithRedirect(this.auth, provider),
+      (e) => { console.warn('[FirebaseBackend] Google sign-in failed', e); return { ok: false, error: friendlyAuthError(e) }; });
   }
 
   /** No session: start (or go back to) an anonymous guest cloud save. */
@@ -251,10 +277,9 @@ export class FirebaseBackend {
   }
 }
 
-/** Plain-English auth errors for toasts and the start menu. */
+/** Plain-English auth errors for toasts and the start menu (a closed popup is a cancel, never shown). */
 export function friendlyAuthError(e) {
   const code = e?.code || '';
-  if (code.includes('popup-closed') || code.includes('cancelled-popup')) return 'The sign-in window was closed before finishing.';
   if (code.includes('popup-blocked')) return 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.';
   if (code.includes('network')) return 'No connection. Check your internet and try again.';
   if (code.includes('unauthorized-domain')) return 'Sign-in is not enabled for this web address yet.';

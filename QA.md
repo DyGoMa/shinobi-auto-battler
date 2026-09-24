@@ -104,7 +104,7 @@ The audit runs in a desktop browser. On a real phone also check:
 - iOS Safari's collapsing address bar on long screens (Wiki, Settings);
 - the Android back button (it moves through the `#hash` history);
 - a 10-summon with a Kage (the biggest particle burst) on a low-end phone;
-- **Session 5:** the intro's motion at 60 fps (the preview pane throttles animations, so the run and the slam were checked frame by frame, not live); the Android back button on the intro (skips) and on the start menu (stays); **Sign in with Google** on the start menu in Chrome for Android (the redirect flow, FIREBASE_SETUP.md step 9) and coming back signed in; the build stamp clear of the gesture bar in both orientations.
+- **Session 5:** the intro's motion at 60 fps (the preview pane throttles animations, so the run and the slam were checked frame by frame, not live); the Android back button on the intro (skips) and on the start menu (stays); **Sign in with Google** on the start menu in Chrome for Android with its default cookie settings (0.10.1: a popup opens; signing in enters the game; closing it returns to the menu with no message; FIREBASE_SETUP.md step 9); the build stamp clear of the gesture bar in both orientations.
 
 ## For the art, audio and VFX pass
 

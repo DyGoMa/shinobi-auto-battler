@@ -91,6 +91,7 @@ function accountCard(game, ui) {
         btn('Sign in with Google', busy('Signing in…', async () => {
           const r = await cloud.signInWithGoogle();
           if (r.redirecting) { ui.toast('Taking you to Google to sign in…'); return; }
+          if (r.cancelled) return;   // the player closed the Google window
           if (r.ok) { await save.afterSignIn(); game.state.account.googleLinked = true; game.commit('account'); ui.toast('Signed in: your save syncs with your Google account.', 'good'); }
           else ui.toast(r.error, 'bad');
         }), 'primary'),
@@ -107,6 +108,7 @@ function accountCard(game, ui) {
         btn('🔗 Link Google account', busy('Linking…', async () => {
           const r = await cloud.linkGoogle();
           if (r.redirecting) { ui.toast('Taking you to Google to sign in…'); return; }
+          if (r.cancelled) return;   // the player closed the Google window
           if (r.ok) {
             // A Google account that already had a save elsewhere: offer to load it first.
             if (r.switched) await save.afterSignIn();

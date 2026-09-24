@@ -12,7 +12,7 @@ placeholder, where it's drawn, its size, and what's still open.
 | Step | Commit | What it added |
 |---|---|---|
 | 1. Splash + intro | `1ba5fa5` | A fixed overlay while the game loads: 0.8 s splash, five CSS ninja silhouettes run across a dusk band, the title slams in with a shake and a flash (2.8 s in all); tap, Skip or back skips; seen once (device pref) → 0.5 s splash; Settings → Replay the intro; reduced motion → fades. `js/ui/Intro.js`, `js/core/StartFlow.js` |
-| 2. Start menu + sign-in | `94db10a` | The first screen. **No cloud session until the player picks** Continue as guest (anonymous) or Sign in with Google (popup on desktop, redirect on phones or a blocked popup; the existing link/sign-in and "cloud save is newer" paths). Returning: one Continue ("Signed in as <name>" / "Guest save"), guests keep Sign in with Google to link. Errors on the menu. Wiki and Settings from the menu ("‹ Menu"). Android back stays on the menu. `js/ui/StartScreen.js`, `StartFlow.menuModel`, `FirebaseBackend` (injectable SDK) |
+| 2. Start menu + sign-in | `94db10a` | The first screen. **No cloud session until the player picks** Continue as guest (anonymous) or Sign in with Google (the existing link/sign-in and "cloud save is newer" paths; popup first on every device since 0.10.1, see below). Returning: one Continue ("Signed in as <name>" / "Guest save"), guests keep Sign in with Google to link. Errors on the menu. Wiki and Settings from the menu ("‹ Menu"). Android back stays on the menu. `js/ui/StartScreen.js`, `StartFlow.menuModel`, `FirebaseBackend` (injectable SDK) |
 | 3. Build stamp + deploy | `5caae86` | "v<short sha> · <UTC build date>" bottom-right of the menu and Settings › About (`js/core/Version.js`). `.github/workflows/pages.yml` writes `version.json` and deploys through the Pages artifact action; the file is gitignored; missing → "dev". Pages source switched to **GitHub Actions** (done in-session, with permission) |
 | 4. Pixel 8a layout | (in 2–3) | 412×915 and 915×412: `auditAll` and `auditFlows` clean on every existing screen (nothing to fix); the menu is a two-column layout sideways; 100dvh on the intro, safe-area padding on the menu, 44 px targets |
 | 5. Docs | this commit | HANDOFF (this), FIREBASE_SETUP §8–9 and troubleshooting, README, DESIGN §11b, QA.md, the how-to-play and What's new guides |
@@ -34,17 +34,30 @@ start menu (js/ui/StartScreen.js, StartFlow.menuModel(save.cloudState()))
   connecting "Checking your account…"                     (buttons wait; the menu re-renders on save.onChange)
   error      ▶ Play offline, ↻ Try again, a message       → enterGame() / save.connectCloud()
   signedOut  Continue as guest → cloud.continueAsGuest()  (signInAnonymously: the ONLY place a guest account is made)
-             Sign in with Google → cloud.signInWithGoogle()  popup, or redirect on phones (returns { redirecting })
+             Sign in with Google → cloud.signInWithGoogle()  popup; redirect only if the popup can't open ({ redirecting })
   guest      ▶ Continue (Guest save), Sign in with Google → cloud.linkGoogle() (link, or sign into the existing account)
   google     ▶ Continue (Signed in as <displayName>)
   + 📚 Wiki, ⚙️ Settings (body.start-sub: no tab bar, "‹ Menu" back)
 
 game.enterGame({ signedIn, switched })         ui.enterGame() → Home or the deep link, welcome prompt, retro toasts,
                                                then save.afterSignIn(): the "cloud save is newer" prompt, upload
-redirect return                                 init() sets cloud.redirectResult; main.js skips the intro and enters
+redirect return (fallback only)                  sessionStorage flag set → init(): getRedirectResult; a user → main.js skips the intro
+                                               and enters; no user → cloud.redirectResult { empty } → the menu shows the
+                                               third-party-cookie message with "↻ Try again". The flag is cleared either way.
+popup closed                                    { cancelled: true } → the menu stays, no message
 ```
 
 Settings keeps its Account card (sign in / use as a guest / link / sign out) with the same backend calls; sign-out no longer stores a preference (the menu simply offers guest or Google again).
+
+## After Session 5: Google sign-in is popup first (0.10.1)
+
+**Bug (live `6130d94`, a real Pixel 8a, Chrome for Android with third-party cookies blocked, Chrome's default):** "Sign in with Google" on the start menu went to the Firebase `authDomain` and back, and the menu reloaded as "Continue · Guest save" with no message. 0.10.0 chose the redirect flow on phones by user agent; the redirect result lives in the `authDomain`'s storage, which Chrome blocks as third-party, so `getRedirectResult()` came back with no user, and `_finishRedirect` only reported a result when a user came back.
+
+**Fix** (`js/save/FirebaseBackend.js`, `js/ui/StartScreen.js`, `StartFlow.menuModel`):
+1. `signInWithPopup` / `linkWithPopup` first on every device; the user-agent check (`prefersRedirect`) is gone. The redirect is a fallback only for `auth/popup-blocked` and `auth/operation-not-supported-in-this-environment` (`POPUP_UNAVAILABLE`). `auth/popup-closed-by-user` and `auth/cancelled-popup-request` (`POPUP_CANCELLED`) are cancels: `{ ok: false, cancelled: true }`, the menu (and Settings) stay quiet.
+2. Before a redirect the page sets a `sessionStorage` flag (`REDIRECT_FLAG`, 'signIn' or 'link'); `init()` reads and clears it first (so it is cleared even if the SDK fails to load), and only then calls `getRedirectResult`. No user back → `redirectResult = { ok: false, empty: true, error: EMPTY_REDIRECT_ERROR }` → the menu shows the message in the warning colour and the Google button becomes **↻ Try again**. The old `localStorage` marker from 0.10.0 is removed on load.
+3. Linking a guest keeps the one link path: `linkWithPopup`, and on `auth/credential-already-in-use` the same `_signInWithCredentialFromError` → `switched: true` → `game.enterGame({ switched })` → `save.afterSignIn()` → "cloud save is newer" prompt, exactly as the redirect result did.
+4. Tests (core, fake SDK): popup first even with an Android user agent and a touch screen, each fallback code, each cancel code, another popup error, link by popup / credential-already-in-use / blocked / cancelled, redirect return with a user / with no user / with credential-already-in-use / with an error, the flag cleared in every case (and when the SDK fails), the legacy marker removed, the menu's retry state. **152 core tests.**
 
 ## Session 4 in one table
 
@@ -212,8 +225,8 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 3. **Nagato's Earth**, **Boss Rush Pain's five natures**, **Part II dub titles from Wikipedia's season lists**, **non-boss nodes are easy at level**: carried over from Session 3 (see the Session 3b handoff in git history, `025bf7f`).
 
 **Platform**
-4. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md). **Session 5 adds:** the intro at full speed (the preview pane throttles animations, so it was checked frame by frame), the back button on the intro (skips) and on the menu (stays), **Sign in with Google on the start menu in Chrome for Android** (the redirect flow: it leaves for Google and must come back signed in; third-party cookie blocking can break it, FIREBASE_SETUP.md §9), the build stamp clear of the gesture bar, and a Google sign-in end to end (no Google account was used in-session).
-5. **Redirect sign-in on GitHub Pages** depends on the `authDomain`'s storage being reachable from `dygoma.github.io` (Firebase's third-party-cookie caveat). A custom domain with the auth helper on the same origin would remove it; see FIREBASE_SETUP.md §9.
+4. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md). **Session 5 adds:** the intro at full speed (the preview pane throttles animations, so it was checked frame by frame), the back button on the intro (skips) and on the menu (stays), the build stamp clear of the gesture bar, and **Google sign-in end to end on the Pixel 8a with 0.10.1** (the popup opens, signs in, returns to the game; closing it returns to the menu quietly; as a guest, linking keeps the save or offers the newer cloud save). No Google account was used in-session, so none of this was completed here.
+5. **The redirect fallback can't be made reliable on GitHub Pages.** It only runs when a popup can't open (blocked pop-ups, some in-app browsers), and then needs the `authDomain`'s storage as third-party storage, which Chrome blocks by default. The game now reports that case instead of looping silently. **The only full fix is a custom domain** with Firebase's auth helper (`/__/auth/`) served from the game's own origin; Pages can't proxy it (FIREBASE_SETUP.md §9).
 6. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
 
 ## Live check (Session 5)

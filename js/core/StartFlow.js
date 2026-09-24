@@ -38,12 +38,13 @@ export function introPlan({ seen = false, reducedMotion = false, full = false } 
  *   google    'signIn' (no session yet) | 'link' (a guest can link) | null
  *   retry     offer "Try again" (cloud save could not be reached)
  *   busy      a status line while the session is being checked (buttons wait)
- *   message   a line under the buttons (an error, say)
+ *   message   a line under the buttons (an error, say); warn: show it as a warning
+ *   retryGoogle  a Google redirect came back without signing in: the Google button reads "Try again"
  * Nothing is created until the player picks guest or Google: a browser with no
  * session gets those two and no Continue.
  */
 export function menuModel(cs, { hasProgress = false, redirectError = null } = {}) {
-  const m = { primary: null, guest: false, google: null, retry: false, busy: null, message: redirectError || null };
+  const m = { primary: null, guest: false, google: null, retry: false, busy: null, message: redirectError || null, warn: !!redirectError, retryGoogle: false };
   switch (cs.kind) {
     case 'off':        // cloud save not configured: local saves only
       m.primary = { label: hasProgress ? '▶ Continue' : '▶ Play', sub: hasProgress ? 'Saved on this device' : 'A new game, saved on this device' };
@@ -55,6 +56,7 @@ export function menuModel(cs, { hasProgress = false, redirectError = null } = {}
       m.primary = { label: '▶ Play offline', sub: 'Saved on this device only' };
       m.retry = true;
       m.message = m.message || 'Couldn’t reach cloud save. You can play now; your progress uploads once you sign in.';
+      m.warn = true;
       break;
     case 'guest':
       m.primary = { label: '▶ Continue', sub: 'Guest save' };
@@ -67,5 +69,6 @@ export function menuModel(cs, { hasProgress = false, redirectError = null } = {}
       m.guest = true;
       m.google = 'signIn';
   }
+  m.retryGoogle = !!redirectError && !!m.google;
   return m;
 }
