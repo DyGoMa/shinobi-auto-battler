@@ -34,7 +34,7 @@ export const SHIPPUDEN_ARCS = [
         blurb: 'The barrier tags come off and Team Guy meets its own copies. Taijutsu against taijutsu.',
         enemies: [{ id: 'e_clone_guy' }, { id: 'e_clone_lee' }, { id: 'e_clone_neji' }, { id: 'e_clone_tenten' }],
         objective: { type: 'defeatAll' },
-        team: { forced: ['guy', 'lee', 'neji', 'tenten'], leader: 'guy' },
+        team: { forced: ['guy', 'lee', 'neji', 'tenten'] },
       },
       {
         id: 'n_kaz_4', name: 'Puppet Fight: 10 vs. 100!', episodes: '20–26',

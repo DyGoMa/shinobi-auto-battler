@@ -139,8 +139,12 @@ export function autoPickTeam(candidates, node, C, B = BALANCE, opts = {}) {
     }
   }
   if (leader && !members.some(m => m.id === leader)) {
-    if (members.length >= size) members.pop();
-    members.push({ id: leader, def: C.char[leader] });
+    // Forced ninja always play: when they fill every slot, the Leader slot yields.
+    if (forced.length >= size) leader = forced[0].id;
+    else {
+      if (members.length >= size) members.pop();
+      members.push({ id: leader, def: C.char[leader] });
+    }
   }
   const ids = members.map(m => m.id);
   // members = non-leader ids (3 with a leader, up to 4 without); all = full lineup.

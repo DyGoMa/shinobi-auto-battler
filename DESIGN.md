@@ -67,6 +67,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 * Scoped buffs are ×1.8 stronger than whole-team buffs, and Kage leaders give ×1.45.
 * Example: Kakashi, the starter Leader, gives +21.6% ATK to Team 7.
 * Some nodes remove the Leader (Survival Test) or force one (the Third Hokage's Last Stand).
+* Forced ninja always play. If a node forces four, the Leader slot yields: your Leader leads only if they are one of the four, otherwise the first forced ninja does (Traps Activate! → Might Guy).
 
 ### 2.5 Nature Wheel (canon)
 `Fire › Wind › Lightning › Earth › Water › Fire`

@@ -84,6 +84,15 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   psim.units.find(u => u.protected).hp = 0;
   psim._tick(psim.tick);
   ok(psim.state === 'lost' && psim.endReason === 'protectFailed', 'protect objective fails when the escort falls');
+  // four forced ninja and a Leader outside them: every forced ninja plays and the Leader slot yields
+  {
+    const gs = defaultState(C, B);
+    const g = resolveTeam(gs, C.node.n_kaz_3, C);
+    ok(g.members.length === 4 && ['guy', 'lee', 'neji', 'tenten'].every(id => g.members.includes(id)) && g.leader === 'guy' && !g.members.includes('kakashi'), 'four forced ninja all play; the Leader slot yields to the first forced ninja');
+    gs.roster.neji = { level: 1, stars: 1 }; gs.team.leader = 'neji';
+    const g2 = resolveTeam(gs, C.node.n_kaz_3, C);
+    ok(g2.leader === 'neji' && g2.members.length === 4, "the player's Leader is kept when they are one of the forced four");
+  }
   // forced ninja never fight below the loaner level (owning one must not be worse)
   {
     const fs = defaultState(C, B); fs.roster.lee = { level: 3, stars: 4 };

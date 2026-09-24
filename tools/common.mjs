@@ -26,7 +26,12 @@ export function teamForNode(node, pick) {
   const t = node.team || {};
   const all = [...new Set([...(t.forced || []), ...pick.all])].slice(0, 4);
   let leader = t.leader === 'none' ? null : (t.leader || pick.leader);
-  if (leader && !all.includes(leader)) { all.pop(); all.push(leader); }
+  // Same rule as Progression.resolveTeam: forced ninja always play; if they fill
+  // every slot, the first forced ninja leads.
+  if (leader && !all.includes(leader)) {
+    if ((t.forced || []).length >= 4) leader = t.forced[0];
+    else { all.pop(); all.push(leader); }
+  }
   return { members: all, leader };
 }
 

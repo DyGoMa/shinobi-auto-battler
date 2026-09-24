@@ -144,6 +144,9 @@ export function resolveTeam(state, node, C, chosen = state.team) {
   else if (t.leader) { leader = t.leader; }
   else if (chosen.leader && state.roster[chosen.leader] && !banned.has(chosen.leader) && (members.includes(chosen.leader) || !bases.has(baseOf(chosen.leader)))) leader = chosen.leader;
   const size = 4;
+  // Forced ninja always play. If they fill every slot, the Leader slot yields:
+  // the first forced ninja leads unless the player's Leader is one of them.
+  if (members.length >= size && t.leader !== 'none' && !members.includes(leader)) leader = members[0];
   const leaderPending = leader && !members.includes(leader);
   if (leaderPending) bases.add(baseOf(leader));
   const cap = leaderPending ? size - 1 : size;
