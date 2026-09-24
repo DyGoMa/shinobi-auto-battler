@@ -11,12 +11,12 @@
 // It is safe to commit these to a public repo: a Firebase web API key only
 // identifies the project; access is controlled by firestore.rules + Auth.
 export const firebaseConfig = {
-  apiKey: "PASTE_API_KEY_HERE",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID",
+  apiKey: "AIzaSyDkzA8fHB-F1QQLDAxOX_GMNeoCDLOwEOY",
+  authDomain: "inbox-zero-480418.firebaseapp.com",
+  projectId: "inbox-zero-480418",
+  storageBucket: "inbox-zero-480418.firebasestorage.app",
+  messagingSenderId: "617837842966",
+  appId: "1:617837842966:web:51b57ae5570c9f183b5b37",
 };
 
 /** True only when every field has been replaced with a real value. */
