@@ -119,6 +119,7 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
 ## 4. Where the current numbers came from
 * `nodeMult` values were set by `npm run autotune` (bisection on a 200-battle sample per boss).
 * Economy values were tuned by hand until 30 simulated free-to-play players all cleared Part 1 (they finish around team level 34–39 vs enemy level 30).
+* Session 3 capped the late Part II Ryo curves (`cap` on `nodeFirstClear.ryo` 8,500, `nodeReplay.ryo` 10,000, `arcClearBonus.ryo` 9,000). Part I and early Part II rewards are unchanged. Campaign sim, 10 players: end of Part I 35.5 / 11,255 Ryo (unchanged); end of Part II **99.0 → 95.5** vs enemy level 94, median Ryo **32,326 → 24,122** (the old range reached 71,697 for players stuck at the level cap). The end-of-part lines at the bottom of `npm run campaign` print these numbers.
 * If you change a global value (`statMult`, `bossMult`, `ult`, `chakra`), re-run `npm run autotune -- --write`, then `npm run sim` and `npm run campaign`.
 
 ## 5. Safety rails

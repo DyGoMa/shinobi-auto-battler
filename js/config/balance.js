@@ -77,19 +77,21 @@ export const BALANCE = {
     // across Part 1 and later parts). scrolls base 50–300; ryo base 100–1000.
     nodeFirstClear: {
       scrolls: { type: 'linear', base: 160, growth: 3, round: true },
-      ryo:     { type: 'linear', base: 520, growth: 110, round: true },
+      // cap: late Part II stops growing (from node 73, the Five Kage Summit boss), so
+      // free-to-play teams end Part II near the enemy level, not at the level cap.
+      ryo:     { type: 'linear', base: 520, growth: 110, cap: 8500, round: true },
     },
     // Rewards for replaying an already-cleared node (farming). x = global node index.
     nodeReplay: {
       scrolls: { type: 'linear', base: 15, growth: 0.5, round: true },
-      ryo:     { type: 'linear', base: 600, growth: 130, round: true },
+      ryo:     { type: 'linear', base: 600, growth: 130, cap: 10000, round: true }, // cap from node 73
     },
     // Multiplier on first-clear rewards for boss nodes. Range 1–3.
     bossNodeBonusMult: 1.5,
     // One-time bonus for clearing every node of an arc. x = arc index (0-based).
     arcClearBonus: {
       scrolls: { type: 'linear', base: 300, growth: 25, round: true },
-      ryo:     { type: 'linear', base: 1500, growth: 450, round: true },
+      ryo:     { type: 'linear', base: 1500, growth: 450, cap: 9000, round: true }, // cap from arc 17 (Pain's Assault)
     },
     // Boss Rush rewards for clearing round x (1-based). Paid every time.
     bossRush: {

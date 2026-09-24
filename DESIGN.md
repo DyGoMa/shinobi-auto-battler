@@ -175,7 +175,7 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
 * **Levels** cost Ryo on a linear curve (`60 + 34 × level`); the level cap is 100.
 * **Catch-up discount:** a ninja 5 or more levels behind your best one levels up 60% cheaper, so bringing a nature counter off the bench is affordable.
 * **Starting save:** Naruto, Sakura, Sasuke, with Kakashi as Leader, plus 1,500 scrolls and 500 Ryo.
-* **Pacing:** free-to-play bots finish Part I at team level ~34–39 (median 35.5) vs enemy level 30, and Part II at or near the level cap (median 100) vs enemy level 94.
+* **Pacing:** free-to-play bots finish Part I at team level ~34–39 (median 35.5) vs enemy level 30, and Part II at median 95.5 vs enemy level 94, with about 24k Ryo left (mostly the final boss and arc-clear payout). Late Part II Ryo rewards are capped (first clears from node 73, arc bonuses from Pain's Assault) so teams stop short of the level cap.
 
 | Arc | Enemy level at the end |
 |---|---|

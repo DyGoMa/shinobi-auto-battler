@@ -104,7 +104,7 @@ function playCampaign(playerSeed, verbose) {
       const last = log.timeline[log.timeline.length - 1];
       const tiers = { genin: 0, chunin: 0, jonin: 0, kage: 0 };
       for (const id of Object.keys(state.roster)) tiers[C.char[id].tier]++;
-      log.arcs.push({ arc: arc.name, teamLevel: last?.level ?? 0, enemyLevel: enemyLevelForNode(node.globalIndex, B), pulls: state.gacha.totalPulls, scrolls: state.currencies.scrolls, ryo: state.currencies.ryo, owned: Object.keys(state.roster).length, tiers, team: last?.team || [] });
+      log.arcs.push({ arc: arc.name, part: arc.part, teamLevel: last?.level ?? 0, enemyLevel: enemyLevelForNode(node.globalIndex, B), pulls: state.gacha.totalPulls, scrolls: state.currencies.scrolls, ryo: state.currencies.ryo, owned: Object.keys(state.roster).length, tiers, team: last?.team || [] });
     }
   }
   if (verbose) print(log, state);
@@ -143,5 +143,10 @@ const freq = {}; for (const n of allStuck) freq[n] = (freq[n] || 0) + 1;
 const hot = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 6);
 console.log(`\nMost common stuck points: ${hot.length ? hot.map(([n, c]) => `${n} (${c}/${PLAYERS})`).join(', ') : 'none'}`);
 console.log(`Median final team level: ${median(logs.map(l => l.arcs[l.arcs.length - 1]?.teamLevel || 0)).toFixed(1)}  (last enemy level ${enemyLevelForNode(C.nodes.filter(n => SIM_PARTS.includes(n.part)).slice(-1)[0].globalIndex, B)})`);
+for (const part of SIM_PARTS) {
+  const ends = logs.map(l => l.arcs.filter(a => a.part === part).slice(-1)[0]).filter(Boolean);
+  if (!ends.length) continue;
+  console.log(`End of ${PART_LABEL([part])}: median team Lv ${median(ends.map(a => a.teamLevel)).toFixed(1)} vs enemy Lv ${ends[0].enemyLevel}, median Ryo ${median(ends.map(a => a.ryo))} (range ${Math.min(...ends.map(a => a.ryo))}–${Math.max(...ends.map(a => a.ryo))})`);
+}
 console.log(`\n${failed ? 'FAIL' : 'PASS'} — ${PLAYERS - failed}/${PLAYERS} free-to-play players cleared ${PART_LABEL()} with no node needing more than ${MAX_REPLAYS} replays.`);
 process.exit(failed ? 1 : 0);
