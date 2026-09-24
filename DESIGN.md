@@ -227,7 +227,7 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
   * Tap targets are at least 44 px, transitions are 0.2 s, and reduced motion is respected.
 * **Game loop:** rAF with delta clamped to 50 ms and a fixed 1/30 s sim tick. It pauses when the tab is hidden.
 
-## 9. Notes for Session 3
+## 9. Notes for later sessions
 
 * Shippuden content is **data only** (`arcs/shippuden.js`, roster, enemies, banners); no engine code changed for it. See CONTENT_GUIDE.md.
 * **The enemy level curve continues by global node index.** Part II ends at node 99 (level 94); the level cap is 100, reached around node 105.

@@ -1,47 +1,52 @@
-# HANDOFF.md — Session 2 → Session 3 (balance and canon audit)
+# HANDOFF.md — Session 3 → Session 4 (balance and audit pass)
 
-Session 2 added all of Part II and four follow-ups. Every sim passes: `npm test` gives validate, syntax, 35 core tests, 29/29 battle scenarios, and 10/10 free-to-play players clearing Parts I–II.
+Session 3 was a balance and audit pass on the finished Part I + Shippuden game. Every check passes: `npm test` runs validate, syntax, **41 core tests**, **29/29 battle scenarios**, and **10/10 free-to-play players** clearing Parts I–II with no node above 1 replay.
 
 ## What changed
 
 | Step | Commit | Summary |
 |---|---|---|
-| 1. Shippuden | `b2b2f6a` | `js/content/arcs/shippuden.js`: 13 canon arcs + 4 fillers (Twelve Guardian Ninja, Three-Tails' Appearance, Six-Tails Unleashed, Kakashi: Shadow of the ANBU Black Ops), 67 nodes, anime order. The last node is #99 at enemy level 94 (cap 100). 34 new pullable characters and forms, 88 new enemies/bosses/protect targets, 17 banners. `SIM_PARTS` (default: every part) replaces the `part === 1` filters. Autotuned every boss. |
-| 2. Name re-checks | `719ec54` | See the table below. |
-| 3. Counter gap | `0d80b9f` | Measured; **no lever applied** (see below). `npm run sim` prints the extra numbers. |
-| 4. Phone portrait | `99af516` | Units drawn at 2.05× (390×844) and 2.22× (360×780), in two rows, with scaled bars and labels. Render layer only. |
-| 5. Firebase doc | `1417789` | Standard edition, `(default)` Database ID, project-limit tip, anonymous Auto clean-up OFF. |
+| 1. Counter gap | `16abb18` | `jutsuClash.overwhelmedChakraRefund` **0.5**: an Overwhelmed ult is still cancelled (no damage) and the enemy jutsu still lands at ×0.55, but 50 chakra comes back. In-game 🤖 Auto-ult now uses `botUlts('smart')` (clash-aware); the sim keeps `'asap'` for boss targets. `npm run sim` prints the 3-of-4 countered case. Autotune re-run (9 bosses moved 0.01–0.06). **The bands were not reached** (see below). |
+| 2. Late Part II economy | `a291299` | Caps on `nodeFirstClear.ryo` (8,500, from node 73), `nodeReplay.ryo` (10,000) and `arcClearBonus.ryo` (9,000, from arc 17 = Pain's Assault). Earlier rewards are unchanged. `npm run campaign` now prints median level and Ryo at the end of each part. |
+| 3. "Traps Activate!" | `0044e31` | **Cause:** players own Team Guy but never level them (Lv 11–13 vs enemy Lv 33), while non-owners got Lv 33 loaners. The node itself is fine (a 1★ Team Guy at Lv 33 wins 100% in 28 s; still 91% at Lv 24). **Fix:** `ownedOrLoaner` raises an owned forced ninja (or fixed Leader) to the loaner level for that battle, keeping their stars. The Team Builder says so. |
+| 4. Forced-team Leader bug | `1baa1ba` | `resolveTeam`: forced ninja always play. If four are forced, the Leader slot yields; the player's Leader leads only if they are one of the four, otherwise the first forced ninja does. The same rule is in `autoPickTeam` and the sims' `teamForNode`. The `n_kaz_3` `leader: 'guy'` workaround is removed. A core test covers it (fails on the old code). |
+| 5. Summon screen | `d617615` | Standard + the newest open arc banner sit side by side at the top (one tap on phone portrait). The rest are under a collapsible "Past banners" row with a Part I / Part II switch and a wrapping grid. Checked at 375×812 with no console errors. UI only. |
+| 6. Name and nature audit | `c325d95` | Ep 68 resolved (below). Pain/Nagato → **Water, Wind**; Kaguya's base nature → **Fire**; Minato, Konohamaru and Guren kept. Verdicts are in NAMING.md, "Session 3 nature review". |
 
-## Name re-checks (recorded in `tools/naming-sources.mjs`)
+## Final counter-gap numbers (Land of Waves boss, Water, Lv 8; same on-curve team re-typed; 200 battles per cell)
 
-| Name | Verdict | Source |
+| Bot | Counter (Earth) | Neutral (Lightning) | **3 of 4 countered** (target 25–30%) | **Fully countered** (target 10–15%) |
+|---|---|---|---|---|
+| Fire when ready | 98% | 24% | **1%** | **0%** |
+| Clash-aware (in-game Auto) | 98% | 25% | **0%** | **0%** |
+
+* Sweeping the refund from 0 to 0.9 gave 0–3% for 3 of 4 countered and 0% for fully countered. So the refund is set to 0.5, and nothing else was forced.
+* Why: the clash-aware bot never fires into a losing clash, so it never gets the refund. And at this node a neutral team only wins 24–35%, so the bands ask a mostly countered team to match a neutral one.
+* **What a second lever would have to be** (BALANCE.md §6 has the full table):
+  * A much flatter wheel (~1.1 / 0.93) **plus** Overwhelmed also blocking the enemy jutsu (`overwhelmedJutsuMult` 0) gets 3 of 4 countered to 24% and fully countered to 8% (fire-when-ready). The counter team drops to 79%.
+  * Or redefine the reference: measure where a neutral team wins ~60%. At +3 levels, 3 of 4 countered gets 38% / 26% (fire-when-ready / clash-aware), but fully countered stays at 3–4%.
+
+## Economy before / after (campaign sim, 10 players, medians)
+
+| | Before | After |
 |---|---|---|
-| Naruto Uzumaki (Nine-Tails Chakra) | Kept as a **descriptive** label (P→D) | Narutopedia calls the form "Initial Jinchūriki Form" (no dub name); "Nine-Tails" is the dub term (dub titles of ep 40, Shippuden ep 165) |
-| Six Paths of Pain | **Confirmed** (P→V) | Shippuden ep 132 dub title "In Attendance, the Six Paths of Pain" (Wikipedia, season 6); no English TV field |
-| Prologue: Bell Test | **Renamed → "Prologue: Survival Test"**; "Bell Test" kept as the alternate | Dub titles of eps 4–5 (Wikipedia, Naruto season 1); Narutopedia article "Bell Test" |
-| Deadlock! Sannin Showdown! | **Confirmed** (P→V) | Ep 96 dub title (Wikipedia, Naruto season 4) |
-| Sound Four | **Corrected → "Sound Ninja Four"** | Narutopedia English TV name |
-| Sand Siblings | **Not confirmable; removed from the game** | Narutopedia "Three Sand Siblings", no English TV field and no dub title. Blurbs now name the three; the scope label is "Hidden Sand ninja" |
-| Leaf, Sand, Mist, Cloud, Stone, Sound, Rain | **Confirmed**, used consistently | Village English TV names + dub titles ("Hero of the Leaf", "Pakura of the Sand!", "Sound vs. Leaf", "Village Hidden in the Rain"). Convention in NAMING.md |
+| End of Part I (enemy Lv 30) | team Lv 35.5, 11,255 Ryo | team Lv 35.5, 11,255 Ryo (unchanged) |
+| End of Part II (enemy Lv 94) | team Lv 99.0, 32,326 Ryo (range up to 71,697 when stuck at the level cap) | team Lv **96.3**, **23,580** Ryo (range 22,073–24,816) |
 
-## Counter gap: measured, not fixed
-Target: at equal level and rarity, a countered team wins 25–30%. Measured: **0%** (counter 98%, neutral re-type 34%). Full table in BALANCE.md §6.
-* The candidate damage levers (smaller multipliers down to 1.03/0.98, no penalty for the countered side, mixed-team bonus) leave it at 0–5%. The cause is **Jutsu Clash**: countered Ultimates are *Overwhelmed* (spent) while the boss's jutsu still lands, and neutral/counter teams cancel or overpower it.
-* Best result that keeps the clash rules: **10%** (clash-aware bot, no countered damage penalty, Overwhelmed cancels the jutsu).
-* The only setting that reaches the band makes Overwhelmed ults land at ~85% power, which erases that outcome. Not applied.
-* The countered team needs about **+6 levels** to reach 17–33%.
+The 95.5 measured in step 2 became 96.3 after step 3 (fewer replays wasted on Team Guy). Most of the leftover Ryo is the final boss's first-clear reward plus the arc bonus, which arrive after the last battle.
 
-## Still unresolved (names and natures)
-* **"Destruction of the Hidden Leaf Village"** (P): Session 1 recorded the ep 68 dub title as "…Destruction of the Hidden Leaf Village Begins!"; Wikipedia gives "Zero Hour! The Destruction of Leaf Begins!".
-* **Natures by rule, open to a canon review:** Pain/Nagato = Water (Raging Waves in an ep 128 flashback); Minato and Konohamaru = Fire (first listed, no on-screen nature); Guren = Earth (Narutopedia: "presumed"); Kaguya = Fire/Water/Earth (**design mapping** of her dimensions, not canon).
-* Part II dub episode titles come from **Wikipedia's season lists** (Narutopedia's episode articles use official English titles, which differ in places). A second source would be good.
-* Karui was dropped: no technique with a confirmable dub name.
+Stuck points: before, `n_kaz_3` 7/10; after, nothing above 1/10 (`n_sixtails_3`, `n_bell_3`, `n_countdown_1`, `n_chunin_5`, `n_kaguya_2`).
 
-## Left for Session 3 on purpose
-1. **Counter-gap design decision** (BALANCE.md §6 options). Also, the in-game 🤖 Auto-ult calls `botUlts('asap')` and wastes Ultimates on Overwhelmed clashes; `'smart'` exists.
-2. **Late Part II economy overshoots.** Bots reach the level cap (median 100) against enemy level 94, and finish with ~70k unspendable Ryo. Part I pacing (+5 levels) is unchanged.
-3. **`n_kaz_3`** ("Traps Activate!", Team Guy forced) is the most common stuck point (7/10 bots need 1 replay), because players rarely level all four.
-4. **Engine quirk (worked around in content):** `resolveTeam` drops the last forced member when four are forced and the player's Leader isn't one of them. `n_kaz_3` sets `leader: 'guy'`.
-5. **Sim change:** on-curve teams now give a forced Kage the Genin slot (they used to fight alone). This moved `n_crush_3` from 0.35 to 0.69.
-6. **Balance texture:** Part II adds 15 Kage-tier pulls; long fights remain (Kinoe median 83 s); three Tank bosses were softened to avoid time-outs. The Boss Rush is still the Part I Akatsuki set.
-7. **UI:** the Summon screen has 26 banner tabs in one scrolling strip; consider grouping by part.
+## Name and nature verdicts
+* **Ep 68:** the dub title is "Zero Hour! The Destruction of the Hidden Leaf Village Begins!", as Session 1 recorded. Sources: Narutopedia's episode article ("Other names") and Tubi's listing of the dubbed episode. Wikipedia's season 2 list ("…Destruction of Leaf Begins!") is the outlier. The arc name "Destruction of the Hidden Leaf Village" is now Verified (`tools/naming-sources.mjs`).
+* **Pain/Nagato:** the rule was misapplied. Wind Style: Gale Palm is on screen in the same ep 128 flashback as Raging Waves, and Air Bullets appears in ep 253. Enemy Pains fight with their first (active) nature, so the boss fights are unchanged; the pullable Pain also hits with Wind.
+* **Kaguya:** she uses no Release jutsu on screen, so her base nature is Fire (first listed). Her lava/ice/desert dimensions stay as the Amenominaka element swap (a design mapping). The fight is unchanged.
+* **Minato, Konohamaru** (Fire, first listed) and **Guren** (Earth, Narutopedia "presumed") are kept.
+
+## Still open
+1. **Counter-gap design decision** (above): a second lever (flatter wheel + Overwhelmed blocks the jutsu) or a new reference point. Either one needs a rule or target change, not a number.
+2. **Nagato's Earth:** Narutopedia lists Earth-Style Wall as "Nagato (Anime only)" with no episode. Add Earth if a scene is found.
+3. **Boss Rush Pain** (`e_br_pain`) still has all five natures from Session 1's infobox-list reading. The Boss Rush is still the Part I Akatsuki set.
+4. **Part II dub titles** still come mainly from Wikipedia's season lists; ep 68 showed they can differ from the dub. A second source for the others would help.
+5. **Balance texture** (unchanged): long fights in places (Kinoe median ~83 s); the sim's boss targets still use the fire-when-ready bot, while in-game Auto is clash-aware. With the clash-aware bot, boss win rates range from 36% (Countdown) to 94% (Final Valley) instead of 50–70% (the sim's info block shows both).
+6. **Non-boss nodes are easy at level** (e.g. `n_kaz_3` 100% for a level-matched team). That's by design, but a "real fight" target for non-boss nodes could be added to `npm run sim`.

@@ -69,9 +69,10 @@ firestore.rules
 * **CONTENT_GUIDE.md**: templates and worked examples for every content type.
 * **NAMING.md**: every name in the game, the Narutopedia source checked, and its verification status.
 * **FIREBASE_SETUP.md**: step-by-step cloud-save setup (free Spark plan only).
-* **HANDOFF.md**: Session 2 → Session 3 notes (what changed, open questions, deliberate leftovers).
+* **HANDOFF.md**: Session 3 → Session 4 notes (what changed, final counter-gap numbers, open questions).
 
 ## Roadmap
 * **Session 1:** the engine, every system, Part I, and deployment.
-* **Session 2 (this):** all Shippuden arcs (13 canon + 4 filler), 34 more characters and alternate forms, a measured Nature Wheel counter-gap study (no lever applied, see BALANCE.md §6), bigger units on phone portrait.
-* **Session 3:** full-campaign balance and canon audit (see the Session 2 handoff notes in BALANCE.md §6 and NAMING.md).
+* **Session 2:** all Shippuden arcs (13 canon + 4 filler), 34 more characters and alternate forms, a measured Nature Wheel counter-gap study (no lever applied, see BALANCE.md §6), bigger units on phone portrait.
+* **Session 3 (this):** balance and audit pass: Overwhelmed ults refund half their chakra and Auto-ult is clash-aware (the counter-gap bands are still not reached, see BALANCE.md §6), late Part II Ryo capped, forced ninja fight at least at the node level, four forced ninja always play, grouped Summon banners, name and nature audit.
+* **Session 4:** the counter-gap design decision (second lever or a new reference point), see HANDOFF.md.
