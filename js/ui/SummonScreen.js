@@ -6,6 +6,9 @@ import { TIER_LABEL, RARITY_LABEL } from '../core/formulas.js';
 import { TIER_COLORS } from '../render/Renderer.js';
 
 let selected = null;
+let archiveOpen = false;   // "Past banners" expanded
+let archivePart = null;    // story part shown in the archive
+const PART_NAME = { 1: 'Part I', 2: 'Part II' };
 const TIER_RANK = { genin: 0, chunin: 1, jonin: 2, kage: 3 };
 
 export function render(game, ui, params) {
@@ -21,12 +24,30 @@ export function render(game, ui, params) {
   const rates = bannerRates(banner, state, C, B);
   const pityLeft = Math.max(0, B.gacha.pity - state.gacha.pity);
 
-  const tabs = h('div.banner-tabs', ...banners.map(b => {
+  // Banner picker: the current banners (Standard + newest open arc) always sit in one
+  // row; every other banner is in a collapsible archive, grouped by story part.
+  const partOf = (b) => b.type === 'arc' ? C.arc[b.arc].part : 0;
+  const openArcs = banners.filter(b => b.type === 'arc' && isBannerUnlocked(state, b, C));
+  const current = [C.banner.standard, openArcs[openArcs.length - 1]].filter(Boolean);
+  const archived = banners.filter(b => !current.includes(b));
+  const parts = [...new Set(archived.map(partOf))].filter(p => p > 0);
+  if (!current.includes(banner)) archivePart = partOf(banner);
+  if (!parts.includes(archivePart)) archivePart = parts.includes(partOf(current[current.length - 1])) ? partOf(current[current.length - 1]) : parts[0];
+  const tab = (b, sub) => {
     const open = isBannerUnlocked(state, b, C);
     return h('button.banner-tab' + (b.id === selected ? '.on' : '') + (open ? '' : '.locked'), {
       type: 'button', onclick: () => { if (!open) { ui.toast(`Reach ${C.arc[b.arc].name} to open this banner.`); return; } selected = b.id; ui.refresh(); },
-    }, (open ? '' : '🔒 ') + b.name);
-  }));
+    }, (open ? '' : '🔒 ') + b.name, sub ? h('span.sub', sub) : null);
+  };
+  const openIn = (p) => archived.filter(b => partOf(b) === p && isBannerUnlocked(state, b, C)).length;
+  const tabs = h('div.banner-picker',
+    h('div.banner-current', ...current.map(b => tab(b, b.type === 'standard' ? 'Always available' : 'Current arc'))),
+    parts.length ? h('button.banner-archive-toggle', { type: 'button', 'aria-expanded': String(archiveOpen), onclick: () => { archiveOpen = !archiveOpen; ui.refresh(); } },
+      `${archiveOpen ? '▾' : '▸'} Past banners`, h('span.tiny.muted', parts.map(p => `${PART_NAME[p] || 'Part ' + p}: ${openIn(p)} open`).join(' · '))) : null,
+    archiveOpen && parts.length ? h('div.banner-archive',
+      parts.length > 1 ? h('div.seg', ...parts.map(p => h('button' + (p === archivePart ? '.on' : ''), { type: 'button', onclick: () => { archivePart = p; ui.refresh(); } }, PART_NAME[p] || `Part ${p}`))) : null,
+      h('div.banner-grid', ...archived.filter(b => partOf(b) === archivePart).map(b => tab(b)))) : null,
+  );
 
   const featured = (banner.featured || []).map(id => {
     const d = C.char[id]; const avail = isCharacterAvailable(state, d, C);
