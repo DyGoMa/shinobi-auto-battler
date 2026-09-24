@@ -26,6 +26,17 @@ const [lo0, hi0] = B.targets.bossWinRange;
 const finalGoal = (lo0 + hi0) / 2;
 const midGoal = 0.78;
 
+// Per-node search overrides, only where the default window can't reach the goal.
+//   min:   lower bound of the search (default: the starting value / span)
+//   round: multiplier resolution (default 0.01)
+// Hard n_summit_3 (Danzo Shimura) forces base Sasuke and Karin, two ninja at the Hard
+// level, so it needs far less than its story value (1.01) and its win rate moves
+// ~8 points per 0.01 near the goal (0.32 → 85%, 0.33 → 70%).
+const OVERRIDES = {
+  hard: { n_summit_3: { min: 0.1, round: 0.005 } },
+  story: {},
+};
+
 function tune(hard) {
   const table = hard ? B.hardMode.nodeMult : B.enemyScaling.nodeMult;
   const result = { ...table };
@@ -43,23 +54,27 @@ function tune(hard) {
     // Hard falls back to the story's value, and starts from a wider search window.
     const cur = table[node.id]?.hp ?? (hard ? B.enemyScaling.nodeMult[node.id]?.hp : null) ?? 1;
     const span = hard ? 3 : 2;
-    let lo = Math.log(cur / span), hi = Math.log(cur * span);
+    const ov = OVERRIDES[hard ? 'hard' : 'story'][node.id] || {};
+    const step = ov.round || 0.01;
+    let lo = Math.log(ov.min ?? cur / span), hi = Math.log(cur * span);
     let best = cur, bestErr = Infinity, bestRate = 0;
-    for (let it = 0; it < ITERS + (hard ? 2 : 0); it++) {
-      const m = Math.round(Math.exp((lo + hi) / 2) * 100) / 100;
+    for (let it = 0; it < ITERS + (hard ? 2 : 0) + (ov.min ? 2 : 0); it++) {
+      const m = +(Math.round(Math.exp((lo + hi) / 2) / step) * step).toFixed(3);
       const r = rate(m);
       if (Math.abs(r - goal) < bestErr) { bestErr = Math.abs(r - goal); best = m; bestRate = r; }
       if (r > goal) lo = Math.log(m); else hi = Math.log(m);
     }
     result[node.id] = { hp: best, atk: best };
     table[node.id] = result[node.id];
-    console.log(`${node.id.padEnd(14)} goal ${goal.toFixed(2)}  ->  nodeMult ${best.toFixed(2)}  (win ${(bestRate * 100).toFixed(0)}%)`);
+    console.log(`${node.id.padEnd(14)} goal ${goal.toFixed(2)}  ->  nodeMult ${fmt(best)}  (win ${(bestRate * 100).toFixed(0)}%)`);
   }
   return result;
 }
 
+// Two decimals, or three for a node tuned at a finer resolution (OVERRIDES).
+const fmt = (v) => (Math.abs(v * 100 - Math.round(v * 100)) > 1e-6 ? v.toFixed(3) : v.toFixed(2));
 const blockOf = (result, indent) => {
-  const lines = Object.entries(result).map(([id, v]) => `${indent}  ${(id + ':').padEnd(13)}{ hp: ${v.hp.toFixed(2)}, atk: ${v.atk.toFixed(2)} },`);
+  const lines = Object.entries(result).map(([id, v]) => `${indent}  ${(id + ':').padEnd(13)}{ hp: ${fmt(v.hp)}, atk: ${fmt(v.atk)} },`);
   return `nodeMult: {\n${lines.join('\n')}\n${indent}},`;
 };
 

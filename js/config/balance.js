@@ -420,7 +420,7 @@ export const BALANCE = {
       n_brothers_4:{ hp: 0.97, atk: 0.97 },
       n_sixtails_3:{ hp: 1.08, atk: 1.08 },
       n_pain_5:    { hp: 1.03, atk: 1.03 },
-      n_summit_3:  { hp: 0.33, atk: 0.33 },
+      n_summit_3:  { hp: 0.325, atk: 0.325 },
       n_summit_4:  { hp: 0.83, atk: 0.83 },
       n_countdown_2:{ hp: 0.76, atk: 0.76 },
       n_countdown_4:{ hp: 0.72, atk: 0.72 },
