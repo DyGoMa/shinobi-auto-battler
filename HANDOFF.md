@@ -175,3 +175,12 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 8. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`); no test accounts were created.
 
 ## Live check
+
+After the push (`ac69643`, GitHub Pages build "built"), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser (Chromium), 2026-09-24:
+
+| Save | Result |
+|---|---|
+| **New** (first visit, empty storage) | Loads with no console messages at all. Fresh v2 save, the Academy welcome and tutorial offered, cloud save on as a guest. The Wiki's "Hard mode and Daily challenge" guide loads (`.md` served raw thanks to `.nojekyll`) with this session's copy. No failed requests. |
+| **Existing** (a Session 3-format v1 save with Part I cleared, written to `localStorage`, then reloaded) | No console messages. Migrated to v2 with all 32 Part I battles kept; the tutorial skipped itself and paid its reward (+300 scrolls, +450 Ryo); Part I Complete and First Summon unlocked retroactively; Home shows the Daily challenge, "Next on Hard: Pass or Fail: Survival Test" and "Best: round 3" for the Boss Rush. |
+
+The new-save visit signed in anonymously, as every new visitor does, so the Firebase project has one guest account from this check, holding that synthetic test save. Delete it in the Firebase console (Authentication → Users) if you like; anonymous accounts are also cleaned up automatically if that option is on (FIREBASE_SETUP.md).
