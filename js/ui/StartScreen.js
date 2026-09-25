@@ -6,6 +6,7 @@
 import { h, btn } from './dom.js';
 import { menuModel } from '../core/StartFlow.js';
 import { signInFallback } from '../core/Pwa.js';
+import { installNotice } from './install.js';
 
 export function render(game, ui) {
   const { save, cloud, state } = game;
@@ -62,6 +63,9 @@ export function render(game, ui) {
       h('div.row.center-row.start-links',
         btn('📚 Wiki', () => ui.openWiki('home'), 'ghost small'),
         btn('⚙️ Settings', () => ui.go('settings'), 'ghost small'))),
+    // Phones that haven't installed the app: a notice in the space under the menu, so the
+    // buttons never move (never on a desktop, never in the app).
+    installNotice(game, ui),
     h('div.start-foot',
       h('p.tiny.dim', 'Fan-made, non-commercial. Naruto © Masashi Kishimoto / Shueisha / Studio Pierrot. No official artwork or audio.'),
       h('span.build-stamp', game.build?.label || 'dev')));

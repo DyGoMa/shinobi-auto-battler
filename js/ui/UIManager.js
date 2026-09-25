@@ -140,6 +140,8 @@ export class UIManager {
     try { if (location.hash !== hash) history[push ? 'pushState' : 'replaceState'](null, '', hash); } catch { /* file:// */ }
     this.render(true);
     this.screenEl.scrollTop = 0;
+    // Home, once the game has been entered: the one-time install popup, if it is due (js/ui/install.js checks it is safe).
+    if (id === 'home' && this.installReady) setTimeout(() => this.game.install?.offerPopup(), 400);
   }
 
   /** Draw the current screen. `enter` plays the fade-in (navigation only, not refreshes). */
@@ -174,6 +176,7 @@ export class UIManager {
   enterGame() {
     this.startPending = false;
     document.body.classList.remove('start-mode', 'start-sub');
+    this.game.install?.onLaunch();   // the install reminder banner, if one is due this launch
     const t = this._startTarget && !['start', 'home'].includes(this._startTarget.id) ? this._startTarget : { id: 'home', params: {} };
     this._startTarget = null;
     this.go(t.id, t.params, { replace: true });

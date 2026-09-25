@@ -714,3 +714,36 @@ body.start-mode #screen { padding: 0; grid-area: auto; }
   .node .hint { max-width: 70px; }
   .fight-row > .btn { flex: 1 1 auto; }
 }
+
+/* ---------------- 0.11.2: suggesting the install ---------------- */
+/* The start-menu notice: a slim card under the menu buttons (never pushes them off a 360×780 screen). */
+.install-notice { display: flex; align-items: center; gap: 10px; width: min(380px, 100%); align-self: center; padding: 8px 10px 8px 12px; border-radius: 12px; border: 1px solid #6b3a14; background: #2a1a0c; text-align: left; }
+/* Sideways: the notice takes its own row under the menu column. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .start:has(.install-notice) { grid-template-rows: minmax(0, 1fr) auto auto; grid-template-areas: "brand menu" "brand notice" "foot foot"; }
+  .install-notice { grid-area: notice; align-self: start; width: min(360px, 100%); }
+}
+.install-notice .ins-emoji, #install-banner .ins-emoji { font-size: 1.3rem; line-height: 1; flex: 0 0 auto; }
+.install-notice .ins-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; line-height: 1.2; }
+.install-notice .ins-text b { font-size: .9rem; }
+.install-notice .btn { flex: 0 0 auto; }
+/* The reminder banner: its own grid row between the screen and the tab bar, so it never covers content. */
+#app { grid-template-rows: calc(var(--topbar-h) + var(--safe-t)) minmax(0, 1fr) auto auto; }
+#install-banner { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: #2a1a0c; border-top: 1px solid #6b3a14; font-weight: 700; font-size: .88rem; z-index: 5; }
+#install-banner .ins-text { flex: 1 1 auto; min-width: 0; }
+#install-banner .ins-close { min-width: 44px; padding: 6px 8px; flex: 0 0 auto; }
+body.start-mode #install-banner, body.start-sub #install-banner { display: none; }
+@media (min-width: 900px), (orientation: landscape) and (max-height: 500px) {
+  #app { grid-template-rows: calc(var(--topbar-h) + var(--safe-t)) 1fr auto; grid-template-areas: "top top" "nav main" "nav banner"; }
+  #install-banner { grid-area: banner; }
+}
+/* The popup and the steps dialogs. */
+.install-perks { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; text-align: left; }
+.install-perks li { padding: 8px 12px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--line); font-size: .92rem; }
+.ins-steps { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; counter-reset: ins; }
+.ins-step { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); font-size: .92rem; line-height: 1.35; counter-increment: ins; }
+.ins-step::before { content: counter(ins); flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #1c0d02; font-weight: 900; font-size: .8rem; }
+.ins-ico { flex: 0 0 auto; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--line); color: var(--accent2); }
+.ins-copy { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.ins-link { flex: 1 1 auto; min-width: 0; min-height: 44px; font-size: .85rem; }
+.ins-copy .btn { flex: 0 0 auto; }

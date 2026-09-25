@@ -2,6 +2,11 @@
 
 ## Version {{cfg:version.current}}
 
+- **The game suggests the app on phones.** On a phone or tablet that hasn't installed it, the start menu shows a small **Play full screen: install the app** card, and once you've finished the tutorial a one-time popup explains what you get (full screen, no browser bars, one tap from your home screen, the same save) with **Install** and **Not now**. After Not now, a slim reminder above the tab bar comes back after three days, once more a week later, and then never on its own. Nothing shows on a PC or inside the installed app.
+- **One tap where the browser allows it.** In Chrome or Edge on Android, **Install** opens the real install dialog. Elsewhere it shows short illustrated steps: the browser menu on Android (Samsung Internet, Firefox), **Share → Add to Home Screen** in Safari on an iPhone or iPad, and on an iOS in-app browser (Instagram, Facebook and the like) or Chrome for iOS a **Copy link** button to open the page in Safari. The same steps are in Settings → App (**Show me how**) and in the how-to-play guide.
+
+## Version 0.11.1
+
 - **Install it as an app.** Settings → App → **📲 Install app** (Chrome on Android and on a PC), or **Share → Add to Home Screen** on an iPhone. Launched from the home screen, the game runs full screen with no browser bars, so the empty strip Chrome could draw under the tab bar is gone. The screens you have opened keep working offline.
 - **Updates arrive on their own.** The app looks for a new build each time it opens or comes back to the front and shows **"Update ready — tap to reload"** when there is one. Settings → App → **↻ Check for updates** looks right now.
 - **The back button** (your phone's, or the browser's) now goes to the previous screen, pauses a battle or closes a dialog, instead of leaving the game.

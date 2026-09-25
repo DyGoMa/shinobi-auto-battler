@@ -65,9 +65,10 @@ export function setupPwa(game, ui) {
     u.toast(UPDATE_READY_TEXT, 'good', () => location.reload(), { sticky: true });
   };
 
-  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pwa.prompt = e; refreshSettings(); });
-  window.addEventListener('appinstalled', () => { pwa.prompt = null; ui()?.toast('Installed. Open the game from your home screen for the full-screen version.', 'good'); refreshSettings(); });
-  try { window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => { pwa.standalone = e.matches || isStandalone(); refreshSettings(); }); } catch { /* old browser */ }
+  // The install suggestions (js/ui/install.js) follow these too: a prompt means "not installed", appinstalled hides them all.
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pwa.prompt = e; game.install?.onInstallable(); refreshSettings(); });
+  window.addEventListener('appinstalled', () => { pwa.prompt = null; if (game.install) game.install.onInstalled(); else ui()?.toast('Installed! Open it from your home screen.', 'good'); refreshSettings(); });
+  try { window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => { pwa.standalone = e.matches || isStandalone(); if (pwa.standalone) game.install?.onInstalled({ toast: false }); refreshSettings(); }); } catch { /* old browser */ }
 
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     // The very first load: the game's files were fetched before the worker existed, so

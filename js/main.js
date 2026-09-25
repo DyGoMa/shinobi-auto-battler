@@ -15,6 +15,7 @@ import { playIntro, prefersReducedMotion } from './ui/Intro.js';
 import { introPlan, introSeen, setIntroSeen } from './core/StartFlow.js';
 import { loadBuildInfo, formatBuild } from './core/Version.js';
 import { setupPwa } from './ui/pwa.js';
+import { setupInstall } from './ui/install.js';
 import { isStandalone } from './core/Pwa.js';
 
 async function boot() {
@@ -34,6 +35,8 @@ async function boot() {
   let ui = null;
   // The installable app: service worker, install prompt, update check (js/ui/pwa.js).
   setupPwa(game, () => ui);
+  // 0.11.2: suggesting the install to phone players (notice, popup, reminders; js/ui/install.js).
+  setupInstall(game, () => ui);
 
   const save = new SaveManager({
     local, cloud: cloud.configured ? cloud : null, content: CONTENT, balance: BALANCE,
@@ -103,6 +106,9 @@ async function boot() {
       if (signedIn) ui.toast(switched ? 'Signed in to your existing Google save.' : cloud.displayName ? `Signed in as ${cloud.displayName}.` : 'Cloud save is on (guest).', 'good');
       if (ui.current === 'settings' && !ui.battle) ui.refresh();
     }
+    // The install popup comes last: after the welcome and the "cloud save is newer" prompt, never on top of either.
+    ui.installReady = true;
+    game.install.offerPopup();
   };
   // Back from a Google redirect (phones): straight into the game. An error stays on the menu, which shows it.
   connecting.then(() => {

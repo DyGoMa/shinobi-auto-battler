@@ -171,3 +171,34 @@ export async function auditFlows(game) {
   ui.go('team', { tutorialLesson: 0 }); await snap('fresh save: tutorial lesson 1 team');
   return report.filter(r => r.overflow.length || r.targets.length || r.clipped.length || r.copy.length);
 }
+
+/**
+ * 0.11.2: the install suggestions, forced visible (the pane is not a phone): the start-menu
+ * notice, the one-time popup on Home, the reminder banner above the tab bar (Home and the
+ * Story map), and the three step dialogs. Leaves the device flags and the record as it found them.
+ */
+export async function auditInstall(game) {
+  const { ui } = game; const inst = game.install;
+  const report = [];
+  const snap = async (name, ms = 450) => { await wait(ms); report.push(auditScreen(name)); };
+  const { showSteps } = await import('../js/ui/install.js');
+  const before = { phone: inst.debugPhone, nudge: JSON.parse(JSON.stringify(inst.nudge)) };
+  inst.debugPhone = true; inst.debug.reset();
+  // the start menu with the notice
+  closeModals();
+  ui.startPending = true; ui.go('start'); await snap('start menu: install notice');
+  ui.startPending = false; document.body.classList.remove('start-mode', 'start-sub');
+  // the popup on Home (needs the tutorial done: qaSave 'mid')
+  ui.go('home'); await wait(300); closeModals(); inst.debug.reset(); inst.offerPopup(); await snap('home: install popup');
+  closeModals();
+  // the banner, as at a launch 4 days after "Not now"
+  const t = Date.now() - 4 * 24 * 3600 * 1000;
+  inst.nudge = { popupAt: t, dismissals: [t], installedAt: 0 }; inst.debug.relaunch();
+  ui.go('home'); await snap('home: install banner');
+  ui.go('story', { part: 1 }); await snap('story: install banner');
+  // the steps
+  for (const plan of ['android', 'ios', 'safari']) { closeModals(); ui.go('settings'); await wait(200); showSteps(game, ui, plan); await snap(`install steps: ${plan}`); }
+  closeModals();
+  inst.debugPhone = before.phone; inst.nudge = before.nudge; inst.save(); inst.debug.relaunch(); ui.go('home');
+  return report.filter(r => r.overflow.length || r.targets.length || r.clipped.length || r.copy.length);
+}

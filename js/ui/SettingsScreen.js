@@ -9,6 +9,7 @@ import { tipCard, tipsEnabled, resetTips } from './tips.js';
 import { screenHead } from './chrome.js';
 import { installModel, signInFallback } from '../core/Pwa.js';
 import { UPDATE_READY_TEXT } from './pwa.js';
+import { showSteps, pageLink } from './install.js';
 
 const row = (title, sub, control, id) => h('div.setting', { id },
   h('div.setting-text', h('b', title), sub ? h('div.tiny.muted', sub) : null), control);
@@ -90,16 +91,28 @@ function appCard(game, ui) {
   };
   return h('div.card.gap', { id: 'set-app' },
     h('h2', 'App'),
-    row(m.title, m.text, m.kind === 'prompt' ? btn(m.button, async (e) => {
-      const b = e.currentTarget; b.disabled = true;
-      const r = await pwa.install();
-      if (r === 'accepted') ui.toast('Installing… Open the game from your home screen when it is done.', 'good');
-      else if (r === 'dismissed') ui.toast('Install cancelled. The option stays in your browser\'s menu.');
-      ui.refresh();
-    }, 'primary small') : null, 'set-install'),
+    row(m.title, m.text, appButton(game, ui, m), 'set-install'),
     row('Updates', `The game checks for a new build each time it opens or comes back to the front, and shows "${UPDATE_READY_TEXT}". Reloading is always safe: your progress is saved first.`,
       btn('↻ Check for updates', check, 'small'), 'set-update'),
   );
+}
+
+/** The App card's button per install model: the real prompt, the link to paste into Safari, or the illustrated steps. */
+function appButton(game, ui, m) {
+  const pwa = game.pwa;
+  if (m.kind === 'prompt') return btn(m.button, async (e) => {
+    const b = e.currentTarget; b.disabled = true;
+    const r = await pwa.install();
+    if (r === 'accepted') ui.toast('Installing… Open the game from your home screen when it is done.', 'good');
+    else if (r === 'dismissed') ui.toast('Install cancelled. The option stays in your browser\'s menu.');
+    ui.refresh();
+  }, 'primary small');
+  if (m.kind === 'safari') return btn(m.button, async () => {
+    try { await navigator.clipboard.writeText(pageLink()); ui.toast('Link copied. Paste it into Safari.', 'good'); }
+    catch { showSteps(game, ui, 'safari'); }
+  }, 'primary small');
+  if (m.kind === 'ios' || m.kind === 'manual') return btn('📖 Show me how', () => showSteps(game, ui, m.kind === 'ios' ? 'ios' : 'android'), 'small');
+  return null;
 }
 
 // ---------------------------------------------------------------------------

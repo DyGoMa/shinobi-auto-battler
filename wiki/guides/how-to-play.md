@@ -67,4 +67,11 @@ Progress saves automatically in this browser, and in the cloud as a guest when c
 
 ## The app
 
-Settings → **App** installs the game on your home screen: **📲 Install app** in Chrome (Android, PC), or **Share → Add to Home Screen** in Safari on an iPhone. From the home screen it runs full screen, with no browser bars, and the screens you have opened keep working offline. It checks for a new build each time it opens or comes back to the front and shows **"Update ready — tap to reload"** when there is one; your progress is saved before any reload. Inside the installed app, the back button goes to the previous screen (or pauses a battle, or closes a dialog); from Home it leaves the app.
+Installed, the game runs full screen from your home screen, with no browser bars, and the screens you have opened keep working offline. Your save is the same one. On a phone the start menu offers it (**Play full screen: install the app**), a one-time popup explains it after the tutorial, and Settings → **App** always has it. How to install, per browser:
+
+- **Chrome or Edge on Android:** tap **📲 Install app** (on the start menu, in the popup or in Settings → App) and confirm the dialog. If the button only shows steps instead, open the browser's **⋮** menu and choose **Install app** or **Add to Home screen**.
+- **Samsung Internet, Firefox and other Android browsers:** open the browser menu (**≡** at the bottom right in Samsung Internet, **⋮** in Firefox) and tap **Add to Home screen** (or **Install app**), then confirm.
+- **Safari on an iPhone or iPad:** tap **Share** (the square with an arrow, at the bottom of the screen; at the top on an iPad), scroll down, tap **Add to Home Screen**, then **Add**.
+- **An in-app browser on iOS** (a link opened inside Instagram, Facebook, Messenger and the like) **or Chrome, Firefox or Edge on iOS:** these can't add the game to the Home Screen. Tap **📋 Copy link**, open **Safari**, paste the link in the address bar and follow the Safari steps.
+
+Once it is installed, none of the suggestions show again. Settings → App reads "Installed as an app". It checks for a new build each time it opens or comes back to the front and shows **"Update ready — tap to reload"** when there is one; your progress is saved before any reload. Inside the installed app, the back button goes to the previous screen (or pauses a battle, or closes a dialog); from Home it leaves the app.

@@ -1,6 +1,28 @@
-# HANDOFF.md — 0.11.1 → the art, audio and VFX pass
+# HANDOFF.md — 0.11.2 → the art, audio and VFX pass
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
+
+## 0.11.2: suggesting the install to phone players
+
+Phones and tablets that have not installed the app are told about it, without nagging. Nothing here touches a cost, a reward, a curve or a battle: `npm run sim` and `npm run campaign` print the 0.11.0 numbers. Nothing is stored in the cloud save: installing is per device, so the record is a `LocalBackend` pref (`localStorage`, wrapped in try/catch).
+
+| Piece | Where | What it does |
+|---|---|---|
+| The rules | `js/core/Pwa.js`: `isPhone`, `iosNeedsSafari`, `installPlan`, `installPrompts`, `sanitizeNudge`, `REMINDER_DAYS = [3, 7]` (pure, 30 core tests) | `isPhone` = a touch screen and (a mobile user agent, or a window ≤ 820 px on its short side): never a desktop, not even a wide touch laptop. `installPrompts({ phone, standalone, tutorialDone, nudge, now })` → `{ notice, popup, banner }`: all false when not a phone, standalone, or an install is recorded; the notice on any phone; the popup once the tutorial is `done` and `popupAt` is unset; the banner after `dismissals.length` ≥ 1, at least `REMINDER_DAYS[n-1]` days after the last dismissal, and never once there are 3. `installPlan` → `prompt` (a saved `beforeinstallprompt`), `android` (no event), `ios` (Safari), `safari` (an iOS in-app web view, no "Safari/" token, or CriOS/FxiOS/EdgiOS/Instagram/FBAN…), `installed`. `installModel` (Settings) gained the `safari` kind with a Copy link button |
+| The record | `localStorage["shinobi-auto-battler:pref:installNudge"]` = `{ popupAt, dismissals[], installedAt }` | `popupAt`: the popup was shown (never again). `dismissals`: Not now, the banner's ✕, a declined Chrome dialog, or the steps closed from the popup/banner without installing. `installedAt`: `appinstalled` (or the standalone media query turning on); cleared again when `beforeinstallprompt` fires, since that means the browser sees no install |
+| The surfaces | `js/ui/install.js` (`setupInstall` → `game.install`), `css/style.css` "0.11.2" | **Notice**: `installNotice` on the start menu, a direct child of `.start` in the spacer row under the menu (inside the menu column it made 360×780 scroll by 14 px: the two `1fr` rows stay equal); sideways it gets its own grid area under the menu. **Popup**: `offerPopup` runs from `UIManager.go('home')` (400 ms later, once `ui.installReady`) and from `game.enterGame` after `afterSignIn`, and only when Home is up, no battle, no dialog (`ui._modals`), no `#intro`. It marks `popupAt` when shown. **Banner**: `#install-banner` in `index.html`, its own `auto` grid row between the screen and the tab bar (and a "banner" area under "main" in the side-rail layout), decided once per launch in `ui.enterGame` → `install.onLaunch`; hidden on the menu and by the battle overlay. **Steps**: `showSteps(game, ui, plan)` with inline SVG icons (Share, Add, ⋮, a phone, Safari's compass); the `safari` one has the page link in a field and Copy link (clipboard, or select the field). Settings → App: `appButton` per kind (Install app / Copy link / Show me how) |
+| The glue | `js/ui/pwa.js` | `beforeinstallprompt` → `install.onInstallable()`; `appinstalled` → `install.onInstalled()` (hide everything, toast "Installed! Open it from your home screen."); the standalone media change → `onInstalled({ toast: false })` |
+| Debug | `js/ui/DebugPanel.js` (`?debug=1`) | Pretend phone, Rewind 3 / 7 days, Relaunch check, Reset install state, and a readout of the record and of what would show now (QA.md has the localStorage recipe too) |
+| Audit | `tools/ui-audit.mjs` `auditInstall` | Forces the flags and snapshots the notice, the popup, the banner (Home, Story) and the three step dialogs; restores the record after |
+
+**Decisions**
+* **"After the tutorial's final win returns to Home" is implemented as "the first Home visit with the tutorial done"** (`state.tutorial.status === 'done'`). The final lesson's results dialog offers Summon or the Survival Test, not Home, so the popup comes on the next Home visit; a skipped tutorial counts as done too, and so do existing saves (they see it the first time they reach Home on 0.11.2). The welcome dialog only exists while the tutorial is `new`, so the two never meet; the "cloud save is newer" prompt is awaited before the popup is offered.
+* **The notice never records anything** (rule 2: it is not a reminder), and neither does Settings → App. Only the popup and the banner flows count a close as "not now".
+* **A declined Chrome dialog counts as a dismissal**, so the reminders continue on their schedule; an accepted one ends in `appinstalled`.
+* **The banner is decided at launch** (`enterGame`), not on every render: "at the next launch at least 3 days later". Rewind + Relaunch check in the debug panel re-runs that decision.
+* **The pane's mobile emulation** (width < 768) gives touch points, so it counts as a phone at 360 and 412 wide; at 780×360 it does not, hence `debugPhone` for the landscape check.
+
+**Checks:** `npm test` passes: validate, syntax on 74 files, **252 core tests** (30 new), **61/61 sim scenarios**, **10/10** campaign players; the sim and campaign output is unchanged. `auditInstall`, `auditAll` and `auditFlows` are clean at 412×915 and 360×780 (QA.md, "0.11.2"). Not verifiable in the pane: the real Chrome install dialog and `appinstalled` from it (simulated by dispatching the event), Safari's Share sheet, and an in-app browser's user agent (the detection is unit-tested against Instagram, Facebook and Chrome-for-iOS strings).
 
 ## 0.11.1: the installable app (PWA)
 

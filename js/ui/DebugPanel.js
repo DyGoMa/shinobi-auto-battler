@@ -26,6 +26,22 @@ export class DebugPanel {
       btn('Simulate 100 battles', () => this.simulate(nodeSel.value, out), 'small'),
       btn('Export balance.js', () => this.export(), 'small'),
     );
+    // The install suggestions (0.11.2): fake the device and the reminder timers without waiting days.
+    const inst = game.install;
+    const nudgeOut = h('div.tiny.muted', { style: { margin: '4px 0 8px', whiteSpace: 'pre-wrap' } });
+    const when = (t) => (t ? new Date(t).toLocaleString() : '—');
+    const showNudge = () => {
+      const n = inst.nudge, p = inst.prompts(), f = inst.flags();
+      nudgeOut.textContent = `phone ${f.phone}${inst.debugPhone ? ' (pretend)' : ''} · standalone ${f.standalone} · plan ${inst.plan()}\npopup shown ${when(n.popupAt)} · dismissals ${n.dismissals.length} (last ${when(n.dismissals[n.dismissals.length - 1])}) · installed ${n.installedAt ? 'yes' : 'no'}\nnow: notice ${p.notice} · popup ${p.popup} · banner ${p.banner}`;
+    };
+    const installTools = h('div.tools',
+      btn('Pretend phone', () => { inst.debugPhone = !inst.debugPhone; ui.toast(inst.debugPhone ? 'Install nudges: pretending this is a phone.' : 'Install nudges: real device flags.'); showNudge(); ui.refresh(); }, 'small'),
+      btn('Rewind 3 days', () => { inst.debug.rewind(3); showNudge(); ui.toast('Install timers moved back 3 days.'); }, 'small'),
+      btn('Rewind 7 days', () => { inst.debug.rewind(7); showNudge(); ui.toast('Install timers moved back 7 days.'); }, 'small'),
+      btn('Relaunch check', () => { inst.debug.relaunch(); showNudge(); ui.toast('Banner re-evaluated as at a launch.'); }, 'small'),
+      btn('Reset install state', () => { inst.debug.reset(); showNudge(); ui.refresh(); ui.toast('Install nudge state cleared: the popup is due again on Home.'); }, 'small'),
+    );
+    showNudge();
     const tree = h('div');
     this.buildTree(tree, B, 'BALANCE');
     this.panel = h('div.debug-panel',
@@ -33,6 +49,7 @@ export class DebugPanel {
       h('div.body',
         h('div.small', 'Node for jump / simulate:'), nodeSel, h('div', { style: { height: '8px' } }),
         tools, out,
+        h('div.small', 'Install nudges (0.11.2):'), installTools, nudgeOut,
         h('p.tiny.dim', 'Edits apply immediately (next battle / next calculation). They are NOT saved — use Export and paste the result into js/config/balance.js.'),
         tree));
     document.body.appendChild(this.panel);

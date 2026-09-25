@@ -7,7 +7,7 @@ A fan-made, Naruto-universe **2D lane auto-battler** for the web.
 * Part I and Part II (Shippuden) are complete: 25 arcs in anime order (99 battles, from the Survival Test to the final battle at the Valley of the End), 69 summonable ninja and alternate forms, and an achievement-exclusive Naruto.
 * A skippable **Academy tutorial**, an in-game **Wiki**, 21 **achievements**, **Hard mode**, a **Daily challenge** and an Akatsuki **Boss Rush**.
 * A **start menu** (continue as a guest, or sign in with Google before any save exists) after a short **intro**, and a **build stamp** (commit and UTC build time) on the menu and in Settings.
-* **Installable (0.11.1):** a web app manifest, icons and a minimal network-first service worker; Settings → App installs it on the home screen (standalone, no browser bars), checks for updates ("Update ready — tap to reload") and the back button moves between screens.
+* **Installable (0.11.1):** a web app manifest, icons and a minimal network-first service worker; Settings → App installs it on the home screen (standalone, no browser bars), checks for updates ("Update ready — tap to reload") and the back button moves between screens. **0.11.2** suggests it to phone players: a start-menu notice, a one-time popup after the tutorial, two spaced reminders, and one-tap install where the browser allows it (illustrated steps elsewhere).
 * **Everyday shortcuts (0.11):** ⏭ Skip for battles already won (the real battle, instantly), 1× / 2× / 5× speed, ⚡ recommended power on every battle, Level to recommended and Smart spend on the Roster, ✨ Auto team, counter hints and three team presets, Roster sorting, red dots on the tabs, and a Story map with Story · Hard · Daily · Boss Rush tabs.
 
 The game is complete except for art, music and visual effects: characters are coloured tokens with initials and emoji, and sound is a small synth. HANDOFF.md lists every placeholder for that pass.
@@ -59,7 +59,8 @@ Both sims cover every part by default; `SIM_PARTS=1 npm run sim` runs Part I onl
 ```
 index.html, css/style.css, js/main.js
 manifest.webmanifest, sw.js, icons/   the installable app (0.11.1); tools/make-icons.ps1 regenerates the icons
-js/core/Pwa.js, js/ui/pwa.js         install model, update check (pure) and the browser glue (service worker, prompt, toast)
+js/core/Pwa.js, js/ui/pwa.js         install model, update check, install-suggestion rules (pure) and the browser glue (service worker, prompt, toast)
+js/ui/install.js                    0.11.2: the start-menu notice, the install popup, the reminder banner and the per-browser install steps
 js/config/balance.js        every tunable number and curve (the only place to rebalance)
 js/config/version.js        the game version (matches package.json)
 js/content/                 roster, enemies (+ Boss Rush), arcs/part1.js, arcs/shippuden.js, tutorial,
@@ -96,5 +97,6 @@ firestore.rules, firebase.json
 * **Session 5:** the start flow: splash and intro scene, a start menu that creates the cloud session only when the player picks guest or Google (Google by popup on every device, redirect only as a fallback), a build stamp fed by the GitHub Actions Pages deploy (`.github/workflows/pages.yml`, `version.json` written at build time, never committed), and a Pixel 8a layout pass.
 * **0.11:** quality of life: a flush tab bar, the Story map's mode tabs and node states, ⏭ Skip, 5× speed, recommended power, auto-level, team presets and counter hints, Roster sorting, tab dots, and the tutorial reward once per account.
 * **0.11.1:** the installable app: manifest, icons, a network-first service worker that never pins an old build, an update toast, an Install button in Settings, and the back button.
+* **0.11.2:** the app suggested to phone players: a start-menu notice, a one-time popup after the tutorial, reminders after 3 and 7 days, one-tap install on Android Chrome/Edge and illustrated steps for every other browser (Safari's Share sheet, the Android menu, "open in Safari" with a Copy link button for in-app browsers).
 * **Next:** the art, audio and VFX pass (HANDOFF.md).
 

@@ -121,6 +121,18 @@ start" screens.
 
 Not testable in the pane: the install prompt, standalone mode itself, and the Google popup inside the installed app.
 
+## 0.11.2: suggesting the install
+
+`auditInstall` (new in `tools/ui-audit.mjs`: forces the device flags, then the start-menu notice, the popup on Home, the reminder banner on Home and the Story map, and the Android, iOS and "open in Safari" step dialogs), `auditAll` and `auditFlows` are clean at **412×915** and **360×780** (http://localhost:8091, `?debug=1`). One fix on the way: the banner's ✕ was 34 px wide (now 44).
+
+**The start menu at 360×780** with the notice: Continue as guest 243–322 px, Sign in with Google 332–395, Wiki/Settings 435–479, the notice 564–629 in the spacer row under the menu, the footer 714–768, and the screen does not scroll (a first version put the notice inside the menu column, which made the page 14 px taller than the window because the two `1fr` rows of the start grid stay equal). Sideways (780×360) the notice takes its own row under the menu column (`grid-template-areas` "brand menu" / "brand notice" / "foot foot"), no scroll.
+
+**The banner** at 412×915 sits in its own grid row between the screen and the tab bar (803–860 px, tab bar 860–915, the screen ends at 803): it never covers content. Hidden on the start menu and in a battle (the battle overlay is above it).
+
+**Installed:** `__game.pwa.standalone = true` → `prompts()` is all false and the start menu has no notice; `window.dispatchEvent(new Event('appinstalled'))` hides the banner, records `installedAt` and toasts "Installed! Open it from your home screen."; `beforeinstallprompt` clears `installedAt` (the browser says it is not installed).
+
+**Faking the reminder timers:** with `?debug=1`, the 🛠 Debug panel has an "Install nudges" row: **Pretend phone** (a desktop browser counts as a phone), **Rewind 3 days** / **Rewind 7 days** (moves the popup and dismissal timestamps back), **Relaunch check** (re-evaluates the banner as at a launch and mounts it), **Reset install state** (clears the record: the popup is due again on Home). It also prints the record and what would show now. Without the panel, the record is `localStorage["shinobi-auto-battler:pref:installNudge"]` = `{"popupAt":<ms>,"dismissals":[<ms>,…],"installedAt":0}`; set a dismissal to `Date.now() - 4*864e5` and reload. Nothing is in the cloud save.
+
 ## Check on real devices before a release
 
 The audit runs in a desktop browser. On a real phone also check:
@@ -129,6 +141,7 @@ The audit runs in a desktop browser. On a real phone also check:
 - the Android back button (it moves through the `#hash` history);
 - a 10-summon with a Kage (the biggest particle burst) on a low-end phone;
 - **0.11:** the tab bar on the Pixel 8a with 3-button and with gesture navigation (no empty strip under the tabs; Chrome's own bottom bar, "the chin", can still appear on some pages: see HANDOFF.md), an iPhone's home indicator in both orientations, 5× speed on a low-end phone, and the Story map's scroll to the current battle;
+- **0.11.2 (the install suggestions):** in Chrome on the Pixel 8a, **not installed** (uninstall the 0.11.1 app first, or use a fresh Chrome profile): the start menu shows the "Play full screen" notice and the buttons stay on screen; enter the game with the tutorial done (or finish/skip it) and the popup appears once on Home, not over the welcome or "cloud save is newer" prompts; **Not now** closes it and it never returns; **Install** on the notice/popup/Settings opens Chrome's install dialog in one tap (accepting shows "Installed! Open it from your home screen." and every suggestion disappears, cancelling toasts "Install cancelled"); with `?debug=1` → 🛠 Debug → **Rewind 3 days** → **Relaunch check**: the banner appears above the tab bar (✕ dismisses it; Rewind 7 days → Relaunch check brings the second, then never again); in Samsung Internet or Firefox the Install button shows the menu steps; on an iPhone, Safari shows the Share steps and a link opened from Instagram shows "Open in Safari" with Copy link; **inside the installed app** nothing shows: no notice, no popup, no banner, Settings → App reads "Installed as an app";
 - **0.11.1 (the installed app):** install from Chrome (Settings → App → Install app, or ⋮ → Add to Home screen), launch from the home screen: no browser bars and no strip under the tab bar with gesture navigation and with 3-button navigation; Sign in with Google inside the app (guest → link); push a build and, with the app open, switch away and back: "Update ready — tap to reload" appears and the reload shows the new stamp; the back button moves between screens, pauses a battle, closes a dialog, and leaves the app from Home;
 - **Session 5:** the intro's motion at 60 fps (the preview pane throttles animations, so the run and the slam were checked frame by frame, not live); the Android back button on the intro (skips) and on the start menu (stays); **Sign in with Google** on the start menu in Chrome for Android with its default cookie settings (0.10.1: a popup opens; signing in enters the game; closing it returns to the menu with no message; FIREBASE_SETUP.md step 9); the build stamp clear of the gesture bar in both orientations.
 

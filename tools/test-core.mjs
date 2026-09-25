@@ -11,7 +11,7 @@ import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, 
 import { BattleSim } from '../js/core/BattleSim.js';
 import { INTRO, introPlan, introSeen, setIntroSeen, menuModel } from '../js/core/StartFlow.js';
 import { FirebaseBackend, REDIRECT_FLAG, POPUP_UNAVAILABLE, POPUP_CANCELLED, EMPTY_REDIRECT_ERROR, EARLY_CANCEL_MS } from '../js/save/FirebaseBackend.js';
-import { isStandalone, isIOS, installModel, updateAvailable, shouldCheckForUpdate, UPDATE_CHECK_MIN_MS, signInFallback } from '../js/core/Pwa.js';
+import { isStandalone, isIOS, installModel, updateAvailable, shouldCheckForUpdate, UPDATE_CHECK_MIN_MS, signInFallback, isPhone, iosNeedsSafari, installPlan, installPrompts, sanitizeNudge, emptyNudge, REMINDER_DAYS, DAY_MS } from '../js/core/Pwa.js';
 import { formatBuild, loadBuildInfo, DEV_LABEL } from '../js/core/Version.js';
 import { SaveManager, tutorialRewardClaimed } from '../js/core/SaveManager.js';
 import { recommendedPower, teamPower } from '../js/core/Power.js';
@@ -704,6 +704,59 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(updateAvailable(a, b) && !updateAvailable(a, a) && !updateAvailable(dev, b) && !updateAvailable(a, dev) && !updateAvailable(null, b), 'update: a different live commit, never against "dev"');
   ok(shouldCheckForUpdate(0, 5000) && !shouldCheckForUpdate(5000, 5000 + UPDATE_CHECK_MIN_MS - 1) && shouldCheckForUpdate(5000, 5000 + UPDATE_CHECK_MIN_MS), 'update checks are at most one a minute');
   ok(signInFallback({ standalone: true, ua: pixel })?.label && !signInFallback({ standalone: false, ua: pixel }) && !signInFallback({ standalone: true, ua: iphone }), 'sign-in fallback: the browser on Android only inside the installed app, never on iOS');
+}
+
+// ---- 0.11.2: suggesting the install (js/core/Pwa.js) ----------------------------
+{
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+  const pixel = 'Mozilla/5.0 (Linux; Android 15; Pixel 8a) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36';
+  const win = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36';
+  const ipad = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15';
+  // the device
+  ok(isPhone({ ua: pixel, maxTouchPoints: 5, width: 412 }) && isPhone({ ua: iphone, maxTouchPoints: 5, width: 390 }), 'phone: touch + a mobile user agent');
+  ok(isPhone({ ua: ipad, maxTouchPoints: 5, width: 1024 }), 'phone: an iPad that says Macintosh, by its touch points');
+  ok(isPhone({ ua: win, maxTouchPoints: 10, width: 360 }), 'phone: touch + a narrow window even with a desktop user agent');
+  ok(!isPhone({ ua: win, maxTouchPoints: 0, width: 360 }), 'not a phone: a narrow desktop window with no touch');
+  ok(!isPhone({ ua: win, maxTouchPoints: 10, width: 1280 }), 'not a phone: a wide touch-screen laptop');
+  ok(!isPhone({ ua: pixel, maxTouchPoints: 0, width: 412 }), 'not a phone: a mobile user agent with no touch (a desktop emulating one)');
+  // the install plan per browser
+  ok(installPlan({ standalone: true, canPrompt: true, ua: pixel }) === 'installed', 'plan: inside the installed app, nothing');
+  ok(installPlan({ canPrompt: true, ua: pixel }) === 'prompt', 'plan: Android Chrome with beforeinstallprompt → the real dialog');
+  ok(installPlan({ canPrompt: false, ua: pixel }) === 'android', 'plan: Android without the event → the menu steps');
+  ok(installPlan({ canPrompt: false, ua: pixel.replace('Chrome/140.0', 'SamsungBrowser/26.0 Chrome/140.0') }) === 'android', 'plan: Samsung Internet → the menu steps');
+  ok(installPlan({ canPrompt: false, ua: iphone }) === 'ios', 'plan: iPhone Safari → Share steps');
+  ok(installPlan({ canPrompt: false, ua: ipad, maxTouchPoints: 5 }) === 'ios', 'plan: iPad Safari (Macintosh UA) → Share steps');
+  const inApp = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 300.0';
+  const crios = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/128.0 Mobile/15E148 Safari/604.1';
+  const fbios = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/430.0]';
+  ok(iosNeedsSafari(inApp) && iosNeedsSafari(crios) && iosNeedsSafari(fbios) && !iosNeedsSafari(iphone) && !iosNeedsSafari(pixel), 'iOS in-app browsers and Chrome for iOS need Safari; Safari and Android do not');
+  ok(installPlan({ ua: inApp }) === 'safari' && installPlan({ ua: crios }) === 'safari', 'plan: iOS in-app / non-Safari → "open in Safari"');
+  ok(installModel({ ua: inApp }).kind === 'safari' && /Copy link/.test(installModel({ ua: inApp }).button), 'Settings → App on an iOS in-app browser: Open in Safari, with a Copy link button');
+  ok(installModel({ ua: iphone }).kind === 'ios' && installModel({ ua: pixel }).kind === 'manual', 'Settings → App: Safari and Android unchanged');
+  // the record
+  ok(JSON.stringify(sanitizeNudge(null)) === JSON.stringify(emptyNudge()) && JSON.stringify(sanitizeNudge('junk')) === JSON.stringify(emptyNudge()), 'nudge record: nothing stored → empty');
+  const sane = sanitizeNudge({ popupAt: 'x', dismissals: [5, -1, 'a', 9, 10, 11, 12], installedAt: NaN });
+  ok(sane.popupAt === 0 && sane.installedAt === 0 && sane.dismissals.length === REMINDER_DAYS.length + 1 && sane.dismissals[0] === 5, 'nudge record: bad values dropped, dismissals capped');
+  // eligibility
+  const t0 = Date.parse('2026-09-24T12:00:00Z');
+  const P = (o) => installPrompts({ phone: true, standalone: false, tutorialDone: true, nudge: emptyNudge(), now: t0, ...o });
+  ok(JSON.stringify(P({ phone: false })) === JSON.stringify({ notice: false, popup: false, banner: false }), 'desktop: nothing, ever');
+  ok(JSON.stringify(P({ standalone: true })) === JSON.stringify({ notice: false, popup: false, banner: false }), 'inside the installed app: nothing');
+  ok(JSON.stringify(P({ nudge: { ...emptyNudge(), installedAt: t0 - DAY_MS } })) === JSON.stringify({ notice: false, popup: false, banner: false }), 'an install recorded (appinstalled): nothing, even in the browser');
+  ok(JSON.stringify(P({ tutorialDone: false })) === JSON.stringify({ notice: true, popup: false, banner: false }), 'phone, tutorial not done: the start notice only');
+  ok(JSON.stringify(P({})) === JSON.stringify({ notice: true, popup: true, banner: false }), 'phone, tutorial done, popup never shown: the notice and the popup');
+  // the reminder schedule after "Not now"
+  const notNow = { ...emptyNudge(), popupAt: t0, dismissals: [t0] };
+  ok(!P({ nudge: notNow }).popup && !P({ nudge: notNow, now: t0 + 1000 }).banner, 'after Not now: the popup never again, no banner the same day');
+  ok(!P({ nudge: notNow, now: t0 + 3 * DAY_MS - 1 }).banner && P({ nudge: notNow, now: t0 + 3 * DAY_MS }).banner, 'the first reminder banner: at least 3 days after Not now');
+  ok(P({ nudge: notNow, now: t0 + 30 * DAY_MS }).banner && P({ nudge: notNow, now: t0 + 30 * DAY_MS }).notice, 'a launch a month later still shows the first banner (and the notice)');
+  const t1 = t0 + 4 * DAY_MS;
+  const one = { ...notNow, dismissals: [t0, t1] };
+  ok(!P({ nudge: one, now: t1 + 7 * DAY_MS - 1 }).banner && P({ nudge: one, now: t1 + 7 * DAY_MS }).banner, 'the second banner: at least 7 days after the first was dismissed');
+  const two = { ...notNow, dismissals: [t0, t1, t1 + 8 * DAY_MS] };
+  ok(!P({ nudge: two, now: t1 + 400 * DAY_MS }).banner && P({ nudge: two, now: t1 + 400 * DAY_MS }).notice, 'after the second banner: never auto-shown again; the start notice stays');
+  ok(!P({ nudge: { ...emptyNudge(), dismissals: [t0] }, now: t0 + 10 * DAY_MS }).banner, 'no banner without the popup having been shown');
+  ok(!P({ nudge: notNow, now: t0 + 10 * DAY_MS, standalone: true }).banner, 'a due banner is dropped once the app is installed');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);
