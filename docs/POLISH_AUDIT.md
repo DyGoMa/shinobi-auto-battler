@@ -150,7 +150,7 @@ The battle is a fixed full-screen overlay: HUD row, a 16:9 stage (1280×720 logi
 | Info panel (phone portrait, `.binfo`) | Nature Wheel chips and a foe list with tokens | **P** chips/tokens |
 | Ultimate bar (`.ultbar`) | one button per ninja: 46 px avatar (34 px sideways), name, Ultimate name, HP and chakra bars, "ready" glow loop, ▲ OVERPOWER / = STANDOFF / ▼ WEAK clash badge, dead state | **P** avatars; **restyle** |
 | Coach tips (`.onboard`) | cream card with a tip and OK; pauses the battle (`tipPause`) | R copy; **restyle** |
-| Pause veil + menu | blur veil, Resume / Retreat (and Skip tutorial in a lesson) | **restyle** |
+| Pause veil + menu | blur veil inside `.stage`, card: "Paused", a tip, ▶ Resume, ❓ How Jutsu Clash works, Skip tutorial (lessons), 🏳️ Retreat / End the run / Leave the lesson | **restyle**; **defect (verified at 412×915): the stage is 16:9 of the width (232 px) and the card is 292 px, so 🏳️ Retreat is clipped below the stage on phone portrait** (the round-clear boxes use the same veil) |
 | Round-clear box (Boss Rush) | "Round N cleared", Next round ▶ (auto after the intermission), 🏳️ Take the rewards | **restyle** |
 | Results (`Results.js`, shared with Skip) | VICTORY / DEFEAT hero, node name · time (· ⏭ skipped), reward pills (📜 +N 🪙 +N, ↻ Replay), damage table with bars, "Ultimates fired · Jutsu Clashes · Effective hits" line, Map · Change team · Retry · Next fight ▶; Daily and Boss Rush variants ("ROUND N CLEARED", "Best ever") | **P** emoji; the results screen has no art and no ceremony |
 | Boss appearance | none: a boss simply spawns on the right with a bigger token and a red HP bar; no intro, no name card, no music change | missing |
@@ -162,6 +162,25 @@ Welcome box (🍥 emoji, "Welcome to the Hidden Leaf Village!", Skip / 🎓 Star
 ### 1.13 Debug panel (`?debug=1`)
 
 Developer-only (balance editor, install-nudge tools). Out of scope for the polish pass; it must keep working.
+
+### 1.14 Defects and loose ends the screen inventory found (fix while reskinning)
+
+Stacking order today, bottom to top: `.pause-veil` (z 4) and `.onboard` (z 5) inside `.stage` → `#battle` (30) → `.pull-overlay` (60) → `.flash` (70) → modal veil (80) → toasts (90) → debug (95/96) → `#intro` (100).
+
+1. **Pause menu clipped on phone portrait** (verified in the pane at 412×915): `.pause-veil` lives inside `.stage`, which is `overflow: hidden` and 16:9 of the width (232 px); the pause card is 292 px, so 🏳️ Retreat sits below the stage. The Boss Rush and Daily round-clear boxes use the same veil (420 / 380 px cards). The longest coach tips (`lesson.clash.auto`) may clip the same way. Move the veil out of the stage or let it scroll.
+2. **Toasts cover the announcer strip**: `#toast-root` starts 10 px under the top bar (y ≈ 66 at 412 wide), over the HUD and the canvas's top band, and achievement toasts fire as a fight ends.
+3. **Coach tip button is 36 px** (`.onboard .btn`), under the 44 px rule.
+4. **Boss Rush round clear auto-advances with no visible countdown** (`intermission × 1000 + 4000` ms); a run lost in round 1 reads "ROUND 0 CLEARED".
+5. **The phone info panel is built once per round** (`_buildSim`), so its enemy nature chip does not follow an element swap, although the Wiki says the battle panel shows the current nature; the canvas pip and sash do update.
+6. **Spoiler**: a "???" Roster card opens the full character dialog (name, token, stats, Wiki link).
+7. **Enemy `emoji` is never shown** (tokens and the canvas draw initials only); character emoji only appear as the small avatar badge.
+8. **Class names with no CSS rule**: `.hero-blurb`, `.daily-hero`, `.claimed-note`, `.node-detail`, `.install-popup`, `.install-steps`, `.start-browser`, `.speed-btn`, `.screen.hard-mode` (Hard mode has no look beyond the red tab and 💀). `--b1` (banner hero glow) and `--m2` (node-map gradient) are never set from JS, so every banner glows the same purple.
+9. **Moments with no motion**: nothing on the canvas for the 650–700 ms between the end of a fight and the results; currencies, level-ups, claims, tip dismissal, modal close and the pause veil all change instantly; "TUTORIAL COMPLETE" looks like "LESSON COMPLETE"; the Kage reveal has no Kage-specific copy; Skip animation still plays the flashes and particles.
+10. **Copy slips**: a stray apostrophe in the Team Builder help line ("beat these enemies', ▼ Countered"); "You don't have a Ranged yet."; "Rate-up ×N% of tier"; "Enemy jutsus" (`USE_LABEL + 's'`); the manifest says "Shinobi Auto Battler" and the UI "Shinobi Auto-Battler"; "Sasuke Retrieval Squad" is typed by hand in `BossRushScreen.js` and `ACH_HOW.rushRound` instead of read from content.
+11. **Unreachable toasts** behind disabled 🔒 buttons (Boss Rush, Story map, Team Builder).
+12. **Copy that becomes wrong once art and audio ship**: Home's "characters are shown as coloured tokens with initials", the start footer and About "No official artwork or audio" / "no official artwork is used" (keep the *no official* sense, reword), and the three "arrives with the … update" Settings rows.
+13. The Daily countdown is computed once per render; a hidden tab freezes a battle silently and resumes without the pause menu.
+14. The intro is inaudible on a first visit by construction (§6.4) and the splash has no wordmark.
 
 ## 2. The roster: every playable character (dub names), natures and jutsu
 
@@ -810,6 +829,40 @@ Filler arcs are marked; they are the ones the brief asks how to frame. Global no
 | 97 | The Sharingan Revived | 470–473 | defeatBoss | Kaguya Otsutsuki 👑 | recommended: naruto_sixpaths, sasuke_ems, sakura_hundred, kakashi_mangekyo | "Every dimension changes her nature. Keep a counter for each, and seal her." | blurb only (74 chars, mechanical); no intro/outro scene; no boss pre-fight exchange |
 | 98 | The Final Battle | 475–476 | defeatAll | Sasuke Uchiha (Rinnegan) | banned: sasuke, sasuke_cursemark, sasuke_ems; recommended: naruto_sixpaths | "At the Valley of the End, Sasuke tells Naruto what he means to do. They start with fists." | blurb only (89 chars, narrative); no intro/outro scene |
 | 99 | Naruto and Sasuke | 477–478 | defeatBoss | Sasuke Uchiha (Rinnegan) 👑 | banned: sasuke, sasuke_cursemark, sasuke_ems; recommended: naruto_sixpaths, sakura_hundred, kakashi_mangekyo | "Indra's Arrow against a Rasen Shuriken. The last fight of the story." | blurb only (68 chars, mechanical); no intro/outro scene; no boss pre-fight exchange |
+
+### 4.4 Where the text is (and is not) seen, and what scaffolding exists
+
+* **Blurbs are Story-map-only.** A node's blurb appears on the node panel and the Wiki; never at battle start, in battle, on the Team Builder (names only) or on results. A player who chains battles with **Next fight ▶** (`Results.js` → `BattleScreen` restart path) never reads a word of story.
+* **Milestones get one line or nothing:** arc clear = "🎉 Arc cleared: X! Bonus included." on results; a new ninja in the pools = "🆕 Now in the summon pools"; Part I → Part II = the Kazekage arc blurb and the Home pill changing from "Part I — The Hidden Leaf Village" to "Part II — Shippuden"; the ending = the final node's blurb "The last fight of the story." then "✓ Story complete — replay any battle"; Hard, Daily and Boss Rush unlocks = nothing at the moment itself (Home's card copy changes later). Bosses have no entrance or defeat line; defeat copy is generic; Boss Rush has no blurb field at all (its only flavour is "How far can you go?"); Hard reuses the story text unchanged.
+* **The three `battle.*` coach tips only ever show to players who skipped the tutorial** (`_battleTipsOn` requires `!state.tutorial.completed` and the `onboarding` flag, which only the Survival Test has). Tutorial graduates never see them.
+* **Tutorial canon conceits to keep or fix in the writing:** Iruka is named in lesson 2's blurb but is in no lesson; Kakashi is the Leader of Team 7 on graduation night (episode 1) in lessons 2 and 3, framed as "for this lesson".
+* **The only "Name: line" format in the game is the announcer** ("Sakura: Healing Jutsu!", `Effects.say`).
+* **Scaffolding a dialogue system can reuse:** the in-battle coach tip (`BattleScreen._showTip`): pauses the sim (`tipPause`), queues boxes, closes on its button or on the next Ultimate (`untilUlt`), takes an `onShow` callback; `state.tips.seen` (a save-backed one-time map, reset from Settings); the `onboarding: true` node flag (a per-node switch for scripted text); the data-driven `SCREEN_TIPS` / `TWIST_TEXT` template objects; `avatar()` / `enemyToken()` for speaker portraits; `announceCharacter` (a character-reveal modal). There is **no persistence for seen story beats** yet; the nearest precedents are `tips.seen` and `result.firstClear`.
+* **Constraints for scenes:** the results, tutorial, Daily and Boss Rush modals cannot be dismissed (a scene goes before them or behind a button); achievement toasts fire on every `commit`; the one-time install popup waits for Home with no modal open and becomes eligible after the tutorial, so it competes with any post-tutorial scene; the Boss Rush intermission auto-advances after intermission + 4 s (a scene must clear its timer); starting a Daily spends an attempt before `open()`.
+* **Copy nits found:** the tagline "Your ninja fight on their own…" is typed three times (start menu, welcome box, Home hero); `battle.start` hardcodes "The 1× button" even when the saved speed is 2× or 5×.
+
+### 4.5 Every hook a dialogue scene can use (with the data available there)
+
+| Moment | Owner | Data on hand |
+|---|---|---|
+| Intro / boot | `Intro.js playIntro`, `main.js` | the intro plan only |
+| First boot | `UIManager.enterGame` → `welcome()` | `state.tutorial` |
+| Tutorial entry / lesson card / lesson start / lesson end / skip | `UIManager.openTutorial`, `TutorialScreen.start`, `BattleScreen.open` (`lessonType`), `_tutorialResults`, `UIManager.skipTutorial` | lesson node (`lesson`, `learn`, `blurb`, `enemies`, `team`), index, replay, `res.finished` |
+| Arc selected / node selected on the map | `StoryMapScreen.arcCard`, `nodeDetail` | arc (id, part, blurb, theme, nodes), node + `arcId`, `part`, `globalIndex`, `indexInArc`, `isBossNode`, cleared/unlocked, enemy level, rewards, natures, resolved team, matchup |
+| Pre-battle gate | `UIManager.startBattle(opts)` (precedent: the "tutorial comes first" modal intercepts and re-calls it) | `{node, hard}` / `{node, tutorial}` / `{daily}` / `{bossRush}` |
+| Battle start | `BattleScreen.open` after `_buildSim` | `node`, `hard`, `isRush`, `daily`, arc theme, `sim.units` (player: key, short, natures, isLeader, ult; enemy: name, isBoss, jutsu, activeNature), `matchup`, `rushBoss` |
+| Mid-battle beats (boss barks) | `_tipsFromEvents`, `Effects.onEvents` / `say()` | every sim event (§5.1), boss HP via `unit.hp / maxHp` |
+| Battle end | `BattleScreen._onEnd` | won, `sim.endReason`, `completeNode` result `{scrolls, ryo, firstClear, arcCleared, unlocked, hard}`, stats |
+| Results (played and skipped) | `Results.showStoryResults`, `_dailyResults`, `_rushResults` | node, hard, won, result, stats, `skipped`, `nextOpenNode` |
+| Arc clear / next arc reached / banner opens / new ninja in pools | `Progression.completeNode` (`result.arcCleared`, `result.unlocked`), `isArcReached`, `isBannerUnlocked` | arc id, bonus, character ids |
+| Part I → Part II | the results hook on `n_kuro_3` (`node.part === 1 && next?.part === 2`), `isPartCleared` | as results; also opens Hard for Part I |
+| Story complete | the results hook on `n_kaguya_4` (`nextOpenNode` null), `ach_story` claim → `announceCharacter` | as results |
+| Hard unlock / Daily unlock / Boss Rush unlock | derived after `completeNode` (`isHardUnlocked`, `result.arcCleared === B.daily.unlockArc` / `C.bossRush.unlockArc`) | part / arc |
+| Daily start / rounds / end | `DailyScreen` → `startBattle` (spends the attempt) → `open`; `_dailyEnd`; `_dailyResults` | `{dateKey, twist, node, rounds, nature, level}`, attempts, reward |
+| Boss Rush start / round / end | `BossRushScreen` → `open`; `_intermission` (auto-advance timer); `_rushResults` | round, `bossRushRound()` `{def, spec, level, loop}`, carry, `highestRound` |
+| Summon reveal / first summon | `SummonScreen.playAnimation` (the Continue button) | banner, results `[{id, tier, isNew, refund, stars, featured}]`, `totalPulls`, pity |
+| Achievement unlock / claim | `game.commit` → `achievementsUnlocked`; `AchievementsScreen.claim` | achievement, `rewardCharacter` |
+| Any screen entry | `UIManager.go(id, params)` (the install popup already hooks Home here) | screen id, params |
 
 ## 5. Effects: every jutsu and skill that needs VFX
 
