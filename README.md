@@ -97,3 +97,4 @@ firestore.rules, firebase.json
 * **0.11:** quality of life: a flush tab bar, the Story map's mode tabs and node states, ⏭ Skip, 5× speed, recommended power, auto-level, team presets and counter hints, Roster sorting, tab dots, and the tutorial reward once per account.
 * **0.11.1:** the installable app: manifest, icons, a network-first service worker that never pins an old build, an update toast, an Install button in Settings, and the back button.
 * **Next:** the art, audio and VFX pass (HANDOFF.md).
+
