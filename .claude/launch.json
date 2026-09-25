@@ -4,20 +4,37 @@
     {
       "name": "shinobi-static",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["tools/serve.mjs"],
+      "runtimeArgs": [
+        "tools/serve.mjs"
+      ],
       "port": 8080
     },
     {
       "name": "shinobi-static-8090",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["-e", "process.env.PORT='8090'; import('./tools/serve.mjs')"],
+      "runtimeArgs": [
+        "-e",
+        "process.env.PORT='8090'; import('./tools/serve.mjs')"
+      ],
       "port": 8090
     },
     {
       "name": "shinobi-static-8091",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["-e", "process.env.PORT='8091'; import('./tools/serve.mjs')"],
+      "runtimeArgs": [
+        "-e",
+        "process.env.PORT='8091'; import('./tools/serve.mjs')"
+      ],
       "port": 8091
+    },
+    {
+      "name": "shinobi-static-8092",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.PORT='8092'; import('./tools/serve.mjs')"
+      ],
+      "port": 8092
     }
   ]
 }
