@@ -28,11 +28,13 @@ export const FORMATS = {
   tier: (v) => String(v).charAt(0).toUpperCase() + String(v).slice(1),
   // {{cycle:natureWheel.cycle}} -> Fire › Wind › Lightning › Earth › Water › Fire
   cycle: (v) => [...v, v[0]].join(' › '),
+  // {{speeds:qol.battleSpeeds}} -> 1×, 2× or 5×
+  speeds: (v) => v.map(x => `${x}×`).join(', ').replace(/, ([^,]*)$/, ' or $1'),
   // {{arc:daily.unlockArc}} -> Land of Waves (the arc id in config, shown by name; needs sources.arcNames)
   arc: (v, sources) => sources.arcNames?.[v],
 };
 FORMATS.cfg = FORMATS.num;
-const ARRAY_FORMATS = ['cycle'];
+const ARRAY_FORMATS = ['cycle', 'speeds'];
 
 const PLACEHOLDER = /\{\{\s*([a-z]+)\s*:\s*([\w.]+)\s*\}\}/g;
 

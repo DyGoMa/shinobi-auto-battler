@@ -10,10 +10,10 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 
 ## The screens
 
-- **Home**: continue the story, check your progress, and jump into challenges like the Boss Rush.
-- **Story**: every arc of Part I and Part II in anime order. Tap a battle to see its enemies, their natures and its rewards.
-- **Team**: pick three members and a ★ Leader for the next battle. See [Team composition](wiki:guide/team-composition).
-- **Roster**: every ninja in the game. Spend Ryo here to level them up.
+- **Home**: **▶ Continue** always opens the next story battle. Check your progress, and jump into challenges like the Boss Rush.
+- **Story**: tabs at the top switch between **Story**, **💀 Hard**, **📅 Daily** and **☁️ Boss Rush**. The story map has every arc of Part I and Part II in anime order; arcs you've cleared fold into one line (tap it to see them). On the map, the glowing battle is next, ✓ means cleared, and 🔒 battles say which battle opens them. **⚡** is the recommended team power. Tap a battle to see its enemies, their natures and its rewards.
+- **Team**: pick three members and a ★ Leader for the next battle, or tap **✨ Auto**. Save teams in the **Story**, **Boss** and **Daily** presets. See [Team composition](wiki:guide/team-composition).
+- **Roster**: every ninja in the game, with sorting and filters. Spend Ryo here to level them up, by hand or with **⬆ Level to recommended** and **💰 Smart spend**. See [Levelling and economy](wiki:guide/levelling).
 - **Summon**: spend scrolls to recruit ninja. See [Summoning and pity](wiki:guide/summoning).
 - **Wiki**: this reference. Every screen has a **?** button that opens its page here.
 - **Settings**: sound, battle options, tips and your cloud save.
@@ -25,7 +25,19 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 2. Your ninja walk into the lane and fight automatically. Tanks and Strikers close in; Ranged and Support ninja attack from behind.
 3. **Chakra** fills as they fight. When a portrait at the bottom glows, that ninja's **Ultimate** is ready: tap it, or press 1–4 on a keyboard.
 4. When an enemy shows a **⚠ wind-up bar**, fire an Ultimate into it to start a **Jutsu Clash**. The badge on each ready portrait predicts the result. See [Jutsu Clash explained](wiki:guide/jutsu-clash).
-5. The buttons at the top pause the battle, change its speed and switch **🤖 Auto-ult** on or off.
+5. The buttons at the top pause the battle, switch **🤖 Auto-ult** on or off, and change the speed ({{speeds:qol.battleSpeeds}}). The game remembers the speed you picked for your next battle.
+
+## Skipping a battle
+
+Once you've won a battle, its panel on the Story map (and on Hard) shows **⏭ Skip**. Skip plays the real battle instantly, with your current team and the clash-aware 🤖 Auto-ult, and shows the result straight away. It pays exactly what the battle pays, and it can be lost. The Daily challenge can't be skipped.
+
+## After a battle
+
+The results show what you earned and who dealt the damage, with **🗺️ Map**, **👥 Change team**, **↻ Retry** and **Next fight ▶**.
+
+## Red dots
+
+A red dot on a tab means something is waiting: on **Home**, an achievement reward to claim, today's Daily challenge, or a Boss Rush you haven't tried; on **Summon**, a free summon ticket.
 
 ## Objectives
 
@@ -44,6 +56,7 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 ## When you're stuck
 
 - Check the enemy natures and bring counters. See [the Nature Wheel guide](wiki:guide/nature-wheel).
+- Compare your team's power with the battle's **⚡ recommended power**, and tap **⬆ Level to recommended** to close the gap: it shows the cost first and stops once you're there.
 - Level up on the Roster. Ninja {{num:economy.catchUp.gap}} or more levels behind your best one level up {{pct:economy.catchUp.discount}} cheaper.
 - Save an Ultimate for the boss's ⚠ special instead of firing it the moment it's ready.
 - Replay an earlier battle for Ryo.

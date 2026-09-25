@@ -9,6 +9,13 @@ Two currencies run the game: **📜 scrolls** summon ninja, and **🪙 Ryo** lev
 - Every level adds {{pct:stats.levelMult.growth}} of a ninja's starting stats.
 - **Catch-up discount:** a ninja {{num:economy.catchUp.gap}} or more levels behind your highest-level ninja levels up {{pct:economy.catchUp.discount}} cheaper, so bringing a nature counter off the bench is cheap.
 
+## Levelling shortcuts
+
+Two buttons at the top of the Roster do the levelling for you. Both show exactly what they'll buy and what it costs before spending anything, and they pay the same prices as +1 (catch-up discount included).
+
+- **⬆ Level to recommended** levels the team for the next story battle (or the battle you opened it from on the Story map) until it reaches that battle's recommended power, then stops. If you can't afford the whole way, it tells you what's missing and buys what you can.
+- **💰 Smart spend** spends your Ryo where each Ryo adds the most team power, but never below your **reserve**. The reserve starts at {{num:qol.ryoReserve}} Ryo, enough to bring a benched counter up a few levels; change it in the Smart spend window or in Settings.
+
 ## Earning scrolls and Ryo
 
 | Source | Pays |
@@ -27,5 +34,5 @@ Rewards grow as the story goes on, so later battles pay more.
 
 - Level your **main team** first, then one or two counters for the natures that give you trouble.
 - Don't spread Ryo across everyone you own: four strong ninja beat eight weak ones.
-- Stuck on a boss? Replay the previous battle a few times for Ryo, then level up.
+- Stuck on a boss? Replay the previous battle a few times for Ryo (or **⏭ Skip** it), then level up to the recommended power.
 - Save scrolls for 10× summons when you can: each one guarantees a {{tier:gacha.tenPullGuaranteeTier}} or better.

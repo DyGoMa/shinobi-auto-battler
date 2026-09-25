@@ -36,8 +36,13 @@ Forced ninja always play and take their slots first.
 ## Picking a team for a battle
 
 1. Open the battle on the Story map and read the **enemy natures**.
-2. On the Team screen, the **matchup stars** rate your team against those natures. ▲ marks ninja who counter them, ▼ marks ninja they counter.
-3. **✨ Auto** picks a team by power and nature matchup. It's a good start: then swap in your favourites.
+2. On the Team screen, the **matchup stars** rate your team against those natures, and every ninja (in your slots and in the list) says whether they **▲ Counter** the enemies (their nature beats the enemies' natures), are **▼ Countered** (the enemies' natures beat theirs) or are **• Neutral**.
+3. **✨ Auto** (on the Team screen, or **✨ Auto team** on a battle's panel) picks the best team you own for that battle by power and nature counters. It's instant: it weighs your ninja rather than playing battles. It's a good start: then swap in your favourites.
+4. Check **Team power** against the battle's **Recommended** power. The recommended power is what the boss battles are tuned for: a team at it wins a boss more often than not, and ordinary battles are easier.
+
+## Presets
+
+Three presets hold a whole team each: **🗺️ Story**, **👑 Boss** and **📅 Daily**. Tap an empty preset to save your current team there; tap a saved one to swap to that team in one step, and **💾** to save over it. Presets are part of your save, so they follow you to other devices.
 
 ## Sample teams for common bosses
 

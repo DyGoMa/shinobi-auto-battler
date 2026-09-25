@@ -2,6 +2,20 @@
 
 ## Version {{cfg:version.current}}
 
+- **A tidier phone layout.** The tab bar sits right on the bottom edge (no empty strip under it), all seven tabs keep their labels, and screens scroll clear of it. Once you've done the tutorial, the Home card drops its intro text so **▶ Continue** comes first.
+- **A clearer Story map.** Tabs for **Story**, **💀 Hard**, **📅 Daily** and **☁️ Boss Rush**. The next battle glows, locked battles say which battle opens them, cleared ones have a ✓, and arcs you've cleared fold into one line. The map scrolls to where you are, and every battle shows its **⚡ recommended team power**.
+- **⏭ Skip** any story or Hard battle you've already won: the real battle, played instantly with 🤖 Auto-ult, for the same rewards (and yes, it can be lost). Not for the Daily challenge.
+- **5× battle speed**, and the game remembers the speed you last picked.
+- **Levelling shortcuts** on the Roster: **⬆ Level to recommended** stops once the team reaches the next battle's recommended power, and **💰 Smart spend** puts Ryo where it adds the most power while keeping a reserve ({{num:qol.ryoReserve}} Ryo to start, yours to change). Both show the cost first; prices are unchanged.
+- **Team tools:** every ninja says whether they **Counter**, are **Countered** or are **Neutral** against the fight, **✨ Auto team** is on each battle's panel, and three **presets** (Story, Boss, Daily) swap teams in one tap.
+- **Roster sorting** by rarity, power, level or nature, and a nature filter. Your choice is remembered.
+- **Results** now offer **Next fight**, **Retry** and **Change team**.
+- **Red dots** on the tabs when an achievement reward, today's Daily challenge or a free summon is waiting.
+- **Skip animation** for summons, on the banner and in Settings.
+- **The tutorial reward is paid once per account.** Replaying the tutorial, or starting over with Reset save, says "Rewards already claimed" instead of paying again.
+
+## Version 0.10.1
+
 - **Signing in with Google on a phone works again.** Sign in with Google now opens a Google window on every device instead of leaving the page, so a phone that blocks third-party cookies no longer comes back signed out. Closing the window just takes you back to the menu. If a sign-in ever can't finish, the menu now says so and offers **Try again**.
 
 ## Version 0.10.0

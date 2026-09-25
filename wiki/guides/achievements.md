@@ -9,6 +9,8 @@ Achievements are goals across the whole game. They **unlock by themselves** as y
 - **🎫 Rare+ summon tickets:** a summon that is guaranteed to be {{tier:achievements.rareTicketMinTier}} or better. The big milestones give these.
 - **🌟 An exclusive ninja:** completing Part I and Part II earns [Naruto Uzumaki (Nine-Tails Chakra Mode)](wiki:character/naruto_chakramode). This form never appears in any banner, and it joins at the level of your best-levelled Naruto.
 
+When a reward is waiting, 🏆 and the Home tab show a red dot. **🎁 Claim all** takes every waiting reward at once.
+
 Use tickets on the **Summon** screen: the ticket buttons appear under the normal summon buttons. Ticket summons count toward the Kage guarantee like any other summon.
 
 ## The four kinds

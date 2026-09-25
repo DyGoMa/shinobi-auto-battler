@@ -1,6 +1,29 @@
-# HANDOFF.md — Session 5 → the art, audio and VFX pass
+# HANDOFF.md — 0.11.0 → the art, audio and VFX pass
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
+
+## 0.11.0: quality of life
+
+A convenience release: nothing here changes a cost, a reward, an XP curve or a battle. `npm run sim` and `npm run campaign` print exactly the numbers they printed before (diffed line by line against the 0.10.1 run). DESIGN.md §14 has the rules.
+
+| Step | Commit | What it added |
+|---|---|---|
+| 1. Layout | `b515767` | The bottom tab bar is the tabs (54 px) plus `env(safe-area-inset-bottom)` once, as its padding, in an `auto` grid row (it was a 64 px row with the tabs centred in it). Labels have their own class (the red dot used to take the ellipsis rule) and scale with the width; none clips at 360 px. The screen keeps 28 px of bottom padding. Home drops its intro blurb once the tutorial is done |
+| 2. Core | `f7f976d` | `Power.js` (recommended power from the on-curve team config), `AutoLevel.js` (Level to recommended, Smart spend with a reserve), `Skip.js` (the real BattleSim, headless, clash-aware), `Badges.js`, `Teams.js` (presets, counter hints, Roster sort), save v3 with `account.tutorialRewarded`; 56 core tests |
+| 3. Screens | `d93d932` | Story map mode tabs (Story · Hard · Daily · Boss Rush), folded cleared arcs, node states and "Clear <battle> first", ⚡ recommended power, auto-scroll, pre-fight power check, ✨ Auto team and ⏭ Skip; shared results (Map · Change team · Retry · Next fight); 1× / 2× / 5×; Roster sort, filters and auto-level dialogs; Team presets and counter pills; Summon "Skip animation"; Settings shortcuts; tab dots; "Rewards already claimed" |
+| 4. Docs | this commit | Wiki guides (how to play, team composition, levelling, summoning, endgame, achievements) and What's new 0.11.0, DESIGN §14, QA, README, this file; version 0.11.0 |
+
+**Decisions**
+* **The 10-pull stays at 900 scrolls with a Jonin+ guarantee.** The brief asked for exactly 10× the single cost with a Rare+ guarantee; the existing 10-pull is better for the player on both counts, and changing it would move the campaign's economy. Confirmed with the user in-session. It counts 10 toward Kage pity (now tested).
+* **Smart spend reserve default: 500 Ryo** (`balance.qol.ryoReserve` = the starting Ryo), editable per save.
+* **Recommended power** is the on-curve team's power (the team every boss is tuned against), so it means "a boss at this power is a fair fight". Early on it sits above the starter team (the Survival Test shows ⚡1.2k against the starters' ~840, because the on-curve team is a Jonin, two Chunin and a starred Genin); that is intended, since the Survival Test is tuned for the starters with no Ultimates.
+* **Skip always uses the clash-aware bot** (`SKIP_BOT = 'smart'`, the sims' `DEFAULT_BOT`), whatever the player's Auto-ult mode, so a skip is the same fight the sims measure.
+* **The Summon tab's dot now means a free summon** (a ticket). It used to show whenever a single summon was affordable, which is almost always mid-game.
+* **Claim all** already existed on the Achievements screen (0.9); it was kept and documented.
+
+**Checks:** `npm test` passes: validate (509 Wiki pages, every placeholder resolves), syntax on 70 files, **208 core tests**, **61/61 sim scenarios**, **10/10** campaign players. The layout audit is clean at 412×915, 360×780, 915×412 and 1280×800 (QA.md, "0.11").
+
+**The tab bar strip on Android.** Before 0.11 the bar was a 64 px row with ~35 px of tabs centred in it, plus the safe-area inset; the dead space under the labels is gone. Chrome for Android 135+ can also draw its own bottom bar ("the chin") over the navigation area, and it only slides away when the page itself scrolls; this game scrolls inside the screen, not the page. If a strip is still there on the Pixel 8a, it is the chin, and the next step would be to let the document scroll (a bigger change to the app shell). The browser pane reports a 0 px inset, so the inset was checked by simulation (QA.md).
 
 Session 5 added the start flow (below). The game is finished in every way except art, audio and visual effects. Everything a
 player sees is drawn in code (canvas shapes, CSS, emoji) and every sound is a tiny Web
@@ -50,6 +73,8 @@ popup closed                                    { cancelled: true } → the menu
 Settings keeps its Account card (sign in / use as a guest / link / sign out) with the same backend calls; sign-out no longer stores a preference (the menu simply offers guest or Google again).
 
 ## After Session 5: Google sign-in is popup first (0.10.1)
+
+**Verified on real devices by the user (2026-09-24):** in a private and a regular browser window, on a PC and on the Pixel 8a, guest → Sign in with Google (link) → the "cloud save is newer" prompt all worked.
 
 **Bug (live `6130d94`, a real Pixel 8a, Chrome for Android with third-party cookies blocked, Chrome's default):** "Sign in with Google" on the start menu went to the Firebase `authDomain` and back, and the menu reloaded as "Continue · Guest save" with no message. 0.10.0 chose the redirect flow on phones by user agent; the redirect result lives in the `authDomain`'s storage, which Chrome blocks as third-party, so `getRedirectResult()` came back with no user, and `_finishRedirect` only reported a result when a user came back.
 
@@ -225,9 +250,16 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 3. **Nagato's Earth**, **Boss Rush Pain's five natures**, **Part II dub titles from Wikipedia's season lists**, **non-boss nodes are easy at level**: carried over from Session 3 (see the Session 3b handoff in git history, `025bf7f`).
 
 **Platform**
-4. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md). **Session 5 adds:** the intro at full speed (the preview pane throttles animations, so it was checked frame by frame), the back button on the intro (skips) and on the menu (stays), the build stamp clear of the gesture bar, and **Google sign-in end to end on the Pixel 8a with 0.10.1** (the popup opens, signs in, returns to the game; closing it returns to the menu quietly; as a guest, linking keeps the save or offers the newer cloud save). No Google account was used in-session, so none of this was completed here.
+4. **Real-device checks** before a release: notch/home-bar safe areas on iPhone in both orientations, iOS Safari's collapsing address bar, the Android back button, a Kage 10-summon on a low-end phone (QA.md). **Session 5 adds:** the intro at full speed (the preview pane throttles animations, so it was checked frame by frame), the back button on the intro (skips) and on the menu (stays), and the build stamp clear of the gesture bar. ~~Google sign-in end to end on the Pixel 8a with 0.10.1~~: **done**, verified by the user on a PC and the Pixel 8a (private and regular windows: guest → Google link → cloud-save prompt).
 5. **The redirect fallback can't be made reliable on GitHub Pages.** It only runs when a popup can't open (blocked pop-ups, some in-app browsers), and then needs the `authDomain`'s storage as third-party storage, which Chrome blocks by default. The game now reports that case instead of looping silently. **The only full fix is a custom domain** with Firebase's auth helper (`/__/auth/`) served from the game's own origin; Pages can't proxy it (FIREBASE_SETUP.md §9).
 6. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
+
+**0.11 (new)**
+7. **The tab bar on real phones:** check the Pixel 8a with 3-button and with gesture navigation, and an iPhone's home indicator in both orientations. If a strip remains under the tabs on Android, it is Chrome's chin (see "The tab bar strip on Android" above).
+8. **5× speed on a low-end phone:** the sim runs up to ~8 fixed ticks per frame at 5×; fine on a desktop and the Pixel 8a class, unmeasured on slow phones.
+9. **Presets don't check a battle's rules:** a preset can hold a ninja a battle benches or two ninja the battle forces anyway; the battle's own rules still apply when it starts (as with any team).
+10. **Recommended power for Hard** assumes the Hard on-curve team (everyone unlocked by the end of the part, starred up), so it reads high for a player who only just opened Hard. That is what the Hard bosses are tuned for.
+11. **Skip after a loss** keeps the node cleared (a win once is enough); a skipped loss costs nothing but time, like a normal loss.
 
 ## Live check (0.10.1, popup first)
 

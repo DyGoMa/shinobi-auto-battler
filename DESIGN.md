@@ -20,7 +20,7 @@ there. Names follow the English dub (see NAMING.md).
 6. **Boss Rush**: after clearing the Sasuke Retrieval Squad arc, fight the Akatsuki back to back with no healing between rounds.
 7. **Endgame**: Hard mode for each cleared part and a Daily challenge (§12), with achievements across everything (§11).
 
-Target session: a 30–60 s battle, a reward screen, then a decision (next node, summon, level up or re-team).
+Target session: a 30–60 s battle, a reward screen, then a decision (next node, summon, level up or re-team). Since 0.11 the everyday loop has shortcuts for the chores (§14): ⏭ Skip for battles already won, 5× speed, levelling to a fight's recommended power, team presets and red dots on the tabs.
 
 ---
 
@@ -170,7 +170,8 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
   * Standard (always open).
   * One arc banner per story arc. It opens when you reach the arc and gives its featured ninja 50% of their tier's rate.
   * Featured villains show "joins after …" until their arc is cleared.
-* **Animation:** a scroll unrolls, then a flash in the rarity colour. Kage pulls get a bigger flash, particle burst and glow. Tap to skip.
+* **Animation:** a scroll unrolls, then a flash in the rarity colour. Kage pulls get a bigger flash, particle burst and glow. Tap to skip, or switch on **Skip animation** (on the banner and in Settings, `settings.skipPullAnim`) to show the cards at once.
+* **The 10-pull stays at 900 scrolls with a Jonin+ guarantee** (0.11 decision). The 0.11 brief asked for exactly 10× the single cost with a Rare+ guarantee; the existing 10-pull already beats that for the player (cheaper, a stronger guarantee) and changing it would move the campaign economy, so it was kept. It counts 10 toward Kage pity (tested).
 * **Tiers reflect canon power**, not just rank. The Sannin and the Third Hokage are Kage; Sakura, Ino and the other rookie genin are Genin.
   * To keep every tier viable, rarity multipliers are small (1.0 / 1.12 / 1.25 / 1.4), so a 5★ Genin (×1.4) matches a 1★ Kage.
   * Late-game power growth comes from **alternate forms**: two Part I forms, plus seven Part II forms (Sage Mode and Six Paths Sage Mode Naruto, Eternal Mangekyo Sharingan Sasuke, Hundred Healings Sakura, Mangekyo Sharingan Kakashi, Eight Inner Gates Guy, Fifth Kazekage Gaara).
@@ -240,6 +241,7 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
   3. "Multi Shadow Clone Jutsu": Ultimates, Jutsu Clash and 🤖 Auto-ult. The team starts with full chakra and the foe winds up a jutsu to clash into.
 * Lessons sit outside the story: no node index, never in the sims, autotune or economy curves, and not counted in the campaign sim's difficulty stats (its "new player" run does play them).
 * **Skip tutorial** is on the welcome box, on every tutorial screen and in the pause menu during a lesson, and pays the same 300 scrolls and 450 Ryo as finishing. Existing saves that had cleared the Prologue skip it automatically and get the reward. Anyone can replay it from Settings or the Wiki (no reward).
+* **Once per account (0.11):** the payout sets `account.tutorialRewarded` in the save, which is the account's cloud save (per Firebase uid, guest or Google). **Reset save** and **Import** carry the flag into the new save, so starting over and playing or skipping the tutorial again pays nothing; the welcome box, the tutorial screen, the results and the skip toast say "Rewards already claimed". Save v3's migration sets the flag on every save with the tutorial done (finished, skipped or auto-skipped). Loading a *different* account's cloud save keeps that account's own flag.
 * **Screen tips:** a one-time, dismissable card on the first visit to the Story map, Summon, Team, Character, Settings, Wiki, Achievements, Hard mode and the Daily challenge (seen tips are in the save). Settings → "Show tips again" brings them back.
 
 ## 10. The Wiki
@@ -283,14 +285,46 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
 
 ## 13. Settings and saves
 
-* **Battle:** battle speed (1× / 2×), start battles with Auto-ult on, and the Auto-ult mode (clash-aware or fire when ready).
+* **Battle:** battle speed (1× / 2× / 5×, `qol.battleSpeeds`; the in-battle button changes the same saved setting), start battles with Auto-ult on, and the Auto-ult mode (clash-aware or fire when ready).
+* **Shortcuts (0.11):** skip the summon animation, and the Smart spend reserve.
 * **Help:** show tips again, replay the tutorial.
 * **Audio and visuals:** sound on/off. Music, a separate effects switch and effect detail are disabled placeholders until the audio and VFX pass.
 * **Account and cloud save:** link or sign in with Google, use cloud save as a guest, sign out, sync now, and the save's status (connecting, couldn't connect with Try again, last synced, last upload failed). The game never waits for the cloud: it plays from the local save and reconnects when the browser comes back online.
 * **Your save:** export and import as a text code, and reset (you type RESET to confirm).
 * **About:** the version number (`js/config/version.js`) and a link to the Wiki's "What's new".
 
-## 14. Notes for later sessions
+## 14. Conveniences (0.11)
+
+Shortcuts for the everyday loop. None changes a cost, a reward, an XP curve or a battle: they only choose what the player would otherwise tap. `npm run sim` and `npm run campaign` print the same numbers as before 0.11.
+
+**Recommended power** (`js/core/Power.js`): shown as ⚡ on every map node, in the pre-fight panel, the Team Builder and the Roster. It is the power of the **on-curve team** the boss sims are tuned for (`targets.onCurve`; on Hard `targets.hardMode.onCurve`): its tier mix at the fight's enemy level (+ `levelOffset`) and stars, each slot worth the median pullable ninja of that tier. So a team at the recommended power wins an arc boss about as often as `targets.bossWinRange` says, and ordinary battles are easier. Nothing is typed by hand; it moves with the config. Team power is the same `powerRating` sum over the four fighters (forced loaners at the battle's level).
+
+**Auto-level** (`js/core/AutoLevel.js`, the Roster card and dialogs):
+* **⬆ Level to recommended**: levels the team for the selected fight (default: the next story battle) until it reaches the recommended power, then stops. Greedy: each step buys the +1 with the most team power per Ryo. The dialog shows the levels and the exact cost first; short of Ryo it buys what it can and shows the full cost.
+* **💰 Smart spend**: the same greedy choice with no target, spending everything above the **reserve** (`settings.ryoReserve`, editable in the dialog and in Settings). **Default: `qol.ryoReserve` = 500 Ryo**, the starting Ryo: enough to bring a benched nature counter up a few levels early on (with the catch-up discount), small enough that a new player's first Smart spend still does something.
+* Both plan on a copy of the save and then replay the same `Progression.levelUp` calls in order, so they cost exactly what +1 costs, catch-up discount included.
+
+**⏭ Skip** (`js/core/Skip.js`): on a story battle won at least once, or a Hard battle won at least once on Hard. It builds the battle with `nodeBattleConfig` (the same team, enemies and seed-driven BattleSim as ⚔️ Fight!), runs it headless with the clash-aware bot (`botUlts('smart')`, the sims' `DEFAULT_BOT`) and records it with `completeNode` and `recordBattle`. It can be lost, pays exactly what the battle pays, and counts for achievements. Never on the Daily challenge, tutorial lessons or the Boss Rush.
+
+**Battle speed:** 1× / 2× / 5× (`qol.battleSpeeds`). The last pick is saved (`settings.speed`) and syncs. The sim runs at a fixed tick, so a faster speed only runs more ticks per frame.
+
+**Team tools** (`js/core/Teams.js`):
+* **✨ Auto / ✨ Auto team** (Team Builder, the pre-fight panel): `TeamPicker.autoPickTeam`, a lineup heuristic over power, Nature Wheel matchup and lane reach, with no battles simulated (a full roster takes a few ms).
+* **Counter hints:** every ninja in the Team Builder (slots and list) shows ▲ Counters / ▼ Countered / • Neutral against the fight's enemy natures, from `characterMatchup` and `qol.counterThreshold` (the same wheel as the matchup stars). Taijutsu specialists are never countered.
+* **Presets:** three (Story, Boss, Daily) in `state.teamPresets`; tap to swap, 💾 to overwrite; sanitized on load (owned ninja, one form each).
+* **Roster sort and filters:** rarity, power, level or nature; show, role, rarity and nature filters; saved in `settings.rosterView`.
+
+**Story map:** mode tabs Story · 💀 Hard · 📅 Daily · ☁️ Boss Rush (locked tabs say what opens them); cleared arcs fold into one line; the next battle glows, locked battles are grey with a lock and "Clear <battle> first", cleared ones get ✓; the map scrolls to the current (or chosen) battle. Home's ▶ Continue always opens the next story battle.
+
+**Results** (`js/ui/Results.js`, battles and Skip): 🗺️ Map · 👥 Change team · ↻ Retry · Next fight ▶ (when the next battle is open).
+
+**Red dots** (`js/core/Badges.js`): Home = an achievement reward to claim, today's Daily challenge open with attempts left, or a Boss Rush never tried; Summon = a free summon (a summon ticket or a Rare+ ticket). Achievements' **🎁 Claim all** (since 0.9) claims everything at once.
+
+**Layout:** the bottom tab bar is the tabs (`--tabbar-h`, 54 px) plus `env(safe-area-inset-bottom)` once, as its bottom padding, in an `auto` grid row, so it sits on the bottom edge; the screen scrolls in the row above it with 28 px of bottom padding. Home drops its intro blurb once the tutorial is done.
+
+**Save v3** (`SaveManager`): `settings.speed` (1/2/5), `settings.skipPullAnim`, `settings.ryoReserve`, `settings.rosterView`, `teamPresets`, `account.tutorialRewarded`. Every value is sanitized on load.
+
+## 15. Notes for later sessions
 
 * Shippuden content is **data only** (`arcs/shippuden.js`, roster, enemies, banners); no engine code changed for it. See CONTENT_GUIDE.md.
 * **The enemy level curve continues by global node index.** Part II ends at node 99 (level 94); the level cap is 100, reached around node 105.

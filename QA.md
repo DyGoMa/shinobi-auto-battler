@@ -97,6 +97,14 @@ start" screens.
 
 `auditScreen` runs on the start menu too (the menu is up while `window.__game.ui.startPending` is true; `ui.refresh()` after changing `__game.cloud.phase / ready / user` shows the other states without touching Firebase). Checked at 412×915 and 915×412: the guest, Google, no-session, connecting, error and cloud-off menus, Settings and the Wiki opened from the menu (tab bar hidden, "‹ Menu" back button), the intro overlay (Skip is 54×44 in the safe corner, five runners along the ground line, the title inside the frame). Screenshots in the desktop preview pane time out often at these sizes; the geometry was read from the DOM instead. Nothing on the existing screens needed a fix at 412×915 or 915×412.
 
+## 0.11: shortcuts and the tab bar
+
+`auditAll` and `auditFlows` (which now include the Story map's mode tabs, the pre-fight panel, the Roster's auto-level card and sort chips, the Team Builder's presets and counter pills, the Summon skip toggle, Settings' shortcuts and the shared results dialog) are clean at **412×915**, **360×780**, **915×412** and **1280×800**. A 20×20 test button was caught by the target check, to prove the audit still bites.
+
+**The tab bar** (412×915, Android user agent): 55 px tall (54 px of tabs and the 1 px border) and flush with the bottom edge; none of the seven labels is clipped at 412 or 360 px. The desktop preview reports a 0 px safe area, so the inset was simulated by setting `--safe-b`: with 48 px (3-button navigation) the bar is 103 px and the tabs end exactly 48 px above the edge; with 34 px (iPhone home indicator) 89 px and 34 px. The inset is added once. The screen ends where the bar starts, and Home's last row ends 31 px above the bar when scrolled to the bottom.
+
+**Live check:** see HANDOFF.md ("Live check (0.11.0)").
+
 ## Check on real devices before a release
 
 The audit runs in a desktop browser. On a real phone also check:
@@ -104,6 +112,7 @@ The audit runs in a desktop browser. On a real phone also check:
 - iOS Safari's collapsing address bar on long screens (Wiki, Settings);
 - the Android back button (it moves through the `#hash` history);
 - a 10-summon with a Kage (the biggest particle burst) on a low-end phone;
+- **0.11:** the tab bar on the Pixel 8a with 3-button and with gesture navigation (no empty strip under the tabs; Chrome's own bottom bar, "the chin", can still appear on some pages: see HANDOFF.md), an iPhone's home indicator in both orientations, 5× speed on a low-end phone, and the Story map's scroll to the current battle;
 - **Session 5:** the intro's motion at 60 fps (the preview pane throttles animations, so the run and the slam were checked frame by frame, not live); the Android back button on the intro (skips) and on the start menu (stays); **Sign in with Google** on the start menu in Chrome for Android with its default cookie settings (0.10.1: a popup opens; signing in enters the game; closing it returns to the menu with no message; FIREBASE_SETUP.md step 9); the build stamp clear of the gesture bar in both orientations.
 
 ## For the art, audio and VFX pass

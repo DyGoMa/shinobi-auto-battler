@@ -1,12 +1,12 @@
 # Hard mode and Daily challenge
 
-Finished a part of the story? There's more to do: **Hard mode**, a new **Daily challenge** every day, and the Akatsuki **Boss Rush**. You'll find all three in the Challenges section of the Home screen.
+Finished a part of the story? There's more to do: **Hard mode**, a new **Daily challenge** every day, and the Akatsuki **Boss Rush**. You'll find all three in the Challenges section of the Home screen, and as tabs at the top of the Story map.
 
 ## Hard mode
 
-- Hard mode opens for each part as soon as you clear every battle of that part. On the Story map, switch from **Story** to **💀 Hard**.
+- Hard mode opens for each part as soon as you clear every battle of that part. On the Story map, switch from the **Story** tab to **💀 Hard**.
 - It's the same battles, with enemies {{num:hardMode.levelOffset}} levels higher (never above the level cap) and bosses that have {{x:hardMode.bossMult}} their HP and ATK.
-- Hard battles unlock one after another, just like the story.
+- Hard battles unlock one after another, just like the story. Each shows its own **⚡ recommended power** (for a team that finished the part and starred up), and once you've won a Hard battle you can **⏭ Skip** it.
 - Rewards: your first clear of a Hard battle pays {{pct:hardMode.rewards.firstClear.scrolls}} of the scrolls its story first clear paid, plus a little Ryo. After that, every Hard replay pays {{x:hardMode.rewards.replay.scrolls}} the scrolls and {{x:hardMode.rewards.replay.ryo}} the Ryo of a story replay. Clearing a whole arc on Hard pays a bonus too.
 - Hard mode expects a player who finished the part: bring your best ninja, your stars, and a counter for each boss.
 
@@ -23,6 +23,7 @@ The Daily challenge opens once you clear {{arc:daily.unlockArc}}.
   - **Countered:** every enemy takes the nature that beats your team's main nature.
 - You get {{num:daily.attemptsPerDay}} attempts a day. Your first clear pays {{num:daily.rewards.scrolls}} scrolls, plus Ryo that grows as you go further in the story.
 - A new challenge arrives at midnight, your local time. Everyone at the same point of the story gets the same challenge on the same day.
+- The Daily challenge can't be skipped: every attempt is a real fight. While today's challenge is waiting, the Home tab shows a red dot.
 
 > Tap **👥 Edit team** on the Daily screen to build for today's fight: the nature matchups and **✨ Auto** then use the day's enemies, locked nature included. On a **Countered** day the enemies' nature follows your team, so bring your strongest ninja instead.
 

@@ -5,7 +5,8 @@ Scrolls recruit new ninja on the **Summon** screen. You start with {{num:economy
 ## Costs
 
 - One summon costs {{num:economy.pullCost.single}} scrolls.
-- A 10× summon costs {{num:economy.pullCost.ten}} scrolls and always includes at least one {{tier:gacha.tenPullGuaranteeTier}} or better.
+- A 10× summon costs {{num:economy.pullCost.ten}} scrolls, less than ten single summons, and always includes at least one {{tier:gacha.tenPullGuaranteeTier}} or better. It counts as ten summons toward the Kage guarantee.
+- **Skip animation** (on the banner, or in Settings) shows the cards at once, without the scroll.
 
 ## Rates
 

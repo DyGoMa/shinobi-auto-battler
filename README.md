@@ -7,6 +7,7 @@ A fan-made, Naruto-universe **2D lane auto-battler** for the web.
 * Part I and Part II (Shippuden) are complete: 25 arcs in anime order (99 battles, from the Survival Test to the final battle at the Valley of the End), 69 summonable ninja and alternate forms, and an achievement-exclusive Naruto.
 * A skippable **Academy tutorial**, an in-game **Wiki**, 21 **achievements**, **Hard mode**, a **Daily challenge** and an Akatsuki **Boss Rush**.
 * A **start menu** (continue as a guest, or sign in with Google before any save exists) after a short **intro**, and a **build stamp** (commit and UTC build time) on the menu and in Settings.
+* **Everyday shortcuts (0.11):** ⏭ Skip for battles already won (the real battle, instantly), 1× / 2× / 5× speed, ⚡ recommended power on every battle, Level to recommended and Smart spend on the Roster, ✨ Auto team, counter hints and three team presets, Roster sorting, red dots on the tabs, and a Story map with Story · Hard · Daily · Boss Rush tabs.
 
 The game is complete except for art, music and visual effects: characters are coloured tokens with initials and emoji, and sound is a small synth. HANDOFF.md lists every placeholder for that pass.
 
@@ -45,7 +46,7 @@ Then open http://localhost:8080. Any static server works: there is no bundler, j
 |---|---|
 | `npm run validate` | Content schema check (fields, natures, references, duplicate ids), balance sanity, naming-source coverage, and the Wiki (every page exists, guide links resolve, guides show config values through placeholders) |
 | `npm run check` | `node --check` on every JS file, and verifies every relative import resolves |
-| `npm run test:core` | Saves and migration, gacha guarantees, objectives, the tutorial, achievements, Hard mode, the Daily challenge, the start flow (intro timing, menu gating of the cloud session, the build stamp) |
+| `npm run test:core` | Saves and migration, gacha guarantees, objectives, the tutorial, achievements, Hard mode, the Daily challenge, the start flow (intro timing, menu gating of the cloud session, the build stamp), and the 0.11 shortcuts (recommended power, auto-level and the reserve, Skip, the 10-pull's pity count, the once-per-account tutorial reward, presets, speed and Roster view persistence, tab dots) |
 | `npm run sim` | Seeded battles with a PASS/FAIL table: Survival Test, every arc boss of both parts in Story and on Hard, Boss Rush, the nature check and counter-gap scenario (Story and Hard), fight length; plus the Daily challenge's clear chance per twist |
 | `npm run campaign` | Free-to-play players play the tutorial and the whole story (pull, level, pick by matchup, replay when stuck, claim achievements). `CAMPAIGN_HARD=1` also plays Part I on Hard before Part II |
 | `npm run autotune -- --write` | Re-tunes per-boss difficulty (`enemyScaling.nodeMult`) toward the sim targets; `--mode=hard` does the same for Hard mode |
@@ -61,7 +62,8 @@ js/config/version.js        the game version (matches package.json)
 js/content/                 roster, enemies (+ Boss Rush), arcs/part1.js, arcs/shippuden.js, tutorial,
                             achievements, banners, index.js (merge + validate)
 js/core/                    formulas (curve evaluator), BattleSim (pure, seeded, no DOM), Ninja, GachaSystem,
-                            Progression (story + Hard), Tutorial, Achievements, Daily, SaveManager, TeamPicker
+                            Progression (story + Hard), Tutorial, Achievements, Daily, SaveManager, TeamPicker,
+                            Power, AutoLevel, Skip, Teams, Badges (0.11 shortcuts)
 js/save/                    LocalBackend, FirebaseBackend, firebase-config.js
 js/render/                  Renderer (canvas), Effects
 js/ui/                      UIManager + one file per screen (Home, StoryMap, TeamBuilder, Roster, Summon, BossRush,
@@ -89,4 +91,5 @@ firestore.rules, firebase.json
 * **Session 3:** balance and audit pass: clash-aware Auto-ult, late Part II Ryo capped, forced-ninja rules, grouped Summon banners, name and nature audit. **3b:** a dedicated counter-gap scenario, a flatter wheel and a bigger Overwhelmed refund reach both counter-gap bands (BALANCE.md §6).
 * **Session 4:** the finished game minus art: the Academy tutorial and screen tips, the in-game Wiki, achievements and the exclusive Naruto, Settings, Hard mode, the Daily challenge, and a UX and copy pass (QA.md).
 * **Session 5:** the start flow: splash and intro scene, a start menu that creates the cloud session only when the player picks guest or Google (Google by popup on every device, redirect only as a fallback), a build stamp fed by the GitHub Actions Pages deploy (`.github/workflows/pages.yml`, `version.json` written at build time, never committed), and a Pixel 8a layout pass.
+* **0.11:** quality of life: a flush tab bar, the Story map's mode tabs and node states, ⏭ Skip, 5× speed, recommended power, auto-level, team presets and counter hints, Roster sorting, tab dots, and the tutorial reward once per account.
 * **Next:** the art, audio and VFX pass (HANDOFF.md).
