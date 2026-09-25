@@ -3,7 +3,9 @@
 // lane-reach warnings.
 import { h, btn, fmt, avatar, natureChips, natureChip, stars, roleTag } from './dom.js';
 import { currentNode, resolveTeam, isNodeUnlocked, isHardNodeUnlocked, unitPower, nodeEnemyLevel } from '../core/Progression.js';
-import { nodeEnemyNatures, teamMatchupRating, characterMatchup, autoPickTeam } from '../core/TeamPicker.js';
+import { nodeEnemyNatures, teamMatchupRating, characterMatchup } from '../core/TeamPicker.js';
+import { PRESETS, savePreset, loadPreset, presetEmpty, sanitizePresets, counterLabel, autoBuildTeam } from '../core/Teams.js';
+import { recommendedPower, teamPower } from '../core/Power.js';
 import { leaderBuffText } from '../core/Ninja.js';
 import { tutorialLessons } from '../core/Tutorial.js';
 import { dailyFor, dailyRecord, attemptsLeft, dailyContent, dailyTeamNode, TWIST_TEXT } from '../core/Daily.js';
@@ -62,6 +64,7 @@ export function render(game, ui, params) {
       def ? avatar(def) : h('div.muted', { style: { fontSize: '1.6rem' } }, '+'),
       def ? h('div.name', def.short) : h('div.tiny.muted', selectedSlot === i ? 'Pick below' : 'Empty'),
       def ? h('div.tiny.muted', `Lv ${state.roster[id]?.level ?? '?'}`) : null,
+      def && enemyN.length ? counterPill(def) : null,
       benched ? h('div.pill.bad', 'sits out here') : null,
       def && selectedSlot === i ? h('div.tiny.dim', 'tap again to remove') : null,
     );
@@ -71,7 +74,12 @@ export function render(game, ui, params) {
   const leaderDef = state.team.leader ? C.char[state.team.leader] : null;
   const effectiveLeader = t.leader === 'none' ? null : t.leader ? C.char[t.leader] : (resolved.leader ? C.char[resolved.leader] : null);
   const rating = teamMatchupRating(resolved.members.map(id => C.char[id]), enemyN, B);
-  const power = resolved.members.reduce((s, id) => s + unitPower(C.char[id], state.roster[id] || { level: 1, stars: 1 }, B), 0);
+  const hard = !!params.hard && !lessonNode;
+  const power = teamPower(state, daily ? null : node, C, B, { hard, team: resolved });
+  // Recommended power: story and Hard battles (the Daily fights at your story level instead).
+  const rec = lessonNode || daily ? null : recommendedPower(node, C, B, { hard });
+  const COUNTER = { counters: ['▲', 'Counters', 'match-up'], countered: ['▼', 'Countered', 'match-down'], neutral: ['•', 'Neutral', 'match-even'] };
+  const counterPill = (def) => { const [icon, text, cls] = COUNTER[counterLabel(def, enemyN, B)]; return h('span.counter-pill.' + cls, { title: `${text} against these enemies` }, `${icon} ${text}`); };
 
   // Lane reach warnings
   const defs = resolved.members.map(id => C.char[id]);
@@ -82,7 +90,6 @@ export function render(game, ui, params) {
   else if (melee.length > 2) warnings.push(`Only the front fighter and one Striker right behind it can reach melee range — ${melee.slice(2).map(d => d.short).join(', ')} will mostly wait in line.`);
   if (!defs.some(d => d.role === 'Tank')) warnings.push('No Tank: your front line will take the boss\'s hits directly.');
   const unowned = (t.forced || []).filter(id => !state.roster[id]);
-  const hard = !!params.hard && !lessonNode;
   const syncLv = nodeEnemyLevel(node, B, { hard });
   const synced = (t.forced || []).filter(id => state.roster[id] && state.roster[id].level < syncLv);
 
@@ -111,15 +118,10 @@ export function render(game, ui, params) {
   return h('div.screen',
     screenHead(ui, { title: 'Team Builder', help: 'guide/team-composition', back: daily ? { label: 'Daily', id: 'daily' } : null, right: [
         lessonNode ? null : btn('✨ Auto', () => {
-          const cands = owned.map(id => ({ id, level: state.roster[id].level, stars: state.roster[id].stars }));
           // Countered days re-type the enemies against whatever you pick: go by power.
-          const pick = autoPickTeam(cands, node, EC, B, daily?.twist.id === 'counteredOnly' ? { matchupWeight: 0 } : {});
-          const members = pick.members.filter(id => state.roster[id] && !(t.forced || []).includes(id)).slice(0, 3);
-          for (const id of pick.all) if (members.length < 3 && state.roster[id] && id !== pick.leader && !members.includes(id)) members.push(id);
-          state.team.members = members;
-          if (pick.leader && state.roster[pick.leader]) state.team.leader = pick.leader;
-          game.commit('team'); ui.toast('Team picked by power and nature matchup.'); ui.refresh();
-        }),
+          autoBuildTeam(state, node, C, B, { content: EC, byPower: daily?.twist.id === 'counteredOnly' });
+          game.commit('team'); ui.toast('Team picked by power and nature counters for this fight.', 'good'); ui.refresh();
+        }, '', { title: 'Build the best team you own for this fight (power and nature counters)' }),
         btn(unlocked ? '⚔️ Fight!' : daily ? (dailyRecord(state, daily.dateKey).cleared ? '✓ Cleared' : 'No attempts left') : '🔒 Locked', fight, 'primary', { disabled: !unlocked })] }),
     coach,
     lessonNode ? null : tipCard(game, 'team'),
@@ -133,11 +135,13 @@ export function render(game, ui, params) {
       h('div.divider'),
       h('div.matchup-box',
         h('div', h('div.tiny.muted', 'Nature matchup'), h('div.row', h('span.matchup-stars', '★'.repeat(rating.stars) + '☆'.repeat(5 - rating.stars)), h('b', rating.label))),
-        h('div', h('div.tiny.muted', 'Team power'), h('b', fmt(power))),
+        h('div', h('div.tiny.muted', 'Team power'), h('b', { class: rec == null ? '' : power >= rec ? 'good-text' : 'warn-text' }, fmt(power))),
+        rec == null ? null : h('div', h('div.tiny.muted', 'Recommended'), h('b', fmt(rec))),
         h('div.grow', h('div.tiny.muted', 'Leader buff'), h('div.small', effectiveLeader ? leaderBuffText(effectiveLeader, B) : (t.leader === 'none' ? 'No leader in this battle' : 'No leader chosen'))),
       ),
     ),
     h('div.slots', { style: { marginTop: '12px' } }, slotEl(0), slotEl(1), slotEl(2), slotEl(3)),
+    lessonNode ? null : presetsRow(game, ui),
     (t.forced?.length || t.leader || t.banned?.length) ? h('div.warnbox', { style: { marginTop: '10px' } },
       t.forced?.length ? h('div', '🔒 This battle fields ', h('b', t.forced.map(id => C.char[id].short).join(', ')), unowned.length ? ` (${unowned.map(id => C.char[id].short).join(', ')} join as level-matched guests)` : '', '. They take slots first.', synced.length ? ` ${synced.map(id => C.char[id].short).join(', ')} fight at Lv ${syncLv} here (forced ninja are raised to the battle's level).` : '') : null,
       t.leader === 'none' ? h('div', '★ No Leader buff in this battle.') : t.leader ? h('div', '★ Leader is fixed: ', h('b', C.char[t.leader].name)) : null,
@@ -146,20 +150,46 @@ export function render(game, ui, params) {
     ) : null,
     ...warnings.map(w => h('div.warnbox', { style: { marginTop: '8px' } }, '⚠ ' + w)),
     h('div.filters', ...roles.map(r => h('button.chip' + (roleFilter === r ? '.on' : ''), { type: 'button', onclick: () => { roleFilter = r; ui.refresh(); } }, r))),
-    h('p.tiny.dim', `Tap a slot, then a ninja. Sorted by power × matchup vs ${daily ? "today's challenge" : 'this node'}. ▲ = effective against these enemies, ▼ = countered.`),
+    h('p.tiny.dim', `Tap a slot, then a ninja. Sorted by power × matchup vs ${daily ? "today's challenge" : 'this fight'}. ▲ Counters = their natures beat these enemies', ▼ Countered = the enemies' natures beat theirs, • Neutral.`),
     list.length ? null : h('div.card.center', h('p.muted', `You don't have a ${roleFilter} yet. Summon to find one, or pick from another role.`), btn('Show all roles', () => { roleFilter = 'All'; ui.refresh(); }, 'small')),
     h('div.char-grid', ...list.map(x => {
       const inTeam = slotIds.includes(x.id);
       const banned = (t.banned || []).includes(x.id);
       return h('div.char-card' + (inTeam ? '.selected' : '') + (banned ? '.disabled' : ''), { onclick: () => banned ? ui.toast(`${x.def.short} sits out this battle.`) : assign(x.id), role: 'button', tabindex: '0' },
         h('span.lvl', `Lv ${x.own.level}`),
-        h('span.badge-tl', x.match > 0.15 ? h('span.match-up', '▲') : x.match < -0.15 ? h('span.match-down', '▼') : null),
+        h('span.badge-tl', x.match > B.qol.counterThreshold ? h('span.match-up', '▲') : x.match < -B.qol.counterThreshold ? h('span.match-down', '▼') : null),
         avatar(x.def),
         h('div.name', x.def.name),
         h('div.meta', stars(x.own.stars)),
         h('div.meta', roleTag(x.def.role), ...natureChips(x.def)),
+        enemyN.length ? counterPill(x.def) : null,
         h('div.power', `Power ${fmt(x.power)}`),
       );
     })),
   );
+}
+
+/** Three team presets: tap one to swap to it (an empty one saves the current team); 💾 overwrites it. */
+function presetsRow(game, ui) {
+  const { C, state } = game;
+  const list = sanitizePresets(state.teamPresets, state, C);
+  const same = (p) => p.leader === (state.team.leader || null) && p.members.join() === state.team.members.join();
+  return h('div.presets', { role: 'group', 'aria-label': 'Team presets' },
+    h('span.small.muted', 'Presets'),
+    ...PRESETS.map((P, i) => {
+      const p = list[i];
+      const empty = presetEmpty(p);
+      const who = empty ? 'empty' : [...p.members, p.leader].filter(Boolean).map(id => C.char[id].short).join(', ');
+      const load = () => {
+        if (empty) { savePreset(state, P.id); game.commit('team'); ui.toast(`Saved as the ${P.name} preset.`, 'good'); ui.refresh(); return; }
+        const r = loadPreset(state, P.id, C);
+        if (!r.ok) { ui.toast(r.error, 'bad'); return; }
+        game.commit('team'); ui.toast(`${P.name} team ready.`, 'good'); ui.refresh();
+      };
+      const store = () => { savePreset(state, P.id); game.commit('team'); ui.toast(`Current team saved as ${P.name}.`, 'good'); ui.refresh(); };
+      return h('div.preset' + (!empty && same(p) ? '.on' : '') + (empty ? '.empty' : ''),
+        h('button.preset-load', { type: 'button', onclick: load, 'aria-label': empty ? `Save the current team as the ${P.name} preset` : `Use the ${P.name} preset: ${who}`, title: who },
+          h('b', `${P.icon} ${P.name}`), h('span.tiny.muted', empty ? 'tap to save' : who)),
+        empty ? null : h('button.preset-save', { type: 'button', onclick: store, 'aria-label': `Save the current team over the ${P.name} preset`, title: 'Save the current team here' }, '💾'));
+    }));
 }

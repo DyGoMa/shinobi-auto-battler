@@ -1,7 +1,7 @@
 // Teams.js — Team Builder and Roster conveniences: team presets, counter hints and
 // the Roster's sort and filters. Pure, no DOM; what the player picks lives in the save.
 import { BALANCE } from '../config/balance.js';
-import { characterMatchup } from './TeamPicker.js';
+import { characterMatchup, autoPickTeam } from './TeamPicker.js';
 import { unitPower } from './Progression.js';
 import { TIERS } from './formulas.js';
 
@@ -102,4 +102,23 @@ export function rosterList(state, C, B = BALANCE, view = ROSTER_VIEW_DEFAULT) {
     .filter(d => v.tier === 'All' || d.tier === v.tier)
     .filter(d => natureMatch(d, v.nature))
     .sort((a, b) => (!!own(b) - !!own(a)) || keys[v.sort](a, b) || a.name.localeCompare(b.name));
+}
+
+// ---------------------------------------------------------------- auto-build
+/**
+ * ✨ Auto: the best team for a fight from the ninja you own, by power and Nature Wheel
+ * counters against that fight's enemies (TeamPicker.autoPickTeam: a lineup heuristic,
+ * no battles simulated, so it is instant on a phone). Sets state.team; forced ninja
+ * stay out of the saved team (the battle adds them). opts.content: the Daily's content
+ * (its natures); opts.byPower: ignore natures (Countered days re-type the enemies).
+ */
+export function autoBuildTeam(state, node, C, B = BALANCE, { content = C, byPower = false } = {}) {
+  const forced = node?.team?.forced || [];
+  const cands = Object.keys(state.roster).filter(id => C.char[id]).map(id => ({ id, level: state.roster[id].level, stars: state.roster[id].stars }));
+  const pick = autoPickTeam(cands, node, content, B, byPower ? { matchupWeight: 0 } : {});
+  const members = pick.members.filter(id => state.roster[id] && !forced.includes(id)).slice(0, 3);
+  for (const id of pick.all) if (members.length < 3 && state.roster[id] && id !== pick.leader && !members.includes(id)) members.push(id);
+  state.team.members = members;
+  if (pick.leader && state.roster[pick.leader]) state.team.leader = pick.leader;
+  return state.team;
 }

@@ -1,5 +1,5 @@
 // SummonScreen.js — banners, rates, pity counter, and the pull animation.
-import { h, btn, fmt, avatar, tierTag } from './dom.js';
+import { h, btn, fmt, avatar, tierTag, toggle } from './dom.js';
 import { pull, pullCost, canAfford, bannerRates, ticketPull } from '../core/GachaSystem.js';
 import { isBannerUnlocked, isCharacterAvailable } from '../core/Progression.js';
 import { TIER_LABEL, RARITY_LABEL } from '../core/formulas.js';
@@ -81,6 +81,8 @@ export function render(game, ui, params) {
     h('div.pull-buttons',
       pullBtn('Summon ×1', single, state, () => doPull(1)),
       pullBtn('Summon ×10', ten, state, () => doPull(10), true)),
+    h('div.row.skip-anim', h('span.small.muted.grow', `×10 = ${fmt(ten)} scrolls (${fmt(single * 10)} for ten singles), a ${TIER_LABEL[B.gacha.tenPullGuaranteeTier]} or better guaranteed, 10 toward the Kage counter.`),
+      h('label.small.row.tight', 'Skip animation', toggle(!!state.settings.skipPullAnim, (on) => { state.settings.skipPullAnim = on; game.commit('settings'); }, 'Skip the summon animation'))),
     tickets || rare ? h('div.pull-buttons.tickets',
       tickets ? h('button.btn', { type: 'button', onclick: () => doTicket('tickets') }, h('span', `🎟️ Use a summon ticket`), h('span.sub', `${tickets} left`)) : null,
       rare ? h('button.btn.primary', { type: 'button', onclick: () => doTicket('rareTickets') }, h('span', `🎫 Rare+ summon`), h('span.sub', `${rare} left · ${TIER_LABEL[B.achievements.rareTicketMinTier]} or better`)) : null) : null,
@@ -115,6 +117,7 @@ function pullBtn(label, cost, state, onClick, primary = false) {
 
 function playAnimation(game, ui, results) {
   const { C } = game;
+  const instant = !!game.state.settings.skipPullAnim;   // Settings or the banner's "Skip animation"
   const top = results.reduce((m, r) => TIER_RANK[r.tier] > TIER_RANK[m] ? r.tier : m, 'genin');
   const overlay = h('div.pull-overlay');
   const stage = h('div.col', { style: { alignItems: 'center', gap: '18px' } });
@@ -124,7 +127,7 @@ function playAnimation(game, ui, results) {
   const fx = h('div.burst-layer');
   overlay.append(stage, fx);
   document.body.appendChild(overlay);
-  game.audio.scroll();
+  if (!game.state.settings.skipPullAnim) game.audio.scroll();
   let skipped = false, finished = false;
   const grid = h('div.reveal-grid' + (results.length === 1 ? '.single' : ''));
   const cards = results.map(r => {
@@ -151,6 +154,7 @@ function playAnimation(game, ui, results) {
       setTimeout(() => { c.classList.add('show'); if (!skipped || i === cards.length - 1) game.audio.pullReveal(results[i].tier); if (results[i].tier === 'kage') flash('kage'); if (i === cards.length - 1) { done.style.visibility = 'visible'; finished = true; } }, delay);
     });
   };
+  if (instant) { skipped = true; reveal(); cards.forEach(c => c.classList.add('show')); done.style.visibility = 'visible'; finished = true; return; }
   const t = setTimeout(reveal, 900);
   overlay.addEventListener('click', (e) => {
     if (e.target === done) return;

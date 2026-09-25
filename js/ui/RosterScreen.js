@@ -5,8 +5,10 @@ import { canLevelUp, levelUp, isCharacterAvailable, levelCostFor } from '../core
 import { TIERS, TIER_LABEL } from '../core/formulas.js';
 import { tipCard } from './tips.js';
 import { screenHead, helpButton } from './chrome.js';
-
-let filter = { show: 'all', role: 'All', tier: 'All' };
+import { rosterList, sanitizeRosterView, ROSTER_SORTS } from '../core/Teams.js';
+import { recommendedPower, teamPower } from '../core/Power.js';
+import { openLevelToRecommended, openSmartSpend, targetNode } from './AutoLevelDialog.js';
+import { ryoReserve } from '../core/AutoLevel.js';
 
 const ULT_DESC = {
   single: 'Big single-target hit',
@@ -17,29 +19,40 @@ const ULT_DESC = {
 };
 const RANGE_NAME = { melee: 'Melee (front line)', reach: 'Reach (can hit from behind a Tank)', mid: 'Mid range', long: 'Long range' };
 
-export function render(game, ui) {
+export function render(game, ui, params = {}) {
   const { C, B, state } = game;
   const roles = ['All', 'Tank', 'Striker', 'Ranged', 'Support'];
   const tiers = ['All', ...TIERS];
-  const rows = C.roster
-    .filter(d => filter.show === 'all' || (filter.show === 'owned' ? state.roster[d.id] : !state.roster[d.id]))
-    .filter(d => filter.role === 'All' || d.role === filter.role)
-    .filter(d => filter.tier === 'All' || d.tier === filter.tier)
-    .sort((a, b) => (!!state.roster[b.id] - !!state.roster[a.id]) || (TIERS.indexOf(b.tier) - TIERS.indexOf(a.tier)) || a.name.localeCompare(b.name));
+  const natures = ['All', ...B.natureWheel.cycle, 'Taijutsu'];
+  // The last sort and filters are part of the save (settings.rosterView).
+  const filter = sanitizeRosterView(state.settings.rosterView, B);
+  const setView = (key, v) => { state.settings.rosterView = { ...filter, [key]: v }; game.commit('settings'); ui.refresh(); };
+  const rows = rosterList(state, C, B, filter);
   const ownedCount = C.roster.filter(d => state.roster[d.id]).length;
 
-  const chipset = (key, values, label = (v) => v) => h('div.filters', ...values.map(v => h('button.chip' + (filter[key] === v ? '.on' : ''), { type: 'button', onclick: () => { filter[key] = v; ui.refresh(); } }, label(v))));
+  const chipset = (key, values, label = (v) => v, aria = key) => h('div.filters', { role: 'group', 'aria-label': aria }, ...values.map(v => h('button.chip' + (filter[key] === v ? '.on' : ''), { type: 'button', 'aria-pressed': String(filter[key] === v), onclick: () => setView(key, v) }, label(v))));
+  const node = targetNode(game, params.nodeId ? C.node[params.nodeId] : null);
+  const hard = !!params.hard;
+  const rec = recommendedPower(node, C, B, { hard }), have = teamPower(state, node, C, B, { hard });
 
   return h('div.screen',
     screenHead(ui, { title: 'Roster', help: 'guide/levelling', right: [h('span.pill', `${ownedCount} / ${C.roster.length} recruited`)] }),
     tipCard(game, 'roster'),
+    h('div.card.auto-level',
+      h('div.row.between', h('div', h('div.tiny.muted', `Team for ${hard ? '💀 ' : ''}${node.name}`), h('b', `Power ${fmt(have)}`), h('span.small.muted', ` / recommended ${fmt(rec)}`)),
+        h('div.row',
+          btn('⬆ Level to recommended', () => openLevelToRecommended(game, ui, { node, hard }), have >= rec ? '' : 'primary', { title: 'Level this team until it reaches the recommended power, then stop. Shows the cost first.' }),
+          btn('💰 Smart spend', () => openSmartSpend(game, ui, { node, hard }), '', { title: `Spend Ryo where it adds the most team power, keeping 🪙 ${fmt(ryoReserve(state, B))} in reserve` }))),
+      h('p.tiny.dim', { style: { margin: '6px 0 0' } }, `Smart spend keeps 🪙 ${fmt(ryoReserve(state, B))} in reserve (change it in the dialog or in Settings). Both show the cost before spending, at the normal prices.`)),
     h('p.small', `Level up with Ryo. Duplicate summons add a star (+${pctStr(B.stats.starBonus)} stats each, up to ${B.stats.starCap}★); duplicates past ${B.stats.starCap}★ refund Ryo. Ninja ${B.economy.catchUp.gap}+ levels behind your highest level up at a catch-up discount.`),
-    chipset('show', ['all', 'owned', 'missing'], v => ({ all: 'All', owned: 'Owned', missing: 'Missing' })[v]),
-    chipset('role', roles),
-    chipset('tier', tiers, v => v === 'All' ? 'All tiers' : TIER_LABEL[v]),
+    h('div.row.sort-row', h('span.small.muted', 'Sort'), chipset('sort', ROSTER_SORTS.map(x => x.id), v => ROSTER_SORTS.find(x => x.id === v).label, 'Sort by')),
+    chipset('show', ['all', 'owned', 'missing'], v => ({ all: 'All', owned: 'Owned', missing: 'Missing' })[v], 'Show'),
+    chipset('role', roles, v => v, 'Role'),
+    chipset('tier', tiers, v => v === 'All' ? 'All tiers' : TIER_LABEL[v], 'Rarity'),
+    chipset('nature', natures, v => v === 'All' ? 'All natures' : v, 'Nature'),
     rows.length ? h('div.char-grid', ...rows.map(d => card(game, ui, d)))
-      : h('div.card.center', h('p.muted', filter.show === 'missing' && filter.role === 'All' && filter.tier === 'All' ? 'You have every ninja. Well done!' : 'No ninja match these filters.'),
-        btn('Show everyone', () => { filter.show = 'all'; filter.role = 'All'; filter.tier = 'All'; ui.refresh(); }, 'small')),
+      : h('div.card.center', h('p.muted', filter.show === 'missing' && filter.role === 'All' && filter.tier === 'All' && filter.nature === 'All' ? 'You have every ninja. Well done!' : 'No ninja match these filters.'),
+        btn('Show everyone', () => { state.settings.rosterView = { ...filter, show: 'all', role: 'All', tier: 'All', nature: 'All' }; game.commit('settings'); ui.refresh(); }, 'small')),
   );
 }
 

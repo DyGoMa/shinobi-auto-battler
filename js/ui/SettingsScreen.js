@@ -1,6 +1,7 @@
 // SettingsScreen.js — battle options, help, audio and visuals, account and cloud
 // save, the save itself (export, import, reset) and version info.
-import { h, btn, toggle } from './dom.js';
+import { h, btn, toggle, fmt } from './dom.js';
+import { ryoReserve } from '../core/AutoLevel.js';
 import { SAVE_VERSION } from '../core/SaveManager.js';
 import { FIREBASE_SDK_VERSION } from '../save/FirebaseBackend.js';
 import { GAME_VERSION } from '../config/version.js';
@@ -23,12 +24,19 @@ export function render(game, ui) {
 
     h('div.card',
       h('h2', 'Battle'),
-      row('Battle speed', 'The speed new battles start at. You can switch in battle too.',
-        seg('Battle speed', [[1, '1×'], [2, '2×']], s.speed || 1, (v) => set('speed', v))),
+      row('Battle speed', 'The speed battles start at. The speed button in battle (1× / 2× / 5×) switches it too, and your last pick is kept.',
+        seg('Battle speed', game.B.qol.battleSpeeds.map(v => [v, `${v}×`]), s.speed || 1, (v) => set('speed', v))),
       row('Start battles with Auto-ult on', 'The 🤖 button in battle fires Ultimates for you. You can turn it off mid-battle.',
         toggle(!!s.autoUlt, (on) => { s.autoUlt = on; game.commit('settings'); }, 'Start battles with Auto-ult on')),
       row('Auto-ult mode', s.autoUltMode === 'asap' ? 'Fire when ready: every Ultimate goes off the moment it is ready.' : 'Clash-aware (recommended): fires counter-nature ninja into enemy wind-ups and holds anyone who would be Overwhelmed.',
         seg('Auto-ult mode', [['smart', 'Clash-aware'], ['asap', 'Fire when ready']], s.autoUltMode === 'asap' ? 'asap' : 'smart', (v) => set('autoUltMode', v))),
+    ),
+
+    h('div.card.gap',
+      h('h2', 'Shortcuts'),
+      row('Skip the summon animation', 'Summons show their cards at once. The same switch is on the Summon screen.',
+        toggle(!!s.skipPullAnim, (on) => { s.skipPullAnim = on; game.commit('settings'); }, 'Skip the summon animation')),
+      row('Smart spend reserve', `Roster → 💰 Smart spend never spends below this much Ryo (now 🪙 ${fmt(ryoReserve(state, game.B))}).`, reserveInput(game, ui)),
     ),
 
     h('div.card.gap',
@@ -191,4 +199,16 @@ function confirmReset(game, ui) {
     input,
     h('div.actions', btn('Cancel', () => close(), 'ghost'), go)), { label: 'Reset save' });
   setTimeout(() => input.focus(), 40);
+}
+
+/** The Smart spend reserve (settings.ryoReserve), saved when the field is left. */
+function reserveInput(game, ui) {
+  const { state, B } = game;
+  const input = h('input.reserve-input', { type: 'number', min: '0', step: '100', inputmode: 'numeric', value: String(ryoReserve(state, B)), 'aria-label': 'Smart spend reserve in Ryo' });
+  input.addEventListener('change', () => {
+    const v = Math.max(0, Math.floor(Number(input.value) || 0));
+    state.settings.ryoReserve = v; input.value = String(v);
+    game.commit('settings'); ui.toast(`Smart spend keeps 🪙 ${fmt(v)} in reserve.`, 'good');
+  });
+  return input;
 }

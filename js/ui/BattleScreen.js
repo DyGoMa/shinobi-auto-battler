@@ -6,7 +6,7 @@ import { h, btn, fmt, avatar, objectiveText } from './dom.js';
 import { BattleSim } from '../core/BattleSim.js';
 import { Renderer } from '../render/Renderer.js';
 import { Effects } from '../render/Effects.js';
-import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeUnlocked, isHardNodeUnlocked } from '../core/Progression.js';
+import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits } from '../core/Progression.js';
 import { dailyBattleConfig, completeDaily, attemptsLeft, startDailyAttempt, TWIST_TEXT } from '../core/Daily.js';
 import { hashString, bestNature, beatenBy, natureRelation } from '../core/formulas.js';
 import { leaderBuffText } from '../core/Ninja.js';
@@ -17,6 +17,7 @@ import { LESSON_TITLE } from './TutorialScreen.js';
 import { guideBody, whenGuideReady } from './WikiScreen.js';
 import { recordBattle } from '../core/Achievements.js';
 import { nodeEnemyNatures, teamMatchupRating } from '../core/TeamPicker.js';
+import { showStoryResults, statsTable } from './Results.js';
 
 const CLASH_LABEL = { overpower: '▲ OVERPOWER', standoff: '= STANDOFF', overwhelmed: '▼ WEAK' };
 
@@ -25,7 +26,8 @@ export class BattleScreen {
     this.game = game; this.ui = ui; this.opts = opts;
     this.root = document.getElementById('battle');
     this.paused = false; this.hiddenPause = false; this.tipPause = false;
-    this.speed = game.state.settings.speed || 1;
+    const speeds = game.B.qol.battleSpeeds;
+    this.speed = speeds.includes(game.state.settings.speed) ? game.state.settings.speed : speeds[0];
     this.raf = 0; this.last = 0; this.portraitT = 0;
     this.ended = false;
     this.round = 1; this.rushRewards = { scrolls: 0, ryo: 0 };
@@ -50,7 +52,9 @@ export class BattleScreen {
 
     this.objEl = h('div.obj');
     this.timerEl = h('div.timer', { 'aria-label': 'Battle time' }, '0:00');
-    this.speedBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Battle speed', title: 'Battle speed', onclick: () => { this.speed = this.speed === 1 ? 2 : 1; this.speedBtn.textContent = `${this.speed}×`; } }, `${this.speed}×`);
+    // The speed button cycles 1× → 2× → 5× (balance.qol.battleSpeeds); the pick is saved (and syncs) for the next battle.
+    this.speedBtn = h('button.icon-btn.speed-btn', { type: 'button', onclick: () => this._cycleSpeed() }, `${this.speed}×`);
+    this._labelSpeed();
     this.autoBtn = h('button.icon-btn', { type: 'button', onclick: () => { const s = this.game.state.settings; s.autoUlt = !s.autoUlt; this._syncAuto(); this.game.commit('settings'); } });
     this.pauseBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Pause', title: 'Pause', onclick: () => this.togglePause() }, '⏸');
     const hud = h('div.bhud', this.objEl, this.timerEl, this.autoBtn, this.speedBtn, this.pauseBtn);
@@ -76,6 +80,19 @@ export class BattleScreen {
     this.raf = requestAnimationFrame(this._loop);
     if (this.lessonType) this._tip(`lesson.${this.lessonType}.start`);
     else this._tip('battle.start');
+  }
+
+  _cycleSpeed() {
+    const speeds = this.game.B.qol.battleSpeeds;
+    this.speed = speeds[(speeds.indexOf(this.speed) + 1) % speeds.length];
+    this.speedBtn.textContent = `${this.speed}×`;
+    this._labelSpeed();
+    this.game.state.settings.speed = this.speed;
+    this.game.commit('settings');
+  }
+  _labelSpeed() {
+    const l = `Battle speed ${this.speed}×. Tap for ${this.game.B.qol.battleSpeeds.map(v => v + '×').join(' / ')}.`;
+    this.speedBtn.title = l; this.speedBtn.setAttribute('aria-label', l);
   }
 
   /** Auto-ult is hidden in the tutorial until Lesson 3 introduces it. */
@@ -359,7 +376,7 @@ export class BattleScreen {
     const J = B.jutsuClash;
     switch (id) {
       case 'battle.start':
-        return { top: '12%', body: [b(`Welcome to ${this.node.name}!`), ' Your ninja walk and fight on their own. Goal: ', b(objectiveText(this.node.objective, C)), '.'] };
+        return { top: '12%', body: [b(`Welcome to ${this.node.name}!`), ' Your ninja walk and fight on their own. Goal: ', b(objectiveText(this.node.objective, C)), '. The 1× button (top right) speeds the battle up.'] };
       case 'battle.ult':
         return { untilUlt: true, body: [b('Chakra full!'), ' A glowing portrait (below the battlefield) means that ninja\'s ', b('Ultimate'), ' is ready: tap it to fire. Keys 1–4 work too.'] };
       case 'battle.clash':
@@ -468,6 +485,7 @@ export class BattleScreen {
         h('div.muted', `Lesson ${i + 1} of ${lessons.length}: ${LESSON_TITLE[node.lesson]}`)),
       won ? h('p.center', recap) : h('p.center', 'Even the best ninja lose sometimes. Try the lesson again, or skip the tutorial.'),
       finished && res.reward ? h('div.reward-row', h('div.reward', `📜 +${fmt(res.reward.scrolls)}`), h('div.reward', `🪙 +${fmt(res.reward.ryo)}`), h('div.reward', '🎓 Tutorial reward')) : null,
+      finished && !res.reward ? h('p.center.muted', '✓ Rewards already claimed on this account.') : null,
       finished && !replay ? h('p.center', 'Next up: the Survival Test. Summon a few ninja first with your scrolls, or head straight to the story.') : null,
     );
     const actions = h('div.actions');
@@ -511,16 +529,7 @@ export class BattleScreen {
     timer = setTimeout(go, Math.max(1, this.game.B.bossRush.intermission) * 1000 + 4000);
   }
 
-  _statsTable() {
-    const { sim } = this;
-    const players = sim.units.filter(u => u.side === 'player' && !u.protected);
-    const max = Math.max(1, ...players.map(u => sim.stats.damageByUnit[u.uid] || 0));
-    return h('table.dmg-table', h('tbody', ...players.map(u => h('tr',
-      h('td', u.short + (u.isLeader ? ' ★' : '')),
-      h('td.barcell', h('div.bar', h('i', { style: { width: `${((sim.stats.damageByUnit[u.uid] || 0) / max) * 100}%` } }))),
-      h('td', { style: { textAlign: 'right' } }, fmt(sim.stats.damageByUnit[u.uid] || 0)),
-    ))));
-  }
+  _statsTable() { return statsTable(this.sim); }
 
   /** A daily battle ended. Boss gauntlet dailies go round by round, carrying HP and chakra. */
   _dailyEnd(won) {
@@ -566,29 +575,14 @@ export class BattleScreen {
   }
 
   _results(won, result) {
-    const { game, ui, node } = this; const { C, state } = game;
-    const hard = this.hard;
-    const next = C.nodes[node.globalIndex + 1];
-    const nextOpen = next && !next.placeholder && (hard ? isHardNodeUnlocked(state, next, C) : isNodeUnlocked(state, next, C));
-    const cl = this.sim.stats.clashes;
-    const reasons = { defeated: 'Your team was defeated.', protectFailed: `${C.enemy[node.objective.protect]?.name || 'The escort'} fell.`, timeout: 'Time ran out.', retreat: 'You retreated.' };
-    const content = h('div',
-      h('div.result-hero', h('div.big.' + (won ? 'win' : 'lose'), won ? 'VICTORY' : 'DEFEAT'), h('div.muted', `${node.name} · ${this.sim.time.toFixed(1)}s`), !won ? h('p.small', reasons[this.sim.endReason] || '') : null),
-      won ? h('div.reward-row',
-        h('div.reward', `📜 +${fmt(result.scrolls)}`), h('div.reward', `🪙 +${fmt(result.ryo)}`),
-        result.firstClear ? h('div.reward', '🏅 First clear') : h('div.reward', '↻ Replay')) : null,
-      result.arcCleared ? h('div.warnbox.center', { style: { marginBottom: '10px' } }, `🎉 Arc cleared: ${C.arc[result.arcCleared].name}! Bonus included.`) : null,
-      result.unlocked?.length ? h('div.warnbox.center', { style: { marginBottom: '10px' } }, '🆕 Now in the summon pools: ', h('b', result.unlocked.map(id => C.char[id].name).join(', '))) : null,
-      h('h3', 'Damage dealt'), this._statsTable(),
-      h('p.small', { style: { marginTop: '8px' } }, `Ultimates fired: ${this.sim.stats.ults} · Jutsu Clashes: ${cl.overpower} overpower, ${cl.standoff} standoff, ${cl.overwhelmed} overwhelmed · Effective hits: ${this.sim.stats.effective}`),
-      !won ? h('p.small', '💡 Try a team whose natures beat the enemy (see the Team Builder rating), save Ultimates to clash the boss\'s ⚠ wind-ups, or replay earlier nodes for Ryo and level up.') : null,
-    );
-    const actions = h('div.actions');
-    const close = ui.modal(h('div', content, actions), { dismissable: false, wide: true });
-    const leave = (goTo) => { close(); this.close(goTo); };
-    if (won && nextOpen) actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: next.arcId, nodeId: next.id, hard } }), 'ghost'), btn('↻ Replay', () => { close(); this.restart(); }), btn(`Next: ${next.name} ▶`, () => { close(); this.close(null, true); ui.startBattle({ node: next, hard }); }, 'primary'));
-    else if (won) actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: node.arcId, nodeId: node.id, hard } }), 'ghost'), btn('↻ Replay', () => { close(); this.restart(); }, 'primary'));
-    else actions.append(btn('🗺️ Map', () => leave({ id: 'story', params: { arcId: node.arcId, nodeId: node.id, hard } }), 'ghost'), btn('👥 Team', () => leave({ id: 'team', params: { nodeId: node.id, hard } })), btn('↻ Retry', () => { close(); this.restart(); }, 'primary'));
+    const { ui, node, hard } = this;
+    showStoryResults(this.game, ui, {
+      node, hard, won, result, sim: this.sim,
+      onMap: () => this.close({ id: 'story', params: { arcId: node.arcId, nodeId: node.id, hard } }),
+      onTeam: () => this.close({ id: 'team', params: { nodeId: node.id, hard } }),
+      onRetry: () => this.restart(),
+      onNext: (next) => { this.close(null, true); ui.startBattle({ node: next, hard }); },
+    });
   }
 
   _rushResults(stopped = false) {

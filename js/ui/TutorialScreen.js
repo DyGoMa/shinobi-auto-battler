@@ -4,6 +4,7 @@
 // and pays the same reward as finishing.
 import { h, btn, fmt, avatar, natureChip, episodesLabel } from './dom.js';
 import { tutorialLessons, nextLessonIndex, startTutorial } from '../core/Tutorial.js';
+import { tutorialRewardClaimed } from '../core/SaveManager.js';
 import { resolveTeam } from '../core/Progression.js';
 import { beatenBy } from '../core/formulas.js';
 import { leaderBuffText } from '../core/Ninja.js';
@@ -83,7 +84,9 @@ export function render(game, ui, params) {
       h('div.row', { style: { marginTop: '16px', justifyContent: 'flex-end' } },
         btn(fightLabel, start, 'primary big', { disabled: needsQuiz, title: needsQuiz ? 'Answer the question above first' : '' })),
     ),
-    replay ? null : h('p.small.muted.center', { style: { marginTop: '12px' } }, `Finish the tutorial (or skip it) for 📜 ${fmt(R.scrolls)} scrolls and 🪙 ${fmt(R.ryo)} Ryo.`),
+    // The reward pays once per account: replays, and a restart after Reset save, say so.
+    tutorialRewardClaimed(state) ? h('p.small.muted.center.claimed-note', { style: { marginTop: '12px' } }, '✓ Rewards already claimed on this account: the lessons are just practice now.')
+      : replay ? null : h('p.small.muted.center', { style: { marginTop: '12px' } }, `Finish the tutorial (or skip it) for 📜 ${fmt(R.scrolls)} scrolls and 🪙 ${fmt(R.ryo)} Ryo.`),
   );
 }
 

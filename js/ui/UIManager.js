@@ -13,9 +13,12 @@ import * as Achievements from './AchievementsScreen.js';
 import * as Daily from './DailyScreen.js';
 import * as Start from './StartScreen.js';
 import { BattleScreen } from './BattleScreen.js';
-import { canAfford } from '../core/GachaSystem.js';
-import { isBossRushUnlocked } from '../core/Progression.js';
+import { tabBadges } from '../core/Badges.js';
+import { skipBattle } from '../core/Skip.js';
+import { hashString } from '../core/formulas.js';
+import { showStoryResults } from './Results.js';
 import { tutorialPending, skipTutorial, startTutorial, nextLessonIndex } from '../core/Tutorial.js';
+import { tutorialRewardClaimed } from '../core/SaveManager.js';
 import { claimableAchievements } from '../core/Achievements.js';
 import { startDailyAttempt } from '../core/Daily.js';
 import { playIntro, prefersReducedMotion } from './Intro.js';
@@ -120,6 +123,8 @@ export class UIManager {
     }
     if (enter) el.classList.add('enter');
     this.screenEl.replaceChildren(el);
+    // A screen can act once it is on the page (the Story map scrolls to the current battle).
+    if (enter && scr.mod.afterRender) setTimeout(() => { if (this.screenEl.contains(el)) scr.mod.afterRender(el, this.game, this, this.params || {}); }, 0);
     for (const b of this.tabbar.children) {
       const on = b.dataset.tab === scr.tab;
       b.classList.toggle('active', on);
@@ -161,11 +166,16 @@ export class UIManager {
     if (ready) ach.appendChild(h('span.dot', { 'aria-hidden': 'true' }));
     ach.setAttribute('aria-label', ready ? `Achievements: ${ready} reward${ready === 1 ? '' : 's'} to claim` : 'Achievements');
     ach.classList.toggle('active', this.current === 'achievements');
+    // Red dots (js/core/Badges.js): Home = a reward to claim, today's Daily or a new Boss
+    // Rush; Summon = a free summon (ticket). The tab's label says why, for screen readers.
+    const badges = tabBadges(s, this.game.C, this.game.B);
+    const why = { home: [badges.reasons.claimable && 'rewards to claim', badges.reasons.daily && 'Daily challenge waiting', badges.reasons.rushNew && 'Boss Rush open'].filter(Boolean).join(', '), summon: badges.reasons.freePull ? 'free summon available' : '' };
     for (const b of this.tabbar.children) {
       b.querySelector('.dot')?.remove();
       const id = b.dataset.tab;
-      const show = (id === 'summon' && canAfford(s, 1, this.game.B)) || (id === 'home' && isBossRushUnlocked(s, this.game.C) && !s.bossRush.runs);
-      if (show) b.appendChild(h('span.dot', { 'aria-hidden': 'true' }));
+      const label = TABS.find(t => t.id === id)?.label || id;
+      if (badges[id]) { b.appendChild(h('span.dot', { 'aria-hidden': 'true' })); b.setAttribute('aria-label', `${label}: ${why[id]}`); }
+      else b.removeAttribute('aria-label');
     }
   }
 
@@ -193,7 +203,8 @@ export class UIManager {
       h('h2', 'Welcome to the Hidden Leaf Village!'),
       h('p', 'Your ninja fight on their own. You choose the team, read the Nature Wheel and time the Ultimates.'),
       h('p', 'Three short practice battles at the Academy teach you the basics (about three minutes).'),
-      h('p.small.muted', `Finish or skip it: either way you get 📜 ${fmt(R.scrolls)} scrolls and 🪙 ${fmt(R.ryo)} Ryo.`),
+      tutorialRewardClaimed(state) ? h('p.small.muted', '✓ Rewards already claimed on this account: the lessons are practice only.')
+        : h('p.small.muted', `Finish or skip it: either way you get 📜 ${fmt(R.scrolls)} scrolls and 🪙 ${fmt(R.ryo)} Ryo.`),
       h('div.actions', { style: { justifyContent: 'center' } },
         btn('Skip tutorial', () => { close(); this.skipTutorial({ confirm: false }); }, 'ghost'),
         btn('🎓 Start the tutorial', () => { close(); this.openTutorial(); }, 'primary big')),
@@ -221,13 +232,14 @@ export class UIManager {
   async skipTutorial({ confirm = true, after = null } = {}) {
     const { state, B } = this.game;
     if (confirm) {
-      const ok = await this.confirm('Skip the tutorial?', 'You still get the tutorial reward, and you can replay the lessons any time from the Wiki or Settings.', { okText: 'Skip tutorial', cancelText: 'Keep learning' });
+      const ok = await this.confirm('Skip the tutorial?', tutorialRewardClaimed(state) ? 'This account already has the tutorial reward. You can replay the lessons any time from the Wiki or Settings.' : 'You still get the tutorial reward, and you can replay the lessons any time from the Wiki or Settings.', { okText: 'Skip tutorial', cancelText: 'Keep learning' });
       if (!ok) return false;
     }
     if (this._welcomeClose) this._welcomeClose();
     const reward = skipTutorial(state, B);
     this.game.commit('tutorial');
     if (reward) this.toast(`Tutorial skipped. Reward: 📜 +${fmt(reward.scrolls)} 🪙 +${fmt(reward.ryo)}`, 'good');
+    else this.toast('Tutorial skipped. Rewards already claimed on this account.');
     if (after) after();
     else if (!this.battle) this.go('home');
     return true;
@@ -300,6 +312,24 @@ export class UIManager {
     this.battle = new BattleScreen(this.game, this, opts);
     this.battle.open();
   }
+  /** ⏭ Skip a story or Hard battle already won: the real battle, headless, results at once. */
+  skipBattle({ node, hard = false }) {
+    if (this.battle || !node) return;
+    const { game } = this; const { C, B, state } = game;
+    const r = skipBattle(state, node, C, B, { hard, seed: (hashString(node.id) ^ Date.now()) >>> 0 });
+    if (!r.ok) { this.toast(r.reason); return; }
+    game.commit('battle');
+    r.won ? game.audio.victory() : game.audio.defeat();
+    this.refresh();
+    showStoryResults(game, this, {
+      node, hard, won: r.won, result: r.result, sim: r.sim, skipped: true,
+      onMap: () => this.go('story', { arcId: node.arcId, nodeId: node.id, hard }),
+      onTeam: () => this.go('team', { nodeId: node.id, hard }),
+      onRetry: () => this.skipBattle({ node, hard }),
+      onNext: (next) => this.startBattle({ node: next, hard }),
+    });
+  }
+
   battleClosed(goTo = null) {
     this.battle = null;
     if (goTo) this.go(goTo.id, goTo.params || {}); else this.refresh();

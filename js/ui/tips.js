@@ -7,15 +7,15 @@ import { h, btn, pctStr, countWord } from './dom.js';
 export const SCREEN_TIPS = {
   story: {
     icon: '🗺️', title: 'The story map',
-    text: () => 'Each arc ends with a 👑 boss. Tap a battle to see its enemies and their natures, then build a team that counters them. Cleared battles can be replayed for Ryo.',
+    text: () => 'Each arc ends with a 👑 boss. The glowing battle is next, and ⚡ is the recommended team power. Tap a battle to see its enemies and natures, then build a team that counters them. Battles you have won can be replayed for Ryo, or ⏭ skipped (played instantly, same rewards).',
   },
   team: {
     icon: '👥', title: 'Building a team',
-    text: () => 'Tap a slot, then a ninja. Three members fight alongside a ★ Leader, who fights too and gives a team buff. ▲ marks ninja that are effective against this battle\'s enemies, ▼ marks ninja they counter.',
+    text: () => 'Tap a slot, then a ninja. Three members fight alongside a ★ Leader, who fights too and gives a team buff. Each ninja shows ▲ Counters, ▼ Countered or • Neutral against this fight\'s enemies. ✨ Auto builds the best team for the fight, and the Story, Boss and Daily presets swap teams in one tap.',
   },
   roster: {
     icon: '📖', title: 'Your roster',
-    text: (g) => `Spend Ryo to level up. A ninja ${g.B.economy.catchUp.gap} or more levels behind your best one levels up ${pctStr(g.B.economy.catchUp.discount)} cheaper, so a nature counter from the bench catches up fast.`,
+    text: (g) => `Spend Ryo to level up. ⬆ Level to recommended levels your team for the next fight and stops there; 💰 Smart spend puts Ryo where it adds the most power and keeps a reserve. A ninja ${g.B.economy.catchUp.gap} or more levels behind your best one levels up ${pctStr(g.B.economy.catchUp.discount)} cheaper.`,
   },
   character: {
     icon: '🥷', title: 'Ninja details',
@@ -23,7 +23,7 @@ export const SCREEN_TIPS = {
   },
   summon: {
     icon: '📜', title: 'Summoning',
-    text: (g) => `A Kage is guaranteed within ${g.B.gacha.pity} summons, and the counter carries across every banner. Arc banners boost their featured ninja, and villains join the pools once their arc is cleared.`,
+    text: (g) => `A Kage is guaranteed within ${g.B.gacha.pity} summons, and the counter carries across every banner (a ×10 counts as ten). Arc banners boost their featured ninja, and villains join the pools once their arc is cleared. Switch on "Skip animation" to see your ninja at once.`,
   },
   rush: {
     icon: '☁️', title: 'Boss Rush',
