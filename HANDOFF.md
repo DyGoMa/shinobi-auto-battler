@@ -310,6 +310,10 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 10. **Recommended power for Hard** assumes the Hard on-curve team (everyone unlocked by the end of the part, starred up), so it reads high for a player who only just opened Hard. That is what the Hard bosses are tuned for.
 11. **Skip after a loss** keeps the node cleared (a win once is enough); a skipped loss costs nothing but time, like a normal loss.
 
+## Live check (0.11.2)
+
+Build **v469f949 · 2026-09-25 04:07 UTC** at https://dygoma.github.io/shinobi-auto-battler/, in the desktop browser pane emulating 412×915 (touch, so it counts as a phone): version 0.11.2, the service worker controls the page, `js/ui/install.js` served, the start menu shows the **Play full screen** notice with its Install button (plan `android`: the pane never fires `beforeinstallprompt`), `installPrompts` = notice + popup (the pane's save has the tutorial done). With `__game.pwa.standalone = true` (the installed app) every prompt is false, the notice is gone and the plan is `installed`. The only console error is Firebase's `accounts:lookup` 400 for a stale session in this pane's storage, unrelated to the game files. The real-phone checklist is in QA.md ("0.11.2 (the install suggestions)").
+
 ## Live check (0.11.1)
 
 `360e906` (the release), `5862400` (revalidation) and `09a767e` (the WARM message) each deployed by the workflow within a minute (`version.json` = `09a767e`, built 2026-09-25 03:08 UTC). https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 with its Android user agent; the profile's existing guest session was restored by the menu (**no Firebase account was created**).
