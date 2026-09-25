@@ -1,6 +1,31 @@
-# HANDOFF.md — 0.11.0 → the art, audio and VFX pass
+# HANDOFF.md — 0.11.1 → the art, audio and VFX pass
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
+
+## 0.11.1: the installable app (PWA)
+
+The game installs from the browser and, launched from the Android home screen, runs **standalone** with no Chrome UI, which removes the Chrome "chin" strip under the tab bar that 0.11.0 could not fix in the browser. Nothing here touches a cost, a reward, a curve or a battle: `npm run sim` and `npm run campaign` print the 0.11.0 numbers.
+
+| Piece | Where | What it does |
+|---|---|---|
+| Manifest | `manifest.webmanifest`, linked from `index.html` with `theme-color`, `apple-touch-icon` and the `apple-mobile-web-app-*` tags | name "Shinobi Auto Battler", short_name "Shinobi", `display: standalone`, no orientation lock, dark `theme_color` / `background_color` (#0d1117, the app shell: no white flash), `start_url` and `scope` **relative** (`./`) so they resolve to `/shinobi-auto-battler/` on Pages and `/` locally |
+| Icons | `icons/icon-192.png`, `icon-512.png` (the 忍 badge on the app's dark background), `icon-512-maskable.png` (full orange, glyph in the 80 % safe zone), `apple-touch-icon.png` (180) | Rendered by `tools/make-icons.ps1` (System.Drawing, Yu Gothic Bold); placeholder art, see §7 |
+| Service worker | `sw.js` (root, so its scope is the game's path), registered by `js/ui/pwa.js` with `updateViaCache: 'none'` | **Network first for every same-origin GET** (index.html, version.json, JS, CSS, icons), cached as it passes through, cache **only when the network fails**. No cache-first path for code, so a new deploy is used on the next launch by itself. `skipWaiting` + `clients.claim`, old caches deleted on activate: an update can never get stuck. Cross-origin (Firebase SDK, Google, Firestore) untouched. Offline with nothing cached: a 503 "Offline" response; a navigation falls back to the cached `index.html` |
+| Update check | `js/ui/pwa.js` `checkForUpdate`, `js/core/Pwa.js` `updateAvailable` | Every return to the front (`visibilitychange`, at most once a minute) and Settings → App → **↻ Check for updates** re-read `version.json`; a different commit shows a **sticky** toast **"Update ready — tap to reload"** (`ui.toast(…, { sticky: true })`, one per text). Never compares against "dev" |
+| Install | Settings → **App** card (`SettingsScreen.appCard`, model from `Pwa.installModel`) | `beforeinstallprompt` saved in `game.pwa.prompt` → **📲 Install app**; iOS: "Share → Add to Home Screen"; no prompt: the browser's menu; standalone: "Installed as an app", no button |
+| Back button | `UIManager.go` pushes a history entry per screen change in the game (the menu keeps its held entry; the first screen after the menu **replaces** it); `UIManager._onPop` | Back → the previous screen. A battle pauses, a dismissable dialog closes (`ui._modals`), and the entry is put back so the screen stays. Wiki/Settings opened from the menu → back to the menu. From Home, back leaves the page (an installed app closes); it can take **two presses**, the first eats the intro's leftover entry |
+| Safe areas | `css/style.css` `--safe-t`, `--safe-b` | The top inset is the top bar's padding (its grid row grows by the same amount, once); the bottom inset stays the tab bar's padding, once. `[hidden] { display: none !important }` added |
+| Google sign-in in the app | `FirebaseBackend` `{ standalone }`, `EARLY_CANCEL_MS` | Popup first as before. In standalone, `auth/popup-closed-by-user` **within 1.5 s** (the window never opened) falls back to the redirect; a real close is still a quiet cancel. A failed sign-in in standalone also offers **🌐 Open in the browser to sign in** (menu and Settings; Android only, `Pwa.signInFallback`): Chrome-installed apps share Chrome's storage, so a sign-in there signs the app in too. Not offered on iOS (separate storage) |
+
+**Decisions**
+* **No precache.** The shell is cached as it loads (every module is a static import, so one online launch caches the whole game); a precache list would be one more thing to keep in step and would not make updates safer.
+* **The build check reads `version.json`, not the service worker.** `sw.js` is committed and only changes when it is edited; the deploy changes `version.json`. Comparing commits is the honest "a new build is live" signal, and the network-first worker makes the reload pick it up.
+* **The Pages workflow is unchanged.** `version.json` is still written at build time; `sw.js`, the manifest and `icons/` are ordinary static files in the artifact.
+* **`.claude/launch.json`** gained a second server entry on port 8090 (another session was using 8080).
+
+**Checks:** `npm test` passes: validate (now also the manifest, the icons' PNG headers and sizes, `index.html`'s tags and `sw.js`), syntax on 73 files, **222 core tests** (14 new: standalone detection, iOS detection, the install model per platform, the update comparison and its once-a-minute rule, the sign-in fallback, and the standalone early-cancel → redirect path of `FirebaseBackend`, with a real close still a cancel and a browser tab unchanged), **61/61 sim scenarios**, **10/10** campaign players. The layout audit is clean at 412×915 and 360×780 (QA.md, "0.11.1"). In the desktop browser pane at http://localhost:8090: the worker registers, activates and controls the first page load; 63 files cached after boot; with the server **stopped**, cached files answer 200, an unrequested file and `version.json` answer 503 "Offline", and a full reload boots the game to the start menu from the cache.
+
+**Not verifiable here** (the real-phone checklist in the summary and QA.md): the install prompt itself (the pane never fires `beforeinstallprompt`), standalone mode, the real gesture-bar inset, the Google popup inside the installed app, and the system back button closing the app.
 
 ## 0.11.0: quality of life
 
@@ -27,7 +52,7 @@ A convenience release: nothing here changes a cost, a reward, an XP curve or a b
 
 Session 5 added the start flow (below). The game is finished in every way except art, audio and visual effects. Everything a
 player sees is drawn in code (canvas shapes, CSS, emoji) and every sound is a tiny Web
-Audio synth: **there are no image or audio files in the repo**. This document lists every
+Audio synth: **the only image files in the repo are the four app icons in `icons/` (0.11.1)**, and there are no audio files. This document lists every
 placeholder, where it's drawn, its size, and what's still open.
 
 ## Session 5 in one table
@@ -198,6 +223,7 @@ Driven by sim events (`onEvents`), capped at 260 live items, drawn after units:
 |---|---|---|
 | Brand mark | 30 px orange circle with 忍 | top bar, `index.html` + `.brand-mark` |
 | Favicon | inline SVG (orange circle, 忍) | `index.html` `<link rel="icon">` |
+| App icons (0.11.1) | `icons/icon-192.png`, `icons/icon-512.png`: the same orange disc (r 30/64) with 忍 (Yu Gothic Bold, 56 % of the side) on the app background #0d1117; `icons/icon-512-maskable.png`: full orange #f0691f, the glyph inside the 80 % safe zone; `icons/apple-touch-icon.png` 180×180 like the 192 | `manifest.webmanifest`, `index.html`; regenerate with `tools/make-icons.ps1` (Windows, System.Drawing). Final art: 192, 512 and a maskable 512, plus 180 for iOS |
 | Home hero decoration | 200 px 忍 at 3.5% white | `HomeScreen.js` `.hero .kanji` |
 | Tab icons | emoji 🏯 🗺️ 👥 📖 📜 📚 ⚙️ (20 px) | `UIManager.js` `TABS` |
 | Currencies | 📜 scrolls, 🪙 Ryo, 🎟️ summon ticket, 🎫 Rare+ ticket | top bar, rewards, Summon, Achievements |
@@ -255,7 +281,8 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 6. **Firebase:** the cloud save runs on the free Spark plan (FIREBASE_SETUP.md). QA used the local preview's existing anonymous account with cloud writes switched off (`offline()` in `tools/ui-audit.mjs`) and created no accounts; the live check below created one guest account.
 
 **0.11 (new)**
-7. **The tab bar on real phones:** check the Pixel 8a with 3-button and with gesture navigation, and an iPhone's home indicator in both orientations. If a strip remains under the tabs on Android, it is Chrome's chin (see "The tab bar strip on Android" above).
+7. **The tab bar on real phones:** check the Pixel 8a with 3-button and with gesture navigation, and an iPhone's home indicator in both orientations. If a strip remains under the tabs on Android, it is Chrome's chin (see "The tab bar strip on Android" above). **0.11.1:** installed from Chrome and launched from the home screen the game is standalone, so the chin is gone; the gesture bar's inset is then real and the tab bar pads by it once.
+12. **The installed app on a real phone (0.11.1):** install it, launch from the home screen, check there is no strip, sign in with Google inside it, force an update and see the toast, and try the back button (the checklist is in QA.md). If the Google window fails inside the app, the menu now offers the browser; if that is what happens on the Pixel 8a, note it here.
 8. **5× speed on a low-end phone:** the sim runs up to ~8 fixed ticks per frame at 5×; fine on a desktop and the Pixel 8a class, unmeasured on slow phones.
 9. **Presets don't check a battle's rules:** a preset can hold a ninja a battle benches or two ninja the battle forces anyway; the battle's own rules still apply when it starts (as with any team).
 10. **Recommended power for Hard** assumes the Hard on-curve team (everyone unlocked by the end of the part, starred up), so it reads high for a player who only just opened Hard. That is what the Hard bosses are tuned for.

@@ -16,7 +16,7 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 - **Roster**: every ninja in the game, with sorting and filters. Spend Ryo here to level them up, by hand or with **⬆ Level to recommended** and **💰 Smart spend**. See [Levelling and economy](wiki:guide/levelling).
 - **Summon**: spend scrolls to recruit ninja. See [Summoning and pity](wiki:guide/summoning).
 - **Wiki**: this reference. Every screen has a **?** button that opens its page here.
-- **Settings**: sound, battle options, tips and your cloud save.
+- **Settings**: sound, battle options, tips, your cloud save, and **App** (install the game on your home screen, check for updates).
 - **🏆 Achievements** (top of the screen): goals across the whole game, and their rewards.
 
 ## A battle, step by step
@@ -64,3 +64,7 @@ A red dot on a tab means something is waiting: on **Home**, an achievement rewar
 ## Your save
 
 Progress saves automatically in this browser, and in the cloud as a guest when cloud save is available. Link a Google account in **Settings** to keep your save if you clear the browser, and sign in with the same account on another device to continue there. Settings also exports your save as a text code you can import anywhere.
+
+## The app
+
+Settings → **App** installs the game on your home screen: **📲 Install app** in Chrome (Android, PC), or **Share → Add to Home Screen** in Safari on an iPhone. From the home screen it runs full screen, with no browser bars, and the screens you have opened keep working offline. It checks for a new build each time it opens or comes back to the front and shows **"Update ready — tap to reload"** when there is one; your progress is saved before any reload. Inside the installed app, the back button goes to the previous screen (or pauses a battle, or closes a dialog); from Home it leaves the app.

@@ -68,6 +68,41 @@ if (!TIERS.includes(B.achievements?.rareTicketMinTier)) errors.push('balance.ach
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 if (pkg.version !== GAME_VERSION) errors.push(`package.json version ${pkg.version} does not match js/config/version.js GAME_VERSION ${GAME_VERSION}`);
 
+// ---- the installable app: manifest, icons, service worker, index.html tags -------
+{
+  const root = new URL('../', import.meta.url);
+  const read = (p) => readFileSync(new URL(p, root));
+  let manifest = null;
+  try { manifest = JSON.parse(read('manifest.webmanifest').toString('utf8')); } catch (e) { errors.push(`manifest.webmanifest: ${e.message}`); }
+  if (manifest) {
+    for (const k of ['name', 'short_name', 'start_url', 'scope', 'display', 'background_color', 'theme_color', 'icons']) if (!manifest[k]) errors.push(`manifest.webmanifest: missing "${k}"`);
+    if (manifest.short_name && manifest.short_name.length > 12) errors.push(`manifest.webmanifest: short_name "${manifest.short_name}" is longer than 12 characters (it sits under the home-screen icon)`);
+    if (manifest.display !== 'standalone') errors.push('manifest.webmanifest: display must be "standalone" (no browser bars once installed)');
+    if (manifest.start_url && /^[/h]/.test(manifest.start_url)) errors.push(`manifest.webmanifest: start_url "${manifest.start_url}" must be relative (the game lives under /shinobi-auto-battler/ on Pages and / locally)`);
+    if (manifest.scope && /^[/h]/.test(manifest.scope)) errors.push(`manifest.webmanifest: scope "${manifest.scope}" must be relative`);
+    if (manifest.orientation && /portrait|landscape/.test(manifest.orientation)) errors.push('manifest.webmanifest: do not lock the orientation (the game has a landscape layout)');
+    const html = read('index.html').toString('utf8');
+    const theme = html.match(/<meta name="theme-color" content="([^"]+)"/)?.[1];
+    if (theme !== manifest.theme_color) errors.push(`index.html theme-color ${theme} does not match manifest theme_color ${manifest.theme_color}`);
+    if (!/<link rel="manifest" href="manifest.webmanifest">/.test(html)) errors.push('index.html does not link manifest.webmanifest');
+    if (!/<link rel="apple-touch-icon" href="icons\/apple-touch-icon.png">/.test(html)) errors.push('index.html has no apple-touch-icon');
+    // Every icon exists, is a PNG, and is the size it claims (IHDR).
+    const pngSize = (buf) => (buf.length > 24 && buf.toString('latin1', 1, 4) === 'PNG') ? `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}` : null;
+    const have = new Set();
+    for (const ic of manifest.icons || []) {
+      let buf = null;
+      try { buf = read(ic.src); } catch { errors.push(`manifest icon ${ic.src} is missing`); continue; }
+      const size = pngSize(buf);
+      if (!size) errors.push(`manifest icon ${ic.src} is not a PNG`);
+      else if (size !== ic.sizes) errors.push(`manifest icon ${ic.src} is ${size}, manifest says ${ic.sizes}`);
+      have.add(`${ic.sizes}:${ic.purpose || 'any'}`);
+    }
+    for (const need of ['192x192:any', '512x512:any', '512x512:maskable']) if (!have.has(need)) errors.push(`manifest.webmanifest: no ${need.replace(':', ' ')} icon`);
+    try { if (pngSize(read('icons/apple-touch-icon.png')) !== '180x180') errors.push('icons/apple-touch-icon.png is not 180x180'); } catch { errors.push('icons/apple-touch-icon.png is missing'); }
+    try { const sw = read('sw.js').toString('utf8'); if (!/skipWaiting/.test(sw) || !/clients\.claim/.test(sw)) errors.push('sw.js must skipWaiting and clients.claim (updates must never get stuck)'); } catch { errors.push('sw.js is missing'); }
+  }
+}
+
 // ---- wiki (pages, guide links, config placeholders) ---------------------------
 const wiki = checkWiki();
 errors.push(...wiki.errors);
@@ -83,6 +118,7 @@ console.log(`  balance curves checked: ${curveSpecs.length}   last node enemy le
 const unsourced = missingNames();
 if (unsourced.length) console.log(`  ⚠ ${unsourced.length} name(s) have no source in tools/naming-sources.mjs (NAMING.md): ${unsourced.join(', ')}`);
 else console.log('  names: every in-game name has a recorded source (NAMING.md)');
+console.log('  app: manifest.webmanifest, icons (192, 512, 512 maskable, 180 Apple) and sw.js check out');
 console.log(`  wiki: ${wiki.pages} pages, ${wiki.guides} guides, ${wiki.links} guide links${wiki.errors.length ? ` — ${wiki.errors.length} problem(s)` : ': every page, link and config value checks out'}`);
 if (errors.length) {
   console.log(`\nFAIL — ${errors.length} problem(s):`);

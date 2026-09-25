@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["tools/serve.mjs"],
       "port": 8080
+    },
+    {
+      "name": "shinobi-static-8090",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "process.env.PORT='8090'; import('./tools/serve.mjs')"],
+      "port": 8090
     }
   ]
 }

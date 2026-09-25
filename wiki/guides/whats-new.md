@@ -2,6 +2,13 @@
 
 ## Version {{cfg:version.current}}
 
+- **Install it as an app.** Settings → App → **📲 Install app** (Chrome on Android and on a PC), or **Share → Add to Home Screen** on an iPhone. Launched from the home screen, the game runs full screen with no browser bars, so the empty strip Chrome could draw under the tab bar is gone. The screens you have opened keep working offline.
+- **Updates arrive on their own.** The app looks for a new build each time it opens or comes back to the front and shows **"Update ready — tap to reload"** when there is one. Settings → App → **↻ Check for updates** looks right now.
+- **The back button** (your phone's, or the browser's) now goes to the previous screen, pauses a battle or closes a dialog, instead of leaving the game.
+- **Signing in with Google inside the installed app:** if the Google window can't open there, the game says so and offers to sign you in from the browser instead (on Android the app and Chrome share the same sign-in).
+
+## Version 0.11.0
+
 - **A tidier phone layout.** The tab bar sits right on the bottom edge (no empty strip under it), all seven tabs keep their labels, and screens scroll clear of it. Once you've done the tutorial, the Home card drops its intro text so **▶ Continue** comes first.
 - **A clearer Story map.** Tabs for **Story**, **💀 Hard**, **📅 Daily** and **☁️ Boss Rush**. The next battle glows, locked battles say which battle opens them, cleared ones have a ✓, and arcs you've cleared fold into one line. The map scrolls to where you are, and every battle shows its **⚡ recommended team power**.
 - **⏭ Skip** any story or Hard battle you've already won: the real battle, played instantly with 🤖 Auto-ult, for the same rewards (and yes, it can be lost). Not for the Daily challenge.

@@ -60,6 +60,7 @@ export class UIManager {
     this.startPending = false;
     this._startTarget = null;
     this._held = false;
+    this._modals = [];   // open dialogs, oldest first (the back button closes the newest)
   }
 
   init() {
@@ -76,29 +77,54 @@ export class UIManager {
       this.game.audio.setMuted(s.muted); this.game.commit('mute'); this.refreshTop();
     });
     this.refreshTop();
-    const fromHash = () => {
-      const raw = decodeURIComponent((location.hash || '').replace('#', ''));
-      if (raw.startsWith('wiki/')) return { id: 'wiki', params: { page: raw.slice(5) } };
-      return SCREENS[raw] && raw !== 'tutorial' ? { id: raw, params: {} } : { id: 'home', params: {} };
-    };
     // The start menu comes first; a deep link (#wiki/…) opens once the player enters the game.
     this.startPending = true;
-    this._startTarget = fromHash();
+    this._startTarget = this._fromHash();
     this.go('start');
-    // Android back on the menu does nothing (the menu re-arms its history entry); on the intro it skips (Intro.js).
-    window.addEventListener('popstate', () => { this._held = false; if (this.startPending && this.current === 'start') this._holdHistory(); });
+    // The back button (Android's, the browser's) is handled in _onPop: it pops a screen entry
+    // pushed by go(). hashchange still covers a hash typed into the address bar.
+    window.addEventListener('popstate', () => this._onPop());
     window.addEventListener('hashchange', () => {
-      const t = fromHash();
-      const now = this.current === 'wiki' ? `wiki/${this.params.page || 'home'}` : this.current;
-      const want = t.id === 'wiki' ? `wiki/${t.params.page || 'home'}` : t.id;
-      if (want !== now && !this.battle) this.go(t.id, t.params);
+      const t = this._fromHash();
+      if (!this.battle && !this.startPending && this._hashFor(t.id, t.params) !== this._hashFor(this.current, this.params)) this.go(t.id, t.params);
     });
+  }
+
+  /** The screen a location hash names (#story, #wiki/guide/how-to-play); Home for anything else. */
+  _fromHash() {
+    const raw = decodeURIComponent((location.hash || '').replace('#', ''));
+    if (raw.startsWith('wiki/')) return { id: 'wiki', params: { page: raw.slice(5) } };
+    return SCREENS[raw] && raw !== 'tutorial' ? { id: raw, params: {} } : { id: 'home', params: {} };
+  }
+  _hashFor(id, params = {}) { return '#' + (id === 'wiki' && params.page && params.page !== 'home' ? `wiki/${params.page}` : id); }
+
+  /**
+   * The back button. On the start menu it stays (the menu re-arms its entry); on the Wiki or
+   * Settings opened from the menu it goes back to the menu. In the game, every screen change is
+   * a history entry (go), so back goes to the previous screen and, from the first one, leaves
+   * the page (an installed app closes, as Android apps do). A battle or an open dialog takes it
+   * first: the battle pauses, the dialog closes, and the entry is put back so the screen stays.
+   */
+  _onPop() {
+    this._held = false;
+    if (this.startPending) { if (this.current === 'start') this._holdHistory(); else this.go('start'); return; }
+    const stay = () => { try { history.pushState(null, '', this._hashFor(this.current, this.params)); } catch { /* file:// */ } };
+    if (this.battle) { stay(); if (!this.battle.paused && !this.battle.ended) this.battle.togglePause(true); return; }
+    const top = this._modals[this._modals.length - 1];
+    if (top) { stay(); if (top.dismissable) top.close(); return; }
+    const t = this._fromHash();
+    if (this._hashFor(t.id, t.params) === this._hashFor(this.current, this.params)) {
+      // A leftover entry with this screen's own hash (the intro's, or the menu's): keep going back.
+      try { history.back(); } catch { /* ignore */ }
+      return;
+    }
+    this.go(t.id, t.params);
   }
 
   /** Settings → Replay intro: the full splash and scene again. */
   playIntro() { return playIntro(introPlan({ full: true, reducedMotion: prefersReducedMotion() })); }
 
-  go(id, params = {}) {
+  go(id, params = {}, { replace = false } = {}) {
     if (!SCREENS[id]) id = 'home';
     if (this.startPending && !START_SCREENS.includes(id)) id = 'start';
     if (!this.startPending && id === 'start') id = 'home';
@@ -106,8 +132,12 @@ export class UIManager {
     document.body.classList.toggle('start-mode', this.startPending && id === 'start');
     document.body.classList.toggle('start-sub', this.startPending && id !== 'start');
     if (this.startPending && id === 'start') this._holdHistory();
-    const hash = '#' + (id === 'wiki' && params.page && params.page !== 'home' ? `wiki/${params.page}` : id);
-    try { if (location.hash !== hash) history.replaceState(null, '', hash); } catch { /* file:// */ }
+    // In the game each new screen is a history entry (the back button returns to the previous
+    // one); on the menu the hash is only kept current. The first screen after the menu replaces
+    // the menu's entry, so back from it leaves the page instead of showing the menu again.
+    const hash = this._hashFor(id, params);
+    const push = !this.startPending && !replace;
+    try { if (location.hash !== hash) history[push ? 'pushState' : 'replaceState'](null, '', hash); } catch { /* file:// */ }
     this.render(true);
     this.screenEl.scrollTop = 0;
   }
@@ -146,7 +176,7 @@ export class UIManager {
     document.body.classList.remove('start-mode', 'start-sub');
     const t = this._startTarget && !['start', 'home'].includes(this._startTarget.id) ? this._startTarget : { id: 'home', params: {} };
     this._startTarget = null;
-    this.go(t.id, t.params);
+    this.go(t.id, t.params, { replace: true });
     this.welcome();
   }
 
@@ -250,7 +280,9 @@ export class UIManager {
     const veil = h('div.veil');
     const box = h('div.modal' + (wide ? '.wide' : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-label': label || undefined }, content);
     veil.appendChild(box);
-    const close = () => { veil.remove(); document.removeEventListener('keydown', onKey); if (onClose) onClose(); };
+    const entry = { dismissable, close: () => close() };
+    this._modals.push(entry);
+    const close = () => { veil.remove(); document.removeEventListener('keydown', onKey); this._modals = this._modals.filter(m => m !== entry); if (onClose) onClose(); };
     const onKey = (e) => { if (e.key === 'Escape' && dismissable) close(); };
     if (dismissable) veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
     document.addEventListener('keydown', onKey);
@@ -280,11 +312,14 @@ export class UIManager {
     else for (const a of list) this.toast(`🏆 Achievement unlocked: ${a.name}. Tap to claim.`, 'good', open);
   }
 
-  toast(text, kind = '', onclick = null) {
+  /** A toast for 3.2 s; { sticky: true } keeps it until it is tapped (one per text). */
+  toast(text, kind = '', onclick = null, { sticky = false } = {}) {
+    if (sticky) for (const old of this.toastRoot.querySelectorAll('.toast.sticky')) if (old.textContent === text) return;
     const t = h(onclick ? 'button.toast' : 'div.toast', { role: 'status', type: onclick ? 'button' : null, onclick: onclick ? () => { t.remove(); onclick(); } : null }, text);
     if (kind) t.classList.add(kind);
+    if (sticky) t.classList.add('sticky');
     this.toastRoot.appendChild(t);
-    setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 320); }, 3200);
+    if (!sticky) setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 320); }, 3200);
     while (this.toastRoot.children.length > 4) this.toastRoot.firstChild.remove();
   }
 

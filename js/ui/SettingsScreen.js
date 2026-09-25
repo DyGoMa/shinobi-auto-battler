@@ -7,6 +7,8 @@ import { FIREBASE_SDK_VERSION } from '../save/FirebaseBackend.js';
 import { GAME_VERSION } from '../config/version.js';
 import { tipCard, tipsEnabled, resetTips } from './tips.js';
 import { screenHead } from './chrome.js';
+import { installModel, signInFallback } from '../core/Pwa.js';
+import { UPDATE_READY_TEXT } from './pwa.js';
 
 const row = (title, sub, control, id) => h('div.setting', { id },
   h('div.setting-text', h('b', title), sub ? h('div.tiny.muted', sub) : null), control);
@@ -58,6 +60,8 @@ export function render(game, ui) {
 
     accountCard(game, ui),
 
+    appCard(game, ui),
+
     saveCard(game, ui),
 
     h('div.card.gap',
@@ -67,6 +71,34 @@ export function render(game, ui) {
       h('p.tiny.dim', 'Fan-made, non-commercial. Naruto © Masashi Kishimoto / Shueisha / Studio Pierrot. Names follow the English dub; no official artwork is used.'),
       h('p.build-stamp.about-stamp', { title: 'Build: the deployed commit and its UTC build time ("dev" on a local copy)' }, game.build?.label || 'dev'),
     ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The installable app (js/core/Pwa.js decides what to show; js/ui/pwa.js does it)
+// ---------------------------------------------------------------------------
+function appCard(game, ui) {
+  const pwa = game.pwa;
+  if (!pwa) return null;
+  const m = installModel({ standalone: pwa.standalone, canPrompt: pwa.canPrompt, ua: pwa.ua, maxTouchPoints: pwa.maxTouchPoints });
+  const check = async (e) => {
+    const b = e.currentTarget; b.disabled = true; const old = b.textContent; b.textContent = 'Checking…';
+    try {
+      const newer = await pwa.checkForUpdate({ force: true });
+      if (!newer) ui.toast(game.build?.dev ? 'No build stamp here (a local copy): nothing to check.' : `You're on the latest build (${game.build.shortSha}).`, 'good');
+    } finally { b.disabled = false; b.textContent = old; }
+  };
+  return h('div.card.gap', { id: 'set-app' },
+    h('h2', 'App'),
+    row(m.title, m.text, m.kind === 'prompt' ? btn(m.button, async (e) => {
+      const b = e.currentTarget; b.disabled = true;
+      const r = await pwa.install();
+      if (r === 'accepted') ui.toast('Installing… Open the game from your home screen when it is done.', 'good');
+      else if (r === 'dismissed') ui.toast('Install cancelled. The option stays in your browser\'s menu.');
+      ui.refresh();
+    }, 'primary small') : null, 'set-install'),
+    row('Updates', `The game checks for a new build each time it opens or comes back to the front, and shows "${UPDATE_READY_TEXT}". Reloading is always safe: your progress is saved first.`,
+      btn('↻ Check for updates', check, 'small'), 'set-update'),
   );
 }
 
@@ -81,6 +113,14 @@ function accountCard(game, ui) {
     try { await fn(); } finally { b.disabled = false; b.textContent = old; ui.refresh(); }
   };
   const last = cs.lastSync ? `Last synced at ${new Date(cs.lastSync).toLocaleTimeString()}.` : 'Syncs a few seconds after each change.';
+  // Inside the installed app a failed Google sign-in also offers the browser (Android shares the sign-in).
+  const fallback = game.pwa ? signInFallback({ standalone: game.pwa.standalone, ua: game.pwa.ua, maxTouchPoints: game.pwa.maxTouchPoints }) : null;
+  const signInFailed = (msg) => {
+    ui.toast(msg, 'bad');
+    if (fallback) closeFb = ui.modal(h('div', h('h2', 'Sign in from the browser instead?'), h('p', msg), h('p.small.muted', fallback.text),
+      h('div.actions', btn('Not now', () => closeFb(), 'ghost'), btn(fallback.label, () => { closeFb(); game.pwa.openInBrowser(); }, 'primary'))), { label: 'Sign in from the browser' });
+  };
+  let closeFb = () => {};
   let status, actions = [];
   switch (cs.kind) {
     case 'off':
@@ -101,7 +141,7 @@ function accountCard(game, ui) {
           if (r.redirecting) { ui.toast('Taking you to Google to sign in…'); return; }
           if (r.cancelled) return;   // the player closed the Google window
           if (r.ok) { await save.afterSignIn(); game.state.account.googleLinked = true; game.commit('account'); ui.toast('Signed in: your save syncs with your Google account.', 'good'); }
-          else ui.toast(r.error, 'bad');
+          else signInFailed(r.error);
         }), 'primary'),
         btn('Use as a guest', busy('Connecting…', async () => {
           const r = await cloud.continueAsGuest();
@@ -124,7 +164,7 @@ function accountCard(game, ui) {
             game.commit('account');
             await save.saveCloudNow();
             ui.toast(r.switched ? 'Signed in to your existing Google save.' : 'Google account linked: your save now follows you.', 'good');
-          } else ui.toast(r.error, 'bad');
+          } else signInFailed(r.error);
         }), 'primary'),
         btn('☁️ Sync now', busy('Syncing…', async () => { (await save.saveCloudNow()) ? ui.toast('Uploaded to the cloud.', 'good') : ui.toast('Upload failed. It will try again automatically.', 'bad'); })),
       ];

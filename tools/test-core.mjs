@@ -10,7 +10,8 @@ import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, owned
 import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, dailyReward, dailyBattleConfig, dailyEnemyNature, dailyContent } from '../js/core/Daily.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 import { INTRO, introPlan, introSeen, setIntroSeen, menuModel } from '../js/core/StartFlow.js';
-import { FirebaseBackend, REDIRECT_FLAG, POPUP_UNAVAILABLE, POPUP_CANCELLED, EMPTY_REDIRECT_ERROR } from '../js/save/FirebaseBackend.js';
+import { FirebaseBackend, REDIRECT_FLAG, POPUP_UNAVAILABLE, POPUP_CANCELLED, EMPTY_REDIRECT_ERROR, EARLY_CANCEL_MS } from '../js/save/FirebaseBackend.js';
+import { isStandalone, isIOS, installModel, updateAvailable, shouldCheckForUpdate, UPDATE_CHECK_MIN_MS, signInFallback } from '../js/core/Pwa.js';
 import { formatBuild, loadBuildInfo, DEV_LABEL } from '../js/core/Version.js';
 import { SaveManager, tutorialRewardClaimed } from '../js/core/SaveManager.js';
 import { recommendedPower, teamPower } from '../js/core/Power.js';
@@ -449,6 +450,31 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   const k4 = await lb4.linkGoogle();
   ok(k4.cancelled && !k4.error && lb4.isAnonymous && !l4.calls.includes('linkRedirect'), 'closing the link popup is a quiet cancel; the guest save stays as it was');
 
+  // inside the installed app (standalone): a popup "closed" faster than a human could have
+  // closed it means the window never opened → redirect; a real close is still a quiet cancel
+  {
+    let t = 1000; const now = () => t;
+    const f5 = fakeSdk({ user: guestUser, linkPopup: 'auth/popup-closed-by-user' });
+    const sb = new FirebaseBackend(cfg, { sdk: f5.sdk, standalone: true, now }); await sb.init();
+    const k5 = await sb.linkGoogle();
+    ok(k5.redirecting && f5.calls.join().endsWith('linkPopup,linkRedirect') && session.get(REDIRECT_FLAG) === 'link', 'standalone: a popup closed at once falls back to linkWithRedirect');
+    session.clear();
+    const f6 = fakeSdk({ user: guestUser, linkPopup: 'auth/popup-closed-by-user' });
+    f6.sdk.linkWithPopup = async () => { f6.calls.push('linkPopup'); t += EARLY_CANCEL_MS + 1; throw authError('auth/popup-closed-by-user'); };
+    const sb2 = new FirebaseBackend(cfg, { sdk: f6.sdk, standalone: true, now }); await sb2.init();
+    const k6 = await sb2.linkGoogle();
+    ok(k6.cancelled && !k6.error && !f6.calls.includes('linkRedirect') && !session.has(REDIRECT_FLAG), 'standalone: a popup closed after a while is still a quiet cancel');
+    const f7 = fakeSdk({ popup: 'auth/popup-closed-by-user' });
+    const sb3 = new FirebaseBackend(cfg, { sdk: f7.sdk, standalone: true, now }); await sb3.init();
+    const k7 = await sb3.signInWithGoogle();
+    ok(k7.redirecting && f7.calls.join().endsWith('popup,redirect') && session.get(REDIRECT_FLAG) === 'signIn', 'standalone: the same for signInWithGoogle');
+    session.clear();
+    const f8 = fakeSdk({ popup: 'auth/popup-closed-by-user' });
+    const sb4 = new FirebaseBackend(cfg, { sdk: f8.sdk, standalone: false, now }); await sb4.init();
+    const k8 = await sb4.signInWithGoogle();
+    ok(k8.cancelled && !f8.calls.includes('redirect'), 'in a browser tab an instant close is still a cancel (no redirect)');
+  }
+
   // back from a redirect this page started: every outcome is reported, and the flag is cleared
   const back = async (kind, opts) => { session.set(REDIRECT_FLAG, kind); const r = await backend(opts); return r; };
   const { b: r1 } = await back('signIn', { redirect: 'user' });
@@ -658,6 +684,26 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   bs.daily = { ...bs.daily, date: day, attempts: 1, cleared: true };
   ok(!dailyWaiting(bs, C, B, day) && dailyWaiting(bs, C, B, '2999-01-01'), 'cleared today: no dot, and it comes back the next day');
   ok(bs.daily.date === day, 'checking the dots never changes the save');
+}
+
+// ---- the installable app (js/core/Pwa.js) ------------------------------------
+{
+  ok(isStandalone({ matchMedia: () => ({ matches: true }), navigator: {} }) && !isStandalone({ matchMedia: () => ({ matches: false }), navigator: {} }), 'standalone: display-mode media query');
+  ok(isStandalone({ matchMedia: undefined, navigator: { standalone: true } }) && !isStandalone({ matchMedia: undefined, navigator: {} }), 'standalone: iOS navigator.standalone, false with nothing');
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1';
+  const pixel = 'Mozilla/5.0 (Linux; Android 15; Pixel 8a) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36';
+  ok(isIOS(iphone) && !isIOS(pixel) && isIOS('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 5) && !isIOS('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 0), 'iOS detection (iPhone, iPad as Macintosh with touch, not Android or a Mac)');
+  ok(installModel({ standalone: true, canPrompt: true }).kind === 'installed', 'installed: no install button, even with a prompt');
+  const p = installModel({ standalone: false, canPrompt: true, ua: pixel });
+  ok(p.kind === 'prompt' && /Install app/.test(p.button), 'Android Chrome with beforeinstallprompt: the Install button');
+  const i = installModel({ standalone: false, canPrompt: false, ua: iphone });
+  ok(i.kind === 'ios' && /Share/.test(i.text) && /Add to Home Screen/.test(i.text) && !i.button, 'iPhone: Share > Add to Home Screen, no button');
+  const m = installModel({ standalone: false, canPrompt: false, ua: pixel });
+  ok(m.kind === 'manual' && /Add to Home screen/.test(m.text) && !m.button, 'no prompt yet: the browser menu');
+  const a = { sha: 'aaaaaaa', dev: false }, b = { sha: 'bbbbbbb', dev: false }, dev = { dev: true };
+  ok(updateAvailable(a, b) && !updateAvailable(a, a) && !updateAvailable(dev, b) && !updateAvailable(a, dev) && !updateAvailable(null, b), 'update: a different live commit, never against "dev"');
+  ok(shouldCheckForUpdate(0, 5000) && !shouldCheckForUpdate(5000, 5000 + UPDATE_CHECK_MIN_MS - 1) && shouldCheckForUpdate(5000, 5000 + UPDATE_CHECK_MIN_MS), 'update checks are at most one a minute');
+  ok(signInFallback({ standalone: true, ua: pixel })?.label && !signInFallback({ standalone: false, ua: pixel }) && !signInFallback({ standalone: true, ua: iphone }), 'sign-in fallback: the browser on Android only inside the installed app, never on iOS');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);

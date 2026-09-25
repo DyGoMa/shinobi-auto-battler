@@ -105,6 +105,22 @@ start" screens.
 
 **Live check:** see HANDOFF.md ("Live check (0.11.0)").
 
+## 0.11.1: the installable app
+
+`auditAll` and `auditFlows` (now with the Settings **App** card) are clean at **412×915** and **360×780** (http://localhost:8090 in the desktop browser pane, Android user agent). No tab label clips at 360 px.
+
+**Insets, simulated** (the pane reports 0 px): with `--safe-b` 48 px and `--safe-t` 24 px at 412×915 the tab bar is 812–915 px (103 px: 54 px of tabs, the 1 px border and the 48 px inset once) and the tabs end exactly 48 px above the edge; the top bar is 0–80 px (56 + 24), the brand sits at 37 px, the screen starts at 80 px and the toasts at 90 px. Without insets: tab bar 860–915 px, top bar 0–56 px, as in 0.11.
+
+**Back button** (`history.back()` from the console): Summon → Roster → Story → Home, one screen per press; an open dialog closes and the screen stays (a non-dismissable one stays open); a battle pauses and the screen stays; a leftover entry with the current screen's hash is skipped. Wiki/Settings opened from the menu go back to the menu.
+
+**Service worker and offline:** registered at scope `/` (locally; `/shinobi-auto-battler/` on Pages), active and controlling the first page load; 63 files cached after boot. With the server stopped: `js/main.js` and `css/style.css` answer 200 from the cache, an unrequested file and `version.json` answer 503 "Offline", and a full reload boots to the start menu.
+
+**Update toast:** with `version.json` stubbed to a different commit, `checkForUpdate()` shows the sticky **"Update ready — tap to reload"** toast (a button, `.toast.good.sticky`), a second check does not stack another, and with the same commit **↻ Check for updates** toasts "You're on the latest build (…)".
+
+**Settings → App:** "Install the app" with the browser-menu text here (the pane never fires `beforeinstallprompt`); with `__game.pwa.standalone = true` the card reads "Installed as an app" with no button. The start menu's **🌐 Open in the browser to sign in** button appears in standalone after a failed Google sign-in and is hidden otherwise.
+
+Not testable in the pane: the install prompt, standalone mode itself, and the Google popup inside the installed app.
+
 ## Check on real devices before a release
 
 The audit runs in a desktop browser. On a real phone also check:
@@ -113,6 +129,7 @@ The audit runs in a desktop browser. On a real phone also check:
 - the Android back button (it moves through the `#hash` history);
 - a 10-summon with a Kage (the biggest particle burst) on a low-end phone;
 - **0.11:** the tab bar on the Pixel 8a with 3-button and with gesture navigation (no empty strip under the tabs; Chrome's own bottom bar, "the chin", can still appear on some pages: see HANDOFF.md), an iPhone's home indicator in both orientations, 5× speed on a low-end phone, and the Story map's scroll to the current battle;
+- **0.11.1 (the installed app):** install from Chrome (Settings → App → Install app, or ⋮ → Add to Home screen), launch from the home screen: no browser bars and no strip under the tab bar with gesture navigation and with 3-button navigation; Sign in with Google inside the app (guest → link); push a build and, with the app open, switch away and back: "Update ready — tap to reload" appears and the reload shows the new stamp; the back button moves between screens, pauses a battle, closes a dialog, and leaves the app from Home;
 - **Session 5:** the intro's motion at 60 fps (the preview pane throttles animations, so the run and the slam were checked frame by frame, not live); the Android back button on the intro (skips) and on the start menu (stays); **Sign in with Google** on the start menu in Chrome for Android with its default cookie settings (0.10.1: a popup opens; signing in enters the game; closing it returns to the menu with no message; FIREBASE_SETUP.md step 9); the build stamp clear of the gesture bar in both orientations.
 
 ## For the art, audio and VFX pass

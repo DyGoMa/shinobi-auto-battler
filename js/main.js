@@ -14,6 +14,8 @@ import { h } from './ui/dom.js';
 import { playIntro, prefersReducedMotion } from './ui/Intro.js';
 import { introPlan, introSeen, setIntroSeen } from './core/StartFlow.js';
 import { loadBuildInfo, formatBuild } from './core/Version.js';
+import { setupPwa } from './ui/pwa.js';
+import { isStandalone } from './core/Pwa.js';
 
 async function boot() {
   // The intro starts first, so the splash is up while the game loads behind it.
@@ -24,11 +26,14 @@ async function boot() {
 
   const audio = new AudioManager();
   const local = new LocalBackend();
-  const cloud = new FirebaseBackend();
+  // Inside the installed app (standalone) the Google popup gets a fast-cancel fallback (FirebaseBackend).
+  const cloud = new FirebaseBackend(undefined, { standalone: isStandalone() });
   const debug = new URLSearchParams(location.search).get('debug') === '1';
 
   const game = { C: CONTENT, B: BALANCE, audio, cloud, debug, rng: makeRng((Date.now() ^ (Math.random() * 1e9)) >>> 0) };
   let ui = null;
+  // The installable app: service worker, install prompt, update check (js/ui/pwa.js).
+  setupPwa(game, () => ui);
 
   const save = new SaveManager({
     local, cloud: cloud.configured ? cloud : null, content: CONTENT, balance: BALANCE,

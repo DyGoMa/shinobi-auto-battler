@@ -5,13 +5,18 @@
 // can link). StartFlow.menuModel decides what to show; this file draws it.
 import { h, btn } from './dom.js';
 import { menuModel } from '../core/StartFlow.js';
+import { signInFallback } from '../core/Pwa.js';
 
 export function render(game, ui) {
   const { save, cloud, state } = game;
   const cs = save.cloudState();
   const model = menuModel(cs, { hasProgress: (state.updatedAt || 0) > 0 || Object.keys(state.progress.cleared).length > 0, redirectError: cloud.redirectResult?.ok === false ? cloud.redirectResult.error : null });
   const note = h('p.small.start-note' + (model.warn ? '.warn-text' : ''), { role: 'status', 'aria-live': 'polite' }, model.message || '');
-  const say = (text, bad = false) => { note.textContent = text; note.classList.toggle('warn-text', bad); };
+  // Inside the installed app, a Google sign-in that fails also offers the browser (Android
+  // shares the app's sign-in): the button appears under the message.
+  const fallback = game.pwa ? signInFallback({ standalone: game.pwa.standalone, ua: game.pwa.ua, maxTouchPoints: game.pwa.maxTouchPoints }) : null;
+  const browserBtn = fallback ? btn(fallback.label, () => game.pwa.openInBrowser(), 'ghost small start-browser', { title: fallback.text, hidden: !model.retryGoogle }) : null;
+  const say = (text, bad = false) => { note.textContent = text; note.classList.toggle('warn-text', bad); if (browserBtn) browserBtn.hidden = !(bad && text); };
   // Disable the menu while a sign-in runs, and show what is happening on the button.
   const busy = (label, fn) => async (e) => {
     const b = e.currentTarget; const old = b.firstChild.textContent;
@@ -53,7 +58,7 @@ export function render(game, ui) {
       h('div.brand-mark.big', { 'aria-hidden': 'true' }, '忍'),
       h('h1', 'Shinobi Auto-Battler'),
       h('p', 'Your ninja fight on their own. You choose the team, read the Nature Wheel and time the Ultimates.')),
-    h('div.start-menu', ...buttons, note,
+    h('div.start-menu', ...buttons, note, browserBtn,
       h('div.row.center-row.start-links',
         btn('📚 Wiki', () => ui.openWiki('home'), 'ghost small'),
         btn('⚙️ Settings', () => ui.go('settings'), 'ghost small'))),

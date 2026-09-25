@@ -43,13 +43,17 @@ const redirectFlag = {
 export const POPUP_UNAVAILABLE = ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'];
 // Popup errors that mean the player closed it (or tapped twice): back to the menu, no message.
 export const POPUP_CANCELLED = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'];
+// Inside the installed app (standalone) the sign-in window opens outside the app, and some
+// Android versions report it closed at once (auth/popup-closed-by-user well before anyone could
+// have tapped anything). A cancel that fast is treated as "a popup can't open here": redirect.
+export const EARLY_CANCEL_MS = 1500;
 
 /** Shown when this page started a redirect and it came back with no user (third-party storage blocked). */
 export const EMPTY_REDIRECT_ERROR = 'Google sign-in didn’t complete. Chrome may be blocking third-party cookies for this site — allow them for dygoma.github.io or try again.';
 
 export class FirebaseBackend {
-  /** opts.sdk: a preloaded (or fake) SDK, for tests. */
-  constructor(config = firebaseConfig, { sdk = null } = {}) {
+  /** opts.sdk: a preloaded (or fake) SDK, for tests. opts.standalone: running as an installed app (js/core/Pwa.js). */
+  constructor(config = firebaseConfig, { sdk = null, standalone = false, now = () => Date.now() } = {}) {
     this.name = 'firebase';
     this.config = config;
     this.ready = false;
@@ -59,6 +63,8 @@ export class FirebaseBackend {
     this.user = null;
     this.m = null;
     this._sdk = sdk;
+    this.standalone = !!standalone;
+    this._now = now;
     // Set by init() when this page started a Google redirect and came back:
     // { ok: true, switched, kind } or { ok: false, error, kind, empty? } (empty: no user came back).
     this.redirectResult = null;
@@ -173,6 +179,7 @@ export class FirebaseBackend {
    * is a quiet cancel ({ ok: false, cancelled: true }); any other error goes to onError.
    */
   async _popupFirst(kind, popup, redirect, onError) {
+    const t0 = this._now();
     try {
       const res = await popup();
       this._setUser(res.user);
@@ -180,7 +187,10 @@ export class FirebaseBackend {
     } catch (e) {
       const code = String(e?.code || '');
       if (POPUP_UNAVAILABLE.includes(code)) return this._redirect(kind, redirect);
-      if (POPUP_CANCELLED.includes(code)) return { ok: false, cancelled: true };
+      if (POPUP_CANCELLED.includes(code)) {
+        if (this.standalone && this._now() - t0 < EARLY_CANCEL_MS) return this._redirect(kind, redirect);
+        return { ok: false, cancelled: true };
+      }
       return onError(e);
     }
   }
