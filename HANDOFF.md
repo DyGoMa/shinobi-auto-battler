@@ -288,6 +288,20 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 10. **Recommended power for Hard** assumes the Hard on-curve team (everyone unlocked by the end of the part, starred up), so it reads high for a player who only just opened Hard. That is what the Hard bosses are tuned for.
 11. **Skip after a loss** keeps the node cleared (a win once is enough); a skipped loss costs nothing but time, like a normal loss.
 
+## Live check (0.11.1)
+
+`360e906` (the release), `5862400` (revalidation) and `09a767e` (the WARM message) each deployed by the workflow within a minute (`version.json` = `09a767e`, built 2026-09-25 03:08 UTC). https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 with its Android user agent; the profile's existing guest session was restored by the menu (**no Firebase account was created**).
+
+| Check | Result |
+|---|---|
+| Load | Start menu, stamp **v09a767e · 2026-09-25 03:08 UTC**, ▶ Continue (Guest save), version 0.11.1. No console messages. |
+| Manifest | Linked as `…/shinobi-auto-battler/manifest.webmanifest`; `start_url` and `scope` resolve to `https://dygoma.github.io/shinobi-auto-battler/`, the icons to `…/shinobi-auto-battler/icons/…` (all 200, `image/png`). `sw.js` is served as `application/javascript` with `max-age=600`. |
+| Service worker | Registered at scope `https://dygoma.github.io/shinobi-auto-battler/`, `sw.js` at that path, state `activated`. On the second and later loads the page is controlled and 63 files pass through the worker into `shinobi-auto-battler-v1`. |
+| First load from a clean state (registration removed, caches deleted, reload) | The page is **not** controlled yet (`controller: false`, as on a real first visit), and the WARM message still leaves **65 files** in the cache: the page itself, every module, `css/style.css`, the manifest and the icons; `version.json` and cross-origin files are not cached. With `360e906` (before the WARM message) that same first load had cached 0. |
+| Update toast | See "Live update check" below (tested against the deploy of the commit that added this section). |
+
+Not verifiable here: the install prompt (`beforeinstallprompt` never fires in this pane), standalone mode, the real gesture-bar inset, the Google popup inside the installed app, and the system back button closing the app. The real-phone checklist is in QA.md ("0.11.1 (the installed app)").
+
 ## Live check (0.11.0)
 
 `1f64363` deployed by the workflow (`version.json` = `1f64363`, built 2026-09-25 00:28 UTC), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 with its Android user agent. The pane was hidden, so everything was driven and measured from JavaScript (no screenshots or coordinate clicks). The profile's existing guest session was restored by the menu (**no Firebase account was created**), cloud writes were stubbed (`offline()`) before entering, and the test saves were built on a copy; the real save was put back afterwards with `skipCloud`.
