@@ -35,7 +35,9 @@ export function render(game, ui) {
       h('div.hero-help', helpButton(ui, 'guide/how-to-play')),
       h('div.pill.accent', tut ? 'Tutorial — The Academy' : (node?.part ?? 2) === 1 ? 'Part I — The Hidden Leaf Village' : 'Part II — Shippuden'),
       h('h1', { style: { marginTop: '10px' } }, 'Shinobi Auto-Battler'),
-      h('p', { style: { maxWidth: '620px' } }, 'Your ninja fight on their own. You choose the team, read the Nature Wheel, and decide when to unleash each Ultimate. Fire one into an enemy\'s wind-up to trigger a ', h('b', 'Jutsu Clash'), '.'),
+      // The intro blurb is for new players: once the tutorial is done it goes, so Continue
+      // and the stats move up (the ? button opens the same explanation in the Wiki).
+      state.tutorial.status === 'done' ? null : h('p.hero-blurb', { style: { maxWidth: '620px' } }, 'Your ninja fight on their own. You choose the team, read the Nature Wheel, and decide when to unleash each Ultimate. Fire one into an enemy\'s wind-up to trigger a ', h('b', 'Jutsu Clash'), '.'),
       h('div.cta',
         primary,
         tut ? btn('Skip tutorial', () => ui.skipTutorial(), 'ghost big') : null,

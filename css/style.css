@@ -31,7 +31,9 @@
   --shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
   --t: 0.2s;
-  --tabbar-h: 64px;
+  /* The bottom tab bar's own height (the tabs). The safe-area inset is added once, as the
+     bar's bottom padding (see #tabbar), never to the grid row as well. */
+  --tabbar-h: 54px;
   --topbar-h: 56px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
@@ -61,7 +63,9 @@ a { color: var(--accent2); }
 
 /* ---------------- App shell ---------------- */
 /* minmax(0, …) columns: no screen content can make the app wider than the window. */
-#app { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--topbar-h) 1fr calc(var(--tabbar-h) + var(--safe-b)); }
+/* Rows: top bar, the scrolling screen, the tab bar at its own height ('auto': the tabs plus
+   the safe-area padding, so the bar sits flush on the bottom edge with no empty strip). */
+#app { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--topbar-h) minmax(0, 1fr) auto; }
 #topbar { display: flex; align-items: center; gap: 12px; padding: 0 14px; background: linear-gradient(180deg, #151d27, #111820); border-bottom: 1px solid var(--line); z-index: 5; }
 #topbar .brand { display: flex; align-items: center; gap: 8px; font-weight: 900; letter-spacing: .02em; cursor: pointer; user-select: none; }
 .brand-mark { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #ffb86b, #e0621d); color: #1b0f06; font-weight: 900; font-size: 16px; box-shadow: 0 0 0 2px #2a1a0c inset; }
@@ -73,14 +77,17 @@ a { color: var(--accent2); }
 .icon-btn:hover { background: var(--surface2); border-color: var(--surface3); }
 .icon-btn:active { transform: scale(.95); }
 
-#screen { overflow-y: auto; overflow-x: hidden; padding: 16px 16px 24px; -webkit-overflow-scrolling: touch; }
+/* The screen scrolls in its own grid row above the tab bar, so nothing can sit behind the
+   bar; the bottom padding leaves the last row of content clear of it. */
+#screen { overflow-y: auto; overflow-x: hidden; padding: 16px 16px 28px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .screen { max-width: 1100px; margin: 0 auto; }
 .screen.enter { animation: screenIn var(--t) ease-out; }
 @keyframes screenIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-#tabbar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: #0f151d; border-top: 1px solid var(--line); padding-bottom: var(--safe-b); z-index: 5; }
-.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 0; background: none; cursor: pointer; color: var(--dim); font-size: .68rem; font-weight: 700; min-height: 44px; min-width: 0; padding: 0 2px; transition: color var(--t), background var(--t); position: relative; }
-.tab > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tabbar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: var(--tabbar-h); background: #0f151d; border-top: 1px solid var(--line); padding: 0 max(2px, env(safe-area-inset-right, 0px)) var(--safe-b) max(2px, env(safe-area-inset-left, 0px)); z-index: 5; }
+/* Seven tabs from a 320 px phone up: the label shrinks with the width so it never clips. */
+.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: none; cursor: pointer; color: var(--dim); font-size: clamp(.6rem, 2.55vw, .72rem); font-weight: 700; letter-spacing: -.01em; min-height: 44px; min-width: 0; padding: 0 1px; transition: color var(--t), background var(--t); position: relative; }
+.tab .tl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.1; }
 .tab .ti { font-size: 1.25rem; line-height: 1; transition: transform var(--t); }
 .tab:hover { color: var(--muted); }
 .tab.active { color: var(--accent); }
@@ -398,7 +405,7 @@ textarea { min-height: 90px; resize: vertical; font-family: ui-monospace, Consol
   #topbar { gap: 8px; padding: 0 10px; }
   #topbar .brand span.title { display: none; }
   .currency { padding: 5px 8px; font-size: .9rem; }
-  #screen { padding: 12px 12px 20px; }
+  #screen { padding: 12px 12px 28px; }
   .slots { grid-template-columns: repeat(2, 1fr); }
   .pull-buttons { grid-template-columns: 1fr; }
   .reveal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

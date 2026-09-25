@@ -62,7 +62,7 @@ export class UIManager {
   init() {
     for (const t of TABS) {
       const b = h('button.tab', { type: 'button', dataset: { tab: t.id }, onclick: () => { this.game.audio.click(); this.go(t.id); } },
-        h('span.ti', { 'aria-hidden': 'true' }, t.icon), h('span', t.label));
+        h('span.ti', { 'aria-hidden': 'true' }, t.icon), h('span.tl', t.label));
       this.tabbar.appendChild(b);
     }
     document.getElementById('brand').addEventListener('click', () => this.go('home'));
