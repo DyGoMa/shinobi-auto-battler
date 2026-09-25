@@ -261,6 +261,23 @@ When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the 
 10. **Recommended power for Hard** assumes the Hard on-curve team (everyone unlocked by the end of the part, starred up), so it reads high for a player who only just opened Hard. That is what the Hard bosses are tuned for.
 11. **Skip after a loss** keeps the node cleared (a win once is enough); a skipped loss costs nothing but time, like a normal loss.
 
+## Live check (0.11.0)
+
+`1f64363` deployed by the workflow (`version.json` = `1f64363`, built 2026-09-25 00:28 UTC), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 with its Android user agent. The pane was hidden, so everything was driven and measured from JavaScript (no screenshots or coordinate clicks). The profile's existing guest session was restored by the menu (**no Firebase account was created**), cloud writes were stubbed (`offline()`) before entering, and the test saves were built on a copy; the real save was put back afterwards with `skipCloud`.
+
+| Check | Result |
+|---|---|
+| Load | Start menu, stamp **v1f64363 · 2026-09-25 00:28 UTC**, ▶ Continue (Guest save). No console messages all session. |
+| Existing save | The guest save migrated to v3 on load: tutorial done, so `account.tutorialRewarded` = true; 3 empty presets; speed 1×. |
+| Tab bar | 860–915 px: 55 px, flush with the bottom edge (inset 0 px in this browser), no clipped label. Home's last row ends at 829 px, 31 px above the bar; the "Kage pity" tile is fully visible. The intro blurb is gone (tutorial done). |
+| Dots | Home ("rewards to claim, Daily challenge waiting, Boss Rush open") and Summon ("free summon available") on the QA save. |
+| Story map | Tabs 🗺️ Story (on) · 🔒 Hard (Part II not cleared) · 📅 Daily · ☁️ Boss Rush. The next battle (The Tenchi Bridge) pulses, shows ⚡5.6k, and was scrolled to the middle of the screen (402–514 px). The first locked battle is grey with 🔒 and "Clear The Tenchi Bridge first". Cleared battles show ✓. Pre-fight: recommended 5,598 vs team 7,468, "✓ Ready". |
+| Skip | On a cleared battle (Traps Activate! Team Guy's Enemy): no battle screen opened, "VICTORY · 18.4 s · ⏭ skipped", +5,020 Ryo (its replay reward), clears +1, buttons Map · Change team · ⏭ Retry · Next fight ▶. No Skip on the next (unwon) battle or on the Daily screen. |
+| 5× | The speed button went 1× → 2× → 5× and saved 5; 20 frames of 40 ms (0.8 s) advanced the battle 4.0 s; the next battle opened at 5×. |
+| 10-pull | "Skip animation" on: all 10 cards shown at once with no scroll; 900 scrolls; the last card a Jonin (the guarantee); pity 0 → 10. |
+
+Not verifiable here: the real safe-area inset on a phone (this browser reports 0 px; simulated in QA.md), and animations at full frame rate (the hidden pane pauses them).
+
 ## Live check (0.10.1, popup first)
 
 `4a9ff3c` deployed by the workflow (`version.json` = `4a9ff3c`, 2026-09-24 15:13 UTC), https://dygoma.github.io/shinobi-auto-battler/ in the Claude desktop browser at 412×915 with its Android user agent and a coarse pointer, on the profile's existing guest session (no account created):
