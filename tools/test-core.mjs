@@ -12,6 +12,17 @@ import { BattleSim } from '../js/core/BattleSim.js';
 import { INTRO, introPlan, introSeen, setIntroSeen, menuModel } from '../js/core/StartFlow.js';
 import { FirebaseBackend, REDIRECT_FLAG, POPUP_UNAVAILABLE, POPUP_CANCELLED, EMPTY_REDIRECT_ERROR } from '../js/save/FirebaseBackend.js';
 import { formatBuild, loadBuildInfo, DEV_LABEL } from '../js/core/Version.js';
+import { SaveManager, tutorialRewardClaimed } from '../js/core/SaveManager.js';
+import { recommendedPower, teamPower } from '../js/core/Power.js';
+import { planToRecommended, planSmartSpend, applyPlan, ryoReserve } from '../js/core/AutoLevel.js';
+import { canSkip, skipBattle, SKIP_BOT } from '../js/core/Skip.js';
+import { tabBadges, dailyWaiting } from '../js/core/Badges.js';
+import { PRESETS, savePreset, loadPreset, counterLabel, rosterList, ROSTER_VIEW_DEFAULT } from '../js/core/Teams.js';
+import { pullCost } from '../js/core/GachaSystem.js';
+import { levelCostFor } from '../js/core/Progression.js';
+import { autoPickTeam } from '../js/core/TeamPicker.js';
+import { DEFAULT_BOT } from './common.mjs';
+import { localDateKey, nodeRewards } from '../js/core/formulas.js';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -486,6 +497,167 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   let askedUrl = '';
   const live = await loadBuildInfo({ fetchImpl: async (u) => { askedUrl = u; return { ok: true, json: async () => ({ sha: 'abcdef0123456789', shortSha: 'abcdef0', builtAt: '2026-09-24T09:30:00Z' }) }; } });
   ok(live.label === 'vabcdef0 · 2026-09-24 09:30 UTC' && /^version\.json\?t=\d+$/.test(askedUrl), 'version.json is fetched with a cache-buster and shown');
+}
+
+
+// ---- 0.11: convenience features ----------------------------------------------------
+{
+  // Recommended power comes from the on-curve team config, never a typed number.
+  const n10 = C.nodes[10];
+  const rec = recommendedPower(n10, C, B), recHard = recommendedPower(n10, C, B, { hard: true });
+  ok(rec > 0 && recHard > rec, 'recommended power is positive and higher on Hard');
+  ok(recommendedPower(C.nodes[40], C, B) > rec, 'recommended power grows along the story');
+  const B2 = structuredClone(B); B2.targets.onCurve.levelOffset += 5;
+  ok(recommendedPower(n10, C, B2) > rec, 'recommended power follows balance.targets.onCurve');
+
+  // Level to recommended: stops as soon as the team reaches it, costs exactly what +1 costs.
+  const s = defaultState(C, B); s.currencies.ryo = 1e6;
+  for (const n of C.nodes.slice(0, 10)) s.progress.cleared[n.id] = { clears: 1, best: 30 };
+  const plan = planToRecommended(s, n10, C, B);
+  ok(plan.reached && plan.power >= plan.target && plan.target === rec, 'Level to recommended reaches the recommended power');
+  const beforeLast = structuredClone(s); applyPlan(beforeLast, { steps: plan.steps.slice(0, -1) }, B);
+  ok(teamPower(beforeLast, n10, C, B) < plan.target, 'Level to recommended stops right after reaching it (one level fewer is short)');
+  const ryo0 = s.currencies.ryo;
+  let manual = 0; { const m = structuredClone(s); for (const st of plan.steps) { manual += levelCostFor(m, st.id, B).cost; m.roster[st.id].level++; } }
+  const done = applyPlan(s, plan, B);
+  ok(done.cost === plan.cost && ryo0 - s.currencies.ryo === plan.cost && manual === plan.cost, 'the shown cost is exactly what the level-ups charge (economy unchanged)');
+  ok(teamPower(s, n10, C, B) >= plan.target && planToRecommended(s, n10, C, B).steps.length === 0, 'after levelling, the team is at the recommended power and nothing more is planned');
+  // Not enough Ryo: buy what's affordable, report what's missing.
+  const poor = defaultState(C, B); poor.currencies.ryo = 300;
+  const pp = planToRecommended(poor, C.nodes[30], C, B);
+  ok(!pp.reached && !pp.affordable && pp.cost <= 300 && pp.full.cost > 300, 'short of Ryo: the plan stays within the Ryo you have and shows the full cost');
+
+  // Smart spend keeps the reserve.
+  const sp = defaultState(C, B); sp.currencies.ryo = 20000; sp.settings.ryoReserve = 5000;
+  ok(ryoReserve(sp, B) === 5000 && ryoReserve(defaultState(C, B), B) === B.qol.ryoReserve, 'the reserve is the saved setting (default balance.qol.ryoReserve)');
+  const smart = planSmartSpend(sp, null, C, B);
+  applyPlan(sp, smart, B);
+  const minNext = Math.min(...resolveTeam(sp, null, C).members.filter(id => sp.roster[id]).map(id => levelCostFor(sp, id, B).cost));
+  ok(sp.currencies.ryo >= 5000 && sp.currencies.ryo - 5000 < minNext && smart.steps.length > 0, 'Smart spend spends down to the reserve and never below it');
+  const broke = defaultState(C, B); broke.currencies.ryo = 400; broke.settings.ryoReserve = 500;
+  ok(planSmartSpend(broke, null, C, B).steps.length === 0, 'Smart spend does nothing when Ryo is at or under the reserve');
+  // Greedy by power per Ryo: a catch-up-discounted ninja is picked first.
+  const cu = defaultState(C, B); cu.currencies.ryo = 1e6; cu.roster.naruto.level = 30; cu.roster.sakura.level = 30; cu.roster.kakashi.level = 30;
+  ok(planSmartSpend(cu, null, C, B, { reserve: cu.currencies.ryo - 5000 }).steps[0]?.id === 'sasuke', 'Smart spend buys the most power per Ryo first (the catch-up discount counts)');
+
+  // Skip: the real engine, headless, clash-aware; blocked on the Daily and on unwon battles.
+  ok(SKIP_BOT === DEFAULT_BOT && SKIP_BOT === 'smart', 'Skip plays with the clash-aware bot the sims use');
+  const k = defaultState(C, B);
+  for (const id of Object.keys(k.roster)) k.roster[id].level = 15;   // well above the Survival Test
+  const nb = C.nodes[1];
+  ok(!canSkip(k, nb, C).ok, 'Skip is blocked on a battle never won');
+  completeNode(k, C.nodes[0], true, C, B); completeNode(k, nb, true, C, B);
+  ok(canSkip(k, nb, C).ok && !canSkip(k, nb, C, { daily: true }).ok && !skipBattle(k, nb, C, B, { daily: true }).ok, 'Skip is open on a won battle and blocked on the Daily');
+  ok(!canSkip(k, C.tutorial.nodes[0], C).ok, 'tutorial lessons cannot be skipped');
+  const ref = new BattleSim({ ...nodeBattleConfig(structuredClone(k), nb, C, B, { seed: 77 }), recordEvents: false });
+  const refEnd = ref.runToEnd({ ultMode: 'smart' });
+  const before = structuredClone(k);
+  const sk = skipBattle(k, nb, C, B, { seed: 77 });
+  ok(sk.ok && (sk.won ? 'won' : 'lost') === refEnd && sk.sim.time === ref.time, 'Skip runs the same BattleSim battle as Fight! (same seed, same result and time)');
+  const exp = nodeRewards(nb.globalIndex, { firstClear: false, isBossNode: nb.isBossNode }, B);
+  ok(sk.won && sk.result.ryo === exp.ryo && sk.result.scrolls === exp.scrolls && k.currencies.ryo - before.currencies.ryo === exp.ryo && k.progress.cleared[nb.id].clears === 2 && k.stats.battles === before.stats.battles + 1, 'a won Skip pays and records exactly what a normal replay does');
+  // A loss is possible: a boss far above the team.
+  const late = C.nodes.find(n => n.isBossNode && n.part === 2);
+  const L = defaultState(C, B); for (const n of C.nodes.slice(0, late.globalIndex + 1)) L.progress.cleared[n.id] = { clears: 1, best: 60 };
+  const lost = skipBattle(L, late, C, B, { seed: 5 });
+  ok(lost.ok && !lost.won && lost.result.ryo === 0 && L.stats.losses === 1, 'a skipped battle can be lost (no rewards, counted as a loss)');
+  // Hard: needs a Hard win of that battle.
+  const H = defaultState(C, B); for (const n of C.nodes.filter(n => n.part === 1)) H.progress.cleared[n.id] = { clears: 1, best: 30 };
+  const h0 = C.nodes[0];
+  ok(!canSkip(H, h0, C, { hard: true }).ok, 'Skip on Hard needs a Hard win (a story win is not enough)');
+  H.progress.hard[h0.id] = { clears: 1, best: 30 };
+  ok(canSkip(H, h0, C, { hard: true }).ok && skipBattle(H, h0, C, B, { hard: true, seed: 2 }).result.hard, 'Skip works on Hard once the Hard battle is won');
+
+  // Summons: the 10-pull (900 scrolls, a Jonin or better, 10 toward Kage pity).
+  const g = defaultState(C, B); g.currencies.scrolls = 1e6;
+  ok(pullCost(10, B) === B.economy.pullCost.ten && pullCost(10, B) <= 10 * pullCost(1, B), 'a 10-pull costs balance.economy.pullCost.ten, at most 10 singles');
+  const grng = makeRng(9); let pityOk = true, guarOk = true;
+  for (let i = 0; i < 200; i++) {
+    const p0 = g.gacha.pity, t0 = g.gacha.totalPulls, sc0 = g.currencies.scrolls;
+    const r = pull(g, 'standard', 10, C, grng, B);
+    const lastKage = r.results.map(x => x.tier).lastIndexOf('kage');
+    const expPity = lastKage < 0 ? p0 + 10 : 9 - lastKage;
+    if (g.gacha.pity !== expPity || g.gacha.totalPulls !== t0 + 10 || sc0 - g.currencies.scrolls !== pullCost(10, B)) pityOk = false;
+    if (!r.results.some(x => ['jonin', 'kage'].includes(x.tier))) guarOk = false;
+  }
+  ok(pityOk, 'a 10-pull counts 10 toward Kage pity (and resets on a Kage)');
+  ok(guarOk, 'every 10-pull has at least one Jonin or better (more than Rare+)');
+
+  // The tutorial reward: once per account, through reset, import and migration.
+  const mem = { data: null };
+  const local = { name: 'mem', isAvailable: () => true, load: async () => (mem.data ? { data: structuredClone(mem.data), updatedAt: 0 } : null), save: (d) => { mem.data = structuredClone(d); } };
+  const sm = new SaveManager({ local, content: C, balance: B });
+  await sm.init();
+  ok(!tutorialRewardClaimed(sm.state) && skipTutorial(sm.state, B)?.scrolls === B.tutorial.rewards.scrolls && sm.state.account.tutorialRewarded, 'the first tutorial reward pays and sets the account flag');
+  sm.save('t');
+  sm.reset();
+  ok(sm.state.account.tutorialRewarded && sm.state.tutorial.status === 'new' && sm.state.currencies.scrolls === B.economy.start.scrolls, 'Reset save keeps the account flag (and starts over otherwise)');
+  startTutorial(sm.state);
+  let replayPaid = null; for (let i = 0; i < C.tutorial.nodes.length; i++) { const r = completeLesson(sm.state, i, C, B); if (r.reward) replayPaid = r.reward; }
+  ok(!replayPaid && sm.state.currencies.scrolls === B.economy.start.scrolls && sm.state.tutorial.completed, 'finishing the tutorial again after a reset pays nothing');
+  ok(skipTutorial(sm.state, B) === null, 'skipping after a reset pays nothing');
+  ok(completeLesson(sm.state, C.tutorial.nodes.length - 1, C, B, { replay: true }).reward === null, 'a replay pays nothing ("Rewards already claimed")');
+  const noFlag = defaultState(C, B);
+  ok(sm.importString(encodeSave(noFlag)).ok && sm.state.account.tutorialRewarded, 'importing a save keeps the account flag');
+  ok(mem.data.account.tutorialRewarded === true, 'the flag is written with the save (the same data the cloud save uploads)');
+  const v2done = migrate({ saveVersion: 2, currencies: { scrolls: 1, ryo: 1 }, tutorial: { status: 'done', lesson: 0, completed: false, rewarded: true } }, C, B);
+  const v2new = migrate({ saveVersion: 2, currencies: { scrolls: 1, ryo: 1 }, tutorial: { status: 'new', lesson: 0, completed: false, rewarded: false } }, C, B);
+  ok(v2done.saveVersion === 3 && v2done.account.tutorialRewarded && !v2new.account.tutorialRewarded, 'migration: saves with the tutorial done get the flag; new ones do not');
+  ok(migrate({ saveVersion: 1, currencies: { scrolls: 1, ryo: 1 }, progress: { cleared: Object.fromEntries(C.arcs[0].nodes.map(n => [n.id, { clears: 1 }])) } }, C, B).account.tutorialRewarded, 'migration: a v1 save past the Prologue gets the reward once and the flag');
+
+  // Speed, presets and the Roster view persist through a save round trip.
+  const ps = defaultState(C, B);
+  ps.settings.speed = 5; ps.settings.rosterView = { show: 'owned', role: 'Tank', tier: 'All', nature: 'Fire', sort: 'level' };
+  ps.team = { members: ['naruto', 'sasuke'], leader: 'kakashi' }; savePreset(ps, 'boss');
+  ps.team = { members: ['sakura'], leader: null };
+  const back = migrate(decodeSave(encodeSave(ps)), C, B);
+  ok(back.settings.speed === 5 && B.qol.battleSpeeds.includes(5), 'battle speed 5× is saved');
+  ok(migrate({ ...ps, settings: { ...ps.settings, speed: 3 } }, C, B).settings.speed === 1, 'an unknown speed falls back to 1×');
+  ok(back.teamPresets.length === PRESETS.length && back.teamPresets[1].members.join() === 'naruto,sasuke' && back.teamPresets[1].leader === 'kakashi', 'team presets are saved');
+  ok(loadPreset(back, 'boss', C).ok && back.team.leader === 'kakashi' && back.team.members.join() === 'naruto,sasuke', 'loading a preset swaps the team in one step');
+  ok(!loadPreset(back, 'daily', C).ok, 'an empty preset does not replace the team');
+  const withSage = { ...ps, roster: { ...ps.roster, naruto_sage: { level: 1, stars: 1 } } };
+  const junk = migrate({ ...withSage, teamPresets: [{ id: 'story', members: ['nobody', 'naruto', 'naruto_sage'], leader: 'zzz' }, 7] }, C, B);
+  ok(junk.teamPresets[0].members.join() === 'naruto' && junk.teamPresets[0].leader === null && junk.teamPresets.length === 3, 'presets drop unknown and duplicate-form ninja');
+  ok(JSON.stringify(back.settings.rosterView) === JSON.stringify(ps.settings.rosterView), 'the Roster sort and filters are saved');
+  ok(JSON.stringify(migrate({ ...ps, settings: { ...ps.settings, rosterView: { sort: 'nope', nature: 'Ice' } } }, C, B).settings.rosterView) === JSON.stringify(ROSTER_VIEW_DEFAULT), 'bad Roster view values fall back to the defaults');
+  const lvl = rosterList(back, C, B, { ...ROSTER_VIEW_DEFAULT, show: 'owned', sort: 'level' });
+  back.roster.sakura.level = 50;
+  ok(rosterList(back, C, B, { ...ROSTER_VIEW_DEFAULT, show: 'owned', sort: 'level' })[0].id === 'sakura' && lvl.length === Object.keys(back.roster).length, 'Roster sort by level puts the highest first');
+  ok(rosterList(back, C, B, { ...ROSTER_VIEW_DEFAULT, nature: 'Lightning' }).every(d => d.natures.includes('Lightning') && !d.taijutsu), 'Roster nature filter');
+
+  // Counter hints: the same wheel as the matchup rating.
+  ok(counterLabel(C.char.sasuke, ['Water'], B) === 'countered' && counterLabel(C.char.lee, ['Water'], B) !== 'countered', 'counter hints: Fire is countered by Water; taijutsu is never countered');
+  ok(counterLabel(C.char.sasuke, ['Wind'], B) === 'counters', 'counter hints: Fire counters Wind');
+  ok(counterLabel(C.char.naruto, [], B) === 'neutral', 'no enemy natures: every ninja is neutral');
+  // Auto-build: a heuristic (no battles simulated), fast on a full roster.
+  const full = defaultState(C, B); for (const c of C.roster) full.roster[c.id] = { level: 50, stars: 3 };
+  const t0 = performance.now();
+  const pick = autoPickTeam(Object.entries(full.roster).map(([id, o]) => ({ id, ...o })), C.nodes[60], C, B);
+  const ms = Math.round(performance.now() - t0);
+  ok(pick.all.length === 4 && ms < 500, `Auto-build picks a full team from every ninja quickly (${ms} ms)`);
+
+  // Tab badges.
+  const bs = defaultState(C, B);
+  const day = localDateKey();
+  ok(!tabBadges(bs, C, B, day).home && !tabBadges(bs, C, B, day).summon, 'no dots on a new save');
+  bs.currencies.tickets = 1;
+  ok(tabBadges(bs, C, B, day).summon && tabBadges(bs, C, B, day).reasons.freePull, 'a summon ticket (a free summon) puts a dot on Summon');
+  bs.currencies.tickets = 0; bs.currencies.rareTickets = 1;
+  ok(tabBadges(bs, C, B, day).summon, 'a Rare+ ticket does too');
+  bs.achievements.unlocked.ach_first_summon = 1;
+  ok(tabBadges(bs, C, B, day).home && tabBadges(bs, C, B, day).reasons.claimable, 'an achievement reward to claim puts a dot on Home');
+  bs.achievements.claimed.ach_first_summon = 1;
+  ok(!tabBadges(bs, C, B, day).home, 'claimed: the dot goes');
+  const firstDaily = C.arc[B.daily.unlockArc].nodes[0].globalIndex;
+  for (const n of C.nodes.slice(0, firstDaily)) bs.progress.cleared[n.id] = { clears: 1 };
+  for (const n of C.arc[B.daily.unlockArc].nodes) completeNode(bs, n, true, C, B);
+  ok(dailyWaiting(bs, C, B, day) && tabBadges(bs, C, B, day).home, "today's Daily challenge not done: a dot on Home");
+  bs.daily = { ...bs.daily, date: day, attempts: B.daily.attemptsPerDay, cleared: false };
+  ok(!dailyWaiting(bs, C, B, day), 'no attempts left: no Daily dot');
+  bs.daily = { ...bs.daily, date: day, attempts: 1, cleared: true };
+  ok(!dailyWaiting(bs, C, B, day) && dailyWaiting(bs, C, B, '2999-01-01'), 'cleared today: no dot, and it comes back the next day');
+  ok(bs.daily.date === day, 'checking the dots never changes the save');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);

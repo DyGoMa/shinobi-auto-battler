@@ -509,6 +509,22 @@ export const BALANCE = {
   },
 
   // ---------------------------------------------------------------------------
+  // CONVENIENCE (0.11) — shortcuts that never change costs, rewards or difficulty.
+  // Recommended team power comes from targets.onCurve / targets.hardMode.onCurve.
+  // ---------------------------------------------------------------------------
+  qol: {
+    // Battle speeds the ⏩ button cycles through (and Settings offers). 1–10 each.
+    battleSpeeds: [1, 2, 5],
+    // Default Ryo reserve for "Smart spend": it never spends below this. The player
+    // can change it (Settings, or the Smart spend dialog). Matches economy.start.ryo:
+    // enough to bring a benched nature counter up a few levels early on. 0–100000
+    ryoReserve: 500,
+    // Team Builder counter hints: a ninja whose matchup (TeamPicker.characterMatchup,
+    // −1..+1) is above this "counters" the fight, below −this is "countered". 0.05–0.4
+    counterThreshold: 0.15,
+  },
+
+  // ---------------------------------------------------------------------------
   // BALANCE TARGETS — checked by `npm run sim` and `npm run campaign`.
   // ---------------------------------------------------------------------------
   targets: {

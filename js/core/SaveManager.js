@@ -2,8 +2,9 @@
 // Backends implement: { name, isAvailable(), async load() -> {data, updatedAt}|null, async save(data) }.
 // Local saves are written immediately; cloud saves are debounced.
 import { BALANCE } from '../config/balance.js';
+import { defaultPresets, sanitizePresets, sanitizeRosterView, ROSTER_VIEW_DEFAULT } from './Teams.js';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /** Ids of the in-battle tips the first story battle shows (the tutorial teaches them too). */
 export const BATTLE_TIP_IDS = ['battle.start', 'battle.ult', 'battle.clash'];
@@ -22,13 +23,18 @@ export function defaultState(C, B = BALANCE) {
     currencies: { scrolls: B.economy.start.scrolls, ryo: B.economy.start.ryo, tickets: 0, rareTickets: 0 },
     roster,
     team: { members: starters.filter(c => c !== leader).map(c => c.id).slice(0, 3), leader: leader ? leader.id : null },
+    teamPresets: defaultPresets(),   // Story / Boss / Daily (js/core/Teams.js)
     progress: { cleared: {}, hard: {} },   // hard: Hard mode clears, same shape as cleared
     gacha: { pity: 0, totalPulls: 0, history: [] },
     bossRush: { highestRound: 0, runs: 0 },
     // autoUltMode: 'smart' = clash-aware (fires counter-nature ninja into wind-ups, holds
     // any that would be Overwhelmed); 'asap' = fire when ready. tips: one-time screen tips.
     // music / sfx / vfx: placeholders the audio and effects update will wire up (Settings shows them disabled).
-    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true, music: true, sfx: true, vfx: true },
+    // speed: one of balance.qol.battleSpeeds (the last pick, in battle or Settings).
+    // skipPullAnim: summons show their cards at once. ryoReserve: Smart spend never goes
+    // below it. rosterView: the Roster's last sort and filters.
+    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true, music: true, sfx: true, vfx: true,
+      skipPullAnim: false, ryoReserve: B.qol.ryoReserve, rosterView: { ...ROSTER_VIEW_DEFAULT } },
     // Combat and day records behind the achievements (js/core/Achievements.js).
     stats: { battles: 0, wins: 0, losses: 0, clashWins: 0, flawlessWins: 0, counteredWins: 0, underdogBossWins: 0, daysPlayed: 0, lastDay: '' },
     // status: 'new' (never started) | 'active' (lesson = next lesson index) | 'done'.
@@ -36,7 +42,9 @@ export function defaultState(C, B = BALANCE) {
     tutorial: { status: 'new', lesson: 0, completed: false, rewarded: false },
     tips: { seen: {} },
     achievements: { unlocked: {}, claimed: {} },   // id -> timestamp
-    account: { googleLinked: false },
+    // tutorialRewarded: the tutorial reward was paid on this account's save. It survives
+    // Reset save and Import, and syncs with the cloud save, so the reward pays only once.
+    account: { googleLinked: false, tutorialRewarded: false },
     // The Daily challenge: today's date key, attempts used, cleared today, lifetime clears.
     daily: { date: '', attempts: 0, cleared: false, totalCleared: 0 },
   };
@@ -69,16 +77,33 @@ export const MIGRATIONS = {
     if (isObj(s.settings)) delete s.settings.onboardingDone;
     return s;
   },
+  // v2 -> v3 (0.11): the tutorial reward becomes a flag on the account's save, set for
+  // every save that already has the tutorial done (finished, skipped or auto-skipped).
+  2: (s) => {
+    const T = isObj(s.tutorial) ? s.tutorial : {};
+    if (!isObj(s.account)) s.account = {};
+    if (T.rewarded || T.completed || T.status === 'done') s.account.tutorialRewarded = true;
+    return s;
+  },
 };
 
-/** Pays the tutorial reward once (finishing and skipping pay the same). Returns what was paid. */
+/** Has this account already been paid the tutorial reward? */
+export function tutorialRewardClaimed(s) { return !!(s?.account?.tutorialRewarded || s?.tutorial?.rewarded); }
+
+/**
+ * Pays the tutorial reward once per account (finishing and skipping pay the same;
+ * replays, a reset save and an import never pay again). Returns what was paid, or null.
+ */
 export function grantTutorialReward(s, B = BALANCE) {
-  if (!isObj(s.tutorial) || s.tutorial.rewarded) return null;
+  if (!isObj(s.tutorial)) return null;
+  if (!isObj(s.account)) s.account = {};
+  if (tutorialRewardClaimed(s)) { s.tutorial.rewarded = true; s.account.tutorialRewarded = true; return null; }
   const r = B.tutorial.rewards;
   if (!isObj(s.currencies)) s.currencies = {};
   s.currencies.scrolls = (Number(s.currencies.scrolls) || 0) + r.scrolls;
   s.currencies.ryo = (Number(s.currencies.ryo) || 0) + r.ryo;
   s.tutorial.rewarded = true;
+  s.account.tutorialRewarded = true;
   return { scrolls: r.scrolls, ryo: r.ryo };
 }
 
@@ -89,7 +114,7 @@ function fillDefaults(target, defaults) {
   for (const [k, v] of Object.entries(defaults)) {
     if (target[k] === undefined || target[k] === null || (isObj(v) && !isObj(target[k])) || (Array.isArray(v) && !Array.isArray(target[k]))) {
       target[k] = structuredClone(v);
-    } else if (isObj(v) && isObj(target[k]) && !['roster', 'cleared', 'hard', 'seen', 'unlocked', 'claimed'].includes(k)) {
+    } else if (isObj(v) && isObj(target[k]) && !['roster', 'cleared', 'hard', 'seen', 'unlocked', 'claimed', 'rosterView'].includes(k)) {
       fillDefaults(target[k], v);
     }
   }
@@ -132,6 +157,14 @@ export function migrate(raw, C, B = BALANCE) {
     T.lesson = Math.max(0, Math.min((C.tutorial?.nodes?.length || 1) - 1, Math.floor(Number(T.lesson) || 0)));
     if (!isObj(s.tips.seen)) s.tips.seen = {};
     s.gacha.pity = Math.max(0, Math.floor(Number(s.gacha.pity) || 0));
+    // 0.11 conveniences
+    const S = s.settings;
+    S.speed = B.qol.battleSpeeds.includes(Number(S.speed)) ? Number(S.speed) : 1;
+    const res = Number(S.ryoReserve); S.ryoReserve = Number.isFinite(res) && res >= 0 ? Math.floor(res) : B.qol.ryoReserve;
+    S.skipPullAnim = !!S.skipPullAnim;
+    S.rosterView = sanitizeRosterView(S.rosterView, B);
+    s.teamPresets = sanitizePresets(s.teamPresets, s, C);
+    s.account.tutorialRewarded = tutorialRewardClaimed(s);
     s.updatedAt = Number(s.updatedAt) || 0;
     return s;
   } catch (e) {
@@ -271,9 +304,16 @@ export class SaveManager {
     try {
       const raw = decodeSave(str);
       if (!isObj(raw) || !raw.currencies) return { ok: false, error: 'That does not look like a save.' };
-      this.replaceState(migrate(raw, this.C, this.B));
+      this.replaceState(this._keepAccountFlags(migrate(raw, this.C, this.B)));
       return { ok: true };
     } catch (e) { return { ok: false, error: 'Could not read that save string.' }; }
   }
-  reset() { this.replaceState(defaultState(this.C, this.B)); }
+  /** Start over. The account keeps its "tutorial reward paid" flag (it pays once per account). */
+  reset() { this.replaceState(this._keepAccountFlags(defaultState(this.C, this.B))); }
+
+  /** Carry this account's one-time flags into a replacement save (reset, import). */
+  _keepAccountFlags(next) {
+    if (tutorialRewardClaimed(this.state)) next.account.tutorialRewarded = true;
+    return next;
+  }
 }
