@@ -22,7 +22,24 @@ self.addEventListener('activate', (e) => {
   })());
 });
 
-self.addEventListener('message', (e) => { if (e.data?.type === 'SKIP_WAITING') self.skipWaiting(); });
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  // The page's first load fetched its files before this worker existed: it sends their URLs
+  // here once, and the worker caches them itself (the page may not even be controlled yet).
+  if (e.data?.type === 'WARM' && Array.isArray(e.data.urls)) e.waitUntil(warm(e.data.urls));
+});
+
+async function warm(urls) {
+  const cache = await caches.open(CACHE);
+  await Promise.all(urls.map(async (u) => {
+    try {
+      const url = new URL(u, self.registration.scope);
+      if (url.origin !== self.location.origin) return;
+      const res = await fetch(url.href, { cache: 'no-cache' });
+      if (res && res.ok && res.type === 'basic') await cache.put(keyFor(url), res);
+    } catch { /* offline, or a missing file (version.json on a local copy) */ }
+  }));
+}
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;

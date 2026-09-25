@@ -12,13 +12,13 @@ import { loadBuildInfo } from '../core/Version.js';
 
 export const UPDATE_READY_TEXT = 'Update ready — tap to reload';
 
-/** Fetch every same-origin file this page has loaded (plus the shell) so the worker caches them. Never throws. */
-async function warmCache(pwa) {
+/** Every same-origin file this page has loaded, plus the shell, manifest and icons: the worker caches them (sw.js WARM). */
+function warmCache(pwa, reg) {
   try {
     const own = (u) => { try { return new URL(u, location.href).origin === location.origin; } catch { return false; } };
-    const urls = new Set([location.pathname, 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png']);
-    for (const e of performance.getEntriesByType('resource')) if (own(e.name)) urls.add(e.name);
-    await Promise.all([...urls].map((u) => fetch(u).catch(() => {})));
+    const urls = new Set([location.href.split('#')[0].split('?')[0], new URL('manifest.webmanifest', location.href).href, new URL('icons/icon-192.png', location.href).href, new URL('icons/icon-512.png', location.href).href]);
+    for (const e of performance.getEntriesByType('resource')) if (own(e.name) && !/version.json/.test(e.name)) urls.add(e.name.split('?')[0]);
+    (reg.active || reg.waiting || reg.installing)?.postMessage({ type: 'WARM', urls: [...urls] });
     pwa.warmed = urls.size;
   } catch (e) { console.warn('[pwa] cache warm-up failed', e); }
 }
@@ -71,13 +71,12 @@ export function setupPwa(game, ui) {
 
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     // The very first load: the game's files were fetched before the worker existed, so
-    // none went through it. When it takes control (clients.claim), fetch them once more
-    // so the cache has the whole game and the next launch works offline.
+    // none went through it. Once the worker is ready, send it their URLs so it caches
+    // them itself and the next launch works offline.
     const firstLoad = !navigator.serviceWorker.controller;
-    if (firstLoad) navigator.serviceWorker.addEventListener('controllerchange', () => warmCache(pwa), { once: true });
     // Registered from index.html's directory: the scope is the game's own path.
     navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
-      .then((reg) => { pwa.registration = reg; })
+      .then((reg) => { pwa.registration = reg; if (firstLoad) return navigator.serviceWorker.ready.then((r) => warmCache(pwa, r)); })
       .catch((e) => console.warn('[pwa] service worker registration failed', e));
   }
   // Back to the front (the phone's app switcher, the screen turning on): look for a new build.
