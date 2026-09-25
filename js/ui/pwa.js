@@ -12,6 +12,17 @@ import { loadBuildInfo } from '../core/Version.js';
 
 export const UPDATE_READY_TEXT = 'Update ready — tap to reload';
 
+/** Fetch every same-origin file this page has loaded (plus the shell) so the worker caches them. Never throws. */
+async function warmCache(pwa) {
+  try {
+    const own = (u) => { try { return new URL(u, location.href).origin === location.origin; } catch { return false; } };
+    const urls = new Set([location.pathname, 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png']);
+    for (const e of performance.getEntriesByType('resource')) if (own(e.name)) urls.add(e.name);
+    await Promise.all([...urls].map((u) => fetch(u).catch(() => {})));
+    pwa.warmed = urls.size;
+  } catch (e) { console.warn('[pwa] cache warm-up failed', e); }
+}
+
 /** Sets up game.pwa. `ui()` returns the UIManager once it exists. */
 export function setupPwa(game, ui) {
   const pwa = {
@@ -59,6 +70,11 @@ export function setupPwa(game, ui) {
   try { window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => { pwa.standalone = e.matches || isStandalone(); refreshSettings(); }); } catch { /* old browser */ }
 
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    // The very first load: the game's files were fetched before the worker existed, so
+    // none went through it. When it takes control (clients.claim), fetch them once more
+    // so the cache has the whole game and the next launch works offline.
+    const firstLoad = !navigator.serviceWorker.controller;
+    if (firstLoad) navigator.serviceWorker.addEventListener('controllerchange', () => warmCache(pwa), { once: true });
     // Registered from index.html's directory: the scope is the game's own path.
     navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
       .then((reg) => { pwa.registration = reg; })

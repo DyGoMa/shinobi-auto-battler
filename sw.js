@@ -2,8 +2,9 @@
 // Deliberately minimal, so an update can never get stuck:
 //   * NETWORK FIRST for every same-origin GET (index.html, version.json, JS, CSS,
 //     icons). The response is cached as it passes through; the cache is only used
-//     when the network fails (offline). There is no cache-first path for code, so a
-//     new deploy is picked up on the next launch as long as the phone is online.
+//     when the network fails (offline). There is no cache-first path for code, and every
+//     fetch revalidates with the server (cache: no-cache), so a new deploy is picked up
+//     on the next launch as long as the phone is online.
 //   * A new sw.js installs at once (skipWaiting) and takes over every open page
 //     (clients.claim); old caches are deleted on activate.
 //   * Cross-origin requests (the Firebase SDK on gstatic, Google sign-in, Firestore)
@@ -37,7 +38,10 @@ const keyFor = (url) => url.origin + url.pathname;
 async function networkFirst(req, url) {
   const cache = await caches.open(CACHE);
   try {
-    const res = await fetch(req);
+    // Revalidate with the server every time (GitHub Pages sends max-age=600): a reload after
+    // a deploy never mixes old and new files. Pages answers unchanged files with a 304.
+    // (A navigate-mode Request cannot take an init, so it is refetched by URL.)
+    const res = req.mode === 'navigate' ? await fetch(req.url, { cache: 'no-cache' }) : await fetch(req, { cache: 'no-cache' });
     if (res && res.ok && res.type === 'basic') cache.put(keyFor(url), res.clone()).catch(() => {});
     return res;
   } catch (err) {
