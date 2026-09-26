@@ -146,7 +146,11 @@ function mapStage(game, arc) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
     draw(dt);
   };
-  box._start = () => { draw(0); if (!still) { last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); } };
+  // Idempotent, and self-starting: a refresh (Auto team, an arc fold) rebuilds the screen without
+  // afterRender, and a canvas nobody started stays black. afterRender still calls it on entry.
+  let started = false;
+  box._start = () => { if (started) return; started = true; draw(0); if (!still) { last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); } };
+  setTimeout(() => { if (box.isConnected) box._start(); }, 0);
   box._arc = arc;
   box.appendChild(h('div.stage-name', def.name));
   return box;
