@@ -11,7 +11,7 @@ export function ultEffectText(ult, B) {
     case 'single': return `Hits one enemy for ×${n(U.single)} ATK${stun}.`;
     case 'aoe': return `Hits the target for ×${n(U.aoeMain)} ATK and every other enemy near it for ×${n(U.aoe)} ATK${stun}.`;
     case 'taunt': return `Taunts: enemies must attack this ninja for ${n(U.tauntDuration)} s, who takes ${pct(U.tauntDR)} less damage, plus a ×${n(U.tauntHit)} ATK hit.`;
-    case 'heal': return `Heals the most injured ally for ${pct(U.healFocusPct)} of their max HP plus ×${n(U.healFocusPower)} of this ninja's ATK, and every other ally for ${pct(U.healSpreadPct)} plus ×${n(U.healSpreadPower)} ATK.`;
+    case 'heal': return `A big rescue: heals the most injured ally for ${pct(U.healFocusPct)} of their max HP plus ×${n(U.healFocusPower)} of this ninja's ATK, and every other ally for ${pct(U.healSpreadPct)} plus ×${n(U.healSpreadPower)} ATK. It charges at ${pct(U.healChargeMult)} of the usual speed; between casts this ninja heals the most injured ally for ${pct(U.healPulsePct)} plus ×${n(U.healPulsePower)} ATK every ${n(U.healPulseInterval)} s.`;
     case 'buff': return `Raises the whole team's ATK by ${pct(U.buffAtk)} for ${n(U.buffDuration)} s.`;
     default: return '';
   }
@@ -28,7 +28,7 @@ export const ROLE_TEXT = {
   Tank: 'Front line. Holds enemies in place and soaks hits; its Ultimate taunts.',
   Striker: 'Close range. Hits hard from the front, or from right behind a Tank.',
   Ranged: 'Back row. Attacks from long range over the front line.',
-  Support: 'Back row. Heals or powers up the whole team with its Ultimate.',
+  Support: 'Back row. A healer keeps a small heal going on whoever is hurt worst and saves its Ultimate for a big rescue; a buffer powers up the whole team with its Ultimate.',
   Civilian: 'An escort you must protect. It never attacks.',
 };
 

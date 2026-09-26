@@ -368,7 +368,7 @@ export class Effects {
           if (sigCtx && !sigCtx.first) { sigCtx.first = true; if (sigCtx.sig?.dash || (!sigCtx.sig && sim.unit(e.src)?.range <= 150)) this.later(Math.max(0, delay - 0.12), () => { const s = sim.unit(e.src); if (s) { r.onAttack(s, 2.2); this.dashLines(s.x, r.chestOf(s).y, s.side === 'player' ? 1 : -1); } }); }
           break;
         }
-        case 'heal': if (u) { const c = r.chestOf(u); this.number(u.x, c.y - 20, '+' + e.amount.toLocaleString('en-US'), { color: '#6dff9f', size: 20 }); for (let i = 0; i < this.n(8); i++) this.emit({ x: u.x + rnd(-24, 24), y: r.unitY(u) - rnd(0, 40), vx: 0, vy: rnd(-70, -30), life: rnd(0.6, 1), size: rnd(2, 4), shape: 'circle', color: pick(['#6dff9f', '#c7ffd8']), add: true }); this.aura(u.uid, '#5fd38a', 0.6); } break;
+        case 'heal': if (u) { const c = r.chestOf(u); this.number(u.x, c.y - 20, '+' + e.amount.toLocaleString('en-US'), { color: '#6dff9f', size: e.pulse ? 13 : 20 }); for (let i = 0; i < this.n(e.pulse ? 2 : 8); i++) this.emit({ x: u.x + rnd(-24, 24), y: r.unitY(u) - rnd(0, 40), vx: 0, vy: rnd(-70, -30), life: rnd(0.6, 1), size: rnd(2, 4), shape: 'circle', color: pick(['#6dff9f', '#c7ffd8']), add: true }); this.aura(u.uid, '#5fd38a', 0.6); } break;
         case 'miss': if (u) this.number(u.x, r.chestOf(u).y - 20, 'miss', { color: '#c8cdd3', size: 14, dur: 0.6 }); break;
         case 'ult': {
           if (!u) break;

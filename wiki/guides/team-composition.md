@@ -11,7 +11,7 @@ Battles happen on a single lane. Your ninja line up by range, front to back, and
 | 🛡️ **Tank** | Front line, in contact | Holds enemies and soaks hits. Its Ultimate **taunts**: enemies must attack it while it takes less damage. |
 | ⚔️ **Striker** | Front, or right behind a Tank | Heavy damage. Its Ultimate hits one enemy hard, or everything near its target. |
 | 🎯 **Ranged** | Back row | Steady damage from behind the front line. |
-| ✚ **Support** | Back row | **Heals** the most injured ally (and the rest a little) or **raises the team's ATK** with its Ultimate. |
+| ✚ **Support** | Back row | A healer keeps a **small heal** going on whoever is hurt worst and saves its Ultimate for a **big rescue**; a buffer **raises the team's ATK** with its Ultimate. |
 
 Only the front fighter and one Striker right behind it can reach an enemy in melee. A third melee ninja mostly waits in line, and the Team screen warns you when that happens. Ultimates are jutsu, so they reach any enemy.
 
@@ -52,7 +52,7 @@ Three presets hold a whole team each: **🗺️ Story**, **👑 Boss** and **�
 
 - A **Tank** to guard: a Tank that clashes pulls the jutsu onto itself.
 - A **Striker whose nature beats the boss**, to Overpower its specials.
-- A **Support** to heal whoever is hurt worst: the heal is a rescue, and it always lands on the ally with the least HP left.
+- A **Support** to heal whoever is hurt worst: a small heal every few seconds, and an Ultimate that rescues the ally with the least HP left for about a quarter to a third of the bar. The rescue charges slowly, so it comes once or twice a fight: hold it for the moment a ninja is about to fall.
 - Against a Water boss, for example: [Gaara](wiki:character/gaara), [Kakashi Hatake](wiki:character/kakashi) (Earth beats Water), [Ino Yamanaka](wiki:character/ino) and [Sakura Haruno](wiki:character/sakura).
 
 **A boss that summons reinforcements**

@@ -172,14 +172,29 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
   | 25 % + 2.0 / 4 % + 0.5 | 91 % | 91 % | 98 % | 98 % | | |
   | 20 % + 1.5 / 3 % + 0.5 | 88 % | 85 % | 97 % | 97 % | | |
   | 15 % + 1.0 / 2 % + 0.3 | 82 % | 79 % | 91 % | 94 % | | |
-  | **12 % + 0.8 / 1 % + 0.2 (final)** | **74 %** | **72 %** | **86 %** | **91 %** | 72 % | 79 % |
+  | 12 % + 0.8 / 1 % + 0.2 (the 70–80 band) | 74 % | 72 % | 86 % | 91 % | 72 % | 79 % |
   | 10 % + 0.6 / none | 62 % | 59 % | 80 % | 85 % | | |
+  | **28 % + 0.8 / 3 % + 0.2 (final, the user's call)** | **97 %** | **97 %** | **100 %** | **100 %** | 95 % | 97 % |
 
-  The ATK part is small next to the share of max HP (a Support's ATK is about 2 % of a Tank's HP at any level), so the final rescue is roughly 14–16 % of the wounded ally's bar (about what one ally used to get) and the rest get about 1.5 %. The proposal's "a ninja at 20 % jumps to 60 %" is not compatible with healers below 90 %; if a bigger rescue is wanted, it needs a cost elsewhere (a slower heal ult's chakra, say), which this pass did not touch.
+  The ATK part is small next to the share of max HP (a Support's ATK is about 2 % of a Tank's HP at any level). The 70–80 band is reached only with a rescue of about 15 % of a bar, which is no more visible than the old per-ally top-up. The user chose the feel over the band, a rescue of a quarter to a third of the wounded ally's bar, and with that rescue on every cast (every ~12 s) healers won 93–98 % and the bosses re-tuned to healer teams became walls for teams without one (the Hard counter-gap team fell to 6 %, the Daily's ✨ Auto teams to 0 % against Aoi Rokusho). So the heal became **a medic's two heals** (the user's design: "a big heal once or twice a fight and a smaller one more often"): the Ultimate is the rare big rescue, **28 % + 0.8 × ATK** on the ally with the least HP left (3 % + 0.2 × ATK on the rest), charging at **`healChargeMult` 0.4** of the usual rate (about one cast per 30 s, so once or twice a fight; `_gainChakra`), and between casts the healer heals the most injured ally **`healPulsePct` 1.5 % + `healPulsePower` 0.2 × ATK every `healPulseInterval` 6 s** (`_healPulse`, a small green number in the battle). Measured on the Supports at boss + 2 against the healer-tuned bosses of the previous retune (quartet 61 %, genin median 44, jonin 62, kage 72):
+
+  | rescue / charge / steady heal | Sakura | Karin | Hundred Healings | Tsunade |
+  |---|---|---|---|---|
+  | 28 % on every cast, no steady heal | 94 % | 93 % | 98 % | 98 % |
+  | 28 % at 0.5 charge, 3 % every 4 s | 90 % | 88 % | 96 % | 97 % |
+  | 28 % at 0.5, 2 % every 5 s | 83 % | 83 % | 93 % | 96 % |
+  | 28 % at 0.4, 2 % every 4 s | 82 % | 80 % | 90 % | 96 % |
+  | 28 % at 0.35, 3 % every 4 s | 90 % | 87 % | 95 % | 97 % |
+  | 28 % at 0.4, 1.5 % every 5 s | 76 % | 74 % | 88 % | 94 % |
+  | **28 % at 0.4, 1.5 % every 6 s (final)** | **74 %** | **74 %** | **87 %** | **94 %** |
+
+  The steady heal sets the healers' win rate far more than the rescue does. At the final numbers a Genin healer is worth about a Jonin Striker in the fourth slot (Sakura 74 % against Guy 69 %, Kakashi 61 %), Chiyo's buff is 76 %, and Tsunade is the top Kage by about nine points over Ay: the best fourth pick, not a must. After the retune: at boss + 2 (quartet 80 %, near the ceiling) Sakura 91 %, Karin 91 %, the Hundred Healings 96 %, Tsunade 99 %, Chiyo 95 %, Jiraiya 98 %; at boss − 2 (quartet 34 %) Sakura 62 %, Karin 56 %, the Hundred Healings 77 %, Tsunade 88 %, Chiyo 57 %, Jiraiya 73 %: the healers are the best fourth pick, most of all in a hard fight, and a team without one still wins its share (the Hard counter-gap team is back at 64 %, every Daily twist clears for all 46 samples).
+
+  **Every Kage a step up** (`stats.rarityMult.kage` 1.4 → **1.5**; the user's rule "kages should feel more powerful but not op", for the whole tier): measured on every Kage and Jonin at boss + 2, the Kage median goes from 72 to 78 against the Jonin 62 (+16, the ~15 aimed for), and no Kage sits more than 6 over the Kage median (Ay +6, Eight Gates +6, Kamui +4; Tsunade +19 as the healer). A 5★ Genin (1.4) still holds its own against a 1★ Kage. After the retune: at boss + 2 the Kage median is 96 % against the Jonin 80 % (the top of the table compresses there); at boss − 2 it is 61 % against 35 %, with Ay +16, Eight Gates +12 and Kamui +11 over the Kage median (the stun and taijutsu kits, as before the lift) and the five Ranged Kage 9–10 under it, level with Pain.
 
   **Area Ultimates are centred on their target** (`aoeMain` × ATK on the target, `aoe` on the rest within `aoeRadius`): the proposal's 3.4 / 2.4 lifted the kage area Strikers to the kage median (Naruto Sage −7 → −1, Madara −8 → 0, Sasuke EMS −10 → −4) and the Ranged area kits by 4–9 points, still below; the pass went to **3.7 / 2.7** (step 2 names the aoe numbers as the first knob). `stunDuration` 2.2 → **1.8 s**: Neji +17 → +8, Ay +16 → +5, Kamui +12 → +4 (audit at boss + 2, after the retune). Ranged `attackInterval` 1.4 → **1.3**, `def` 26 → **30**; Hinata `hp` 0.95 → **1.05** (−7 → −3).
 
-  **Role stats are two-sided.** `stats.roles` also builds every enemy (`Ninja.js` `buildEnemyUnit`), so a Ranged buff also strengthens Ranged bosses (three of the audit's six). Faster or sturdier Ranged variants measured *before* the retune (1.25 s / def 32; 1.2 s / def 30; HP 1850; ATK 112) all made the Ranged ninja and the quartet worse; the two named knobs stay at 1.3 / 30 and autotune absorbs the boss side. Onoki and Orochimaru (plain-single Ranged kage) did not reach the mid-50s the proposal hoped for: at boss + 2 they sit 5–6 under the kage median, at boss − 2 about 15 under, next to the area Ranged kage (Mei, Obito, Naruto Chakra Mode). Fixing that means roster-side changes (a rider or weights on those five), which the plan does not name: not done, see the handoff.
+  **Role stats are two-sided.** `stats.roles` also builds every enemy (`Ninja.js` `buildEnemyUnit`), so a Ranged buff also strengthens Ranged bosses (three of the audit's six). Faster or sturdier Ranged variants measured *before* the retune (1.25 s / def 32; 1.2 s / def 30; HP 1850; ATK 112) all made the Ranged ninja and the quartet worse; the two named knobs stay at 1.3 / 30 and autotune absorbs the boss side. Onoki and Orochimaru (plain-single Ranged kage) did not reach the mid-50s the proposal hoped for: at boss + 2 they sat 5–6 under the kage median, at boss − 2 about 15 under, next to the area Ranged kage (Mei, Obito, Naruto Chakra Mode). The user chose higher weights over a stun rider ("kages should feel more powerful but not op"): `roster.js` `stats` Onoki 0.95 / 1.1 → **1.07 / 1.22** (hp / atk), Orochimaru 1.0 / 1.08 → **1.12 / 1.2**, Mei 1.0 / 1.06 → **1.15 / 1.21**, Obito and Naruto Chakra Mode 1.05 / 1.06 → **1.2 / 1.21** (measured at boss − 2: +0.06 on both gave +3–5 points, +0.10 gave +7–8 for the singles and +4–5 for the area kits, hence the larger lift on the area three). After the retune the five sit 3–6 under the kage median at boss + 2 and 7–8 under at boss − 2, level with Pain and just under Itachi and Hiruzen, whose stuns they lack; with the tier lift they keep that place inside a stronger tier.
 
   **Autotune** (`npm run autotune -- --write`, then `--mode=hard --write`, twice: after the ult rules and again after the aoe bump) re-tuned all 37 story bosses and 37 Hard bosses; every arc boss lands in 50–70 % in `npm run sim`. Because the sim's on-curve teams often carry a healer and the heal is smaller, most bosses came down (`n_waves_5` 1.00 → 0.88, `n_kaz_5` 1.24 → 1.14, `n_pain_5` 0.97 → 0.99, the exception), which is why the **audit at boss + 2 compresses after the retune** (the healer-less quartet goes from 45 % to 80 %): the after tables are given at boss + 2 (the plan's setting) and at boss − 2 (the quartet near its old 45 %, which separates the kits).
 
@@ -192,7 +207,9 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
   | 0.12.0 | 37.0, 11,143 Ryo, 8 achievements | 98.0, 23,855 Ryo, 12 | n_kaguya_4 1/10 | 10/10 |
   | combat pass + first retune, old economy | 37.0, 11,247 | 96.3, 23,564 | none | 10/10 |
   | + Ryo × 0.85, replay scrolls, the achievements | 34.3, 9,629, 11 achievements | 89.5, 21,021, 19 | none | 10/10 |
-  | **final (aoe 3.7 / 2.7, second retune)** | **34.3, 9,629, 11** | **89.5, 21,021, 19** | none | 10/10 |
+  | aoe 3.7 / 2.7, second retune | 34.3, 9,629, 11 | 89.5, 21,021, 19 | none | 10/10 |
+  | the 28 % rescue on every cast and the Ranged Kage weights, third retune | 34.3, 9,676, 11 | 89.5, 20,678, 18 | n_kaguya_4 2/10, n_birth_4 2/10 | 10/10 |
+  | **final: the medic's two heals, Kage 1.5, fourth retune** | **34.3, 9,581, 11** | **91.5, 19,747, 18** | n_bell_3 1/10 | 10/10 |
 
   **Three Daily challenges a day** (`daily.challengesPerDay`, `js/core/Daily.js`: each slot its own boss, twist, attempts and first-clear reward; the day's seed rotates the twists so a day never repeats one; save v5 keeps `daily.slots`). The proposal's firmer twists (0.6 / 0.55 / 0.75) were too much: No Ultimates ×0.6 had 4 of 46 sampled players under 50 % (worst 0 %, Twelve Guardian Ninja: Aoi Rokusho, Lv40), the Boss gauntlet ×0.55 had 5 (worst 0 %), Countered ×0.75 one (49 %). At 0.55 / 0.50 / 0.70 No Ultimates still had one at 7 %; at 0.52 / 0.47 / 0.68 all 46 clear every twist at least half the time (worst 81 % / 100 % / 100 %). Final: `noUlts` **0.52**, `bossRush` **0.5**, `counteredOnly` **0.7** (`lockedNature` 0.9, worst 62 %). Final Daily rows: every twist clears within its 3 attempts for all 46 sampled players; median clear chance 100 % on each; worst Locked nature 62 % (Fourth Great Ninja War: Confrontation, Aoi Rokusho, Lv75), No Ultimates 69 % (Twelve Guardian Ninja, Aoi Rokusho, Lv40), Boss gauntlet 83 % (Fated Battle Between Brothers: Deidara + Pain + Kakashi, Lv56), Countered 98 % (Tenchi Bridge, Aoi Rokusho, Lv36).
 
@@ -203,16 +220,16 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
   | | before (boss + 2) | after (boss + 2) | after (boss − 2) |
   |---|---|---|---|
   | the quartet as it is | 45 % | 80 % | 34 % |
-  | tier medians genin / chunin / jonin / kage | 23 / 33 / 45 / 64 | 56 / 71 / 80 / 91 | 21 / 29 / 35 / 50 |
+  | tier medians genin / chunin / jonin / kage | 23 / 33 / 45 / 64 | 56 / 71 / 80 / 96 | 21 / 29 / 35 / 61 |
 
   | ninja | tier | kit | before (vs tier) | after, boss + 2 (vs tier) | after, boss − 2 (vs tier) |
   |---|---|---|---|---|---|
-  | sakura | genin Support | heal | 93 % (+71 ▲) | 92 % (+36 ▲) | 64 % (+43 ▲) |
-  | karin | genin Support | heal | 90 % (+68 ▲) | 90 % (+34 ▲) | 61 % (+40 ▲) |
-  | sakura_hundred | jonin Support | heal | 98 % (+53 ▲) | 96 % (+16 ▲) | 79 % (+44 ▲) |
+  | karin | genin Support | heal | 90 % (+68 ▲) | 91 % (+35 ▲) | 56 % (+35 ▲) |
+  | sakura | genin Support | heal | 93 % (+71 ▲) | 91 % (+35 ▲) | 62 % (+41 ▲) |
+  | sakura_hundred | jonin Support | heal | 98 % (+53 ▲) | 96 % (+16 ▲) | 77 % (+42 ▲) |
   | chiyo | jonin Support | buff | 70 % (+25 ▲) | 95 % (+15 ▲) | 57 % (+22 ▲) |
-  | tsunade | kage Support | heal | 98 % (+34 ▲) | 98 % (+8) | 84 % (+34 ▲) |
-  | jiraiya | kage Support | buff | 76 % (+12 ▲) | 97 % (+7) | 66 % (+16 ▲) |
+  | tsunade | kage Support | heal | 98 % (+34 ▲) | 99 % (+3) | 88 % (+26 ▲) |
+  | jiraiya | kage Support | buff | 76 % (+12 ▲) | 98 % (+2) | 73 % (+12 ▲) |
   | kiba | genin Striker | single | 23 % (+1) | 56 % (+0) | 20 % (-1) |
   | konohamaru | genin Striker | single | 21 % (-2) | 53 % (-3) | 20 % (-1) |
   | omoi | genin Striker | single | 20 % (-2) | 53 % (-3) | 20 % (-1) |
@@ -234,14 +251,14 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
   | kabuto | jonin Striker | single | 46 % (+1) | 79 % (-1) | 34 % (-1) |
   | asuma | jonin Striker | aoe | 35 % (-10 ▼) | 76 % (-4) | 33 % (-2) |
   | zabuza | jonin Striker | aoe | 31 % (-14 ▼) | 76 % (-4) | 30 % (-5) |
-  | ay | kage Striker | single+stun | 79 % (+16 ▲) | 96 % (+5) | 71 % (+21 ▲) |
-  | kakashi_mangekyo | kage Striker | single+stun | 76 % (+12 ▲) | 95 % (+4) | 67 % (+17 ▲) |
-  | guy_eightgates | kage Striker | single | 75 % (+11 ▲) | 94 % (+4) | 65 % (+14 ▲) |
-  | naruto_sixpaths | kage Striker | aoe | 60 % (-4) | 93 % (+3) | 53 % (+3) |
-  | minato | kage Striker | single | 64 % (+0) | 91 % (+0) | 46 % (-4) |
-  | madara | kage Striker | aoe | 56 % (-8) | 91 % (+0) | 50 % (+0) |
-  | naruto_sage | kage Striker | aoe | 57 % (-7) | 91 % (+0) | 50 % (+0) |
-  | sasuke_ems | kage Striker | aoe | 54 % (-10 ▼) | 89 % (-1) | 48 % (-2) |
+  | naruto_sixpaths | kage Striker | aoe | 60 % (-4) | 97 % (+1) | 68 % (+6) |
+  | ay | kage Striker | single+stun | 79 % (+16 ▲) | 97 % (+0) | 78 % (+16 ▲) |
+  | minato | kage Striker | single | 64 % (+0) | 96 % (+0) | 62 % (+1) |
+  | kakashi_mangekyo | kage Striker | single+stun | 76 % (+12 ▲) | 96 % (+0) | 72 % (+11 ▲) |
+  | guy_eightgates | kage Striker | single | 75 % (+11 ▲) | 96 % (+0) | 74 % (+12 ▲) |
+  | naruto_sage | kage Striker | aoe | 57 % (-7) | 96 % (-1) | 61 % (+0) |
+  | madara | kage Striker | aoe | 56 % (-8) | 95 % (-1) | 60 % (-1) |
+  | sasuke_ems | kage Striker | aoe | 54 % (-10 ▼) | 95 % (-2) | 57 % (-4) |
   | iruka | genin Ranged | single+stun | 35 % (+12 ▲) | 71 % (+16 ▲) | 28 % (+6) |
   | ino | genin Ranged | single+stun | 29 % (+6) | 67 % (+11 ▲) | 26 % (+5) |
   | shino | genin Ranged | aoe | 16 % (-7) | 52 % (-4) | 19 % (-2) |
@@ -259,14 +276,14 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
   | konan | jonin Ranged | aoe | 27 % (-18 ▼) | 74 % (-6) | 28 % (-7) |
   | sasori | jonin Ranged | aoe | 27 % (-18 ▼) | 72 % (-8) | 29 % (-6) |
   | darui | jonin Ranged | aoe | 27 % (-18 ▼) | 72 % (-8) | 29 % (-6) |
-  | itachi | kage Ranged | single+stun | 67 % (+3) | 91 % (+1) | 51 % (+1) |
-  | hiruzen | kage Ranged | single+stun | 66 % (+2) | 90 % (-1) | 50 % (+0) |
-  | pain | kage Ranged | aoe+stun | 55 % (-9 ▼) | 90 % (-1) | 43 % (-8) |
-  | orochimaru | kage Ranged | single | 46 % (-18 ▼) | 85 % (-5) | 36 % (-14 ▼) |
-  | onoki | kage Ranged | single | 46 % (-18 ▼) | 84 % (-7) | 36 % (-15 ▼) |
-  | obito | kage Ranged | aoe | 31 % (-32 ▼) | 82 % (-8 ▼) | 34 % (-16 ▼) |
-  | naruto_chakramode | kage Ranged | aoe | 31 % (-32 ▼) | 82 % (-8 ▼) | 34 % (-16 ▼) |
-  | mei | kage Ranged | aoe | 32 % (-32 ▼) | 81 % (-9 ▼) | 35 % (-16 ▼) |
+  | orochimaru | kage Ranged | single | 46 % (-18 ▼) | 97 % (+0) | 52 % (-10 ▼) |
+  | onoki | kage Ranged | single | 46 % (-18 ▼) | 97 % (+0) | 52 % (-10 ▼) |
+  | obito | kage Ranged | aoe | 31 % (-32 ▼) | 97 % (+0) | 53 % (-9 ▼) |
+  | naruto_chakramode | kage Ranged | aoe | 31 % (-32 ▼) | 97 % (+0) | 53 % (-9 ▼) |
+  | mei | kage Ranged | aoe | 32 % (-32 ▼) | 96 % (+0) | 51 % (-10 ▼) |
+  | pain | kage Ranged | aoe+stun | 55 % (-9 ▼) | 96 % (+0) | 49 % (-13 ▼) |
+  | hiruzen | kage Ranged | single+stun | 66 % (+2) | 96 % (-1) | 57 % (-4) |
+  | itachi | kage Ranged | single+stun | 67 % (+3) | 95 % (-1) | 59 % (-3) |
   | jugo | genin Tank | taunt | 23 % (+0) | 57 % (+2) | 24 % (+2) |
   | jirobo | genin Tank | taunt | 23 % (+0) | 56 % (+1) | 24 % (+3) |
   | hinata | genin Tank | taunt | 16 % (-7) | 53 % (-3) | 19 % (-2) |
@@ -275,8 +292,8 @@ It reports team level per arc, pulls, scroll/Ryo balance and stuck points. **Tar
   | yamato | jonin Tank | taunt | 52 % (+7) | 86 % (+6) | 35 % (+0) |
   | gaara | jonin Tank | taunt | 45 % (+0) | 80 % (+0) | 34 % (-1) |
   | kakuzu | jonin Tank | taunt | 48 % (+3) | 80 % (+0) | 33 % (-2) |
-  | hashirama | kage Tank | taunt | 69 % (+5) | 93 % (+3) | 57 % (+6) |
-  | gaara_kazekage | kage Tank | taunt | 65 % (+1) | 90 % (+0) | 51 % (+1) |
+  | hashirama | kage Tank | taunt | 69 % (+5) | 95 % (-1) | 67 % (+6) |
+  | gaara_kazekage | kage Tank | taunt | 65 % (+1) | 94 % (-2) | 65 % (+4) |
 * If you change a global value (`statMult`, `bossMult`, `ult`, `chakra`, `natureWheel`, `jutsuClash`), re-run `npm run autotune -- --write` and `npm run autotune -- --mode=hard --write`, then `npm run sim` and `npm run campaign`; if the counter-gap baseline (§6) drifts out of 55–65 %, re-centre `targets.counterGapLevelOffset` (and the Hard one) rather than the bands.
 
 ## 5. Safety rails

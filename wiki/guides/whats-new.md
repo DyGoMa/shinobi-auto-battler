@@ -4,9 +4,10 @@
 
 The balancing pass. Nothing new to unlock; the numbers behind the fights and the rewards are re-tuned from the game's own simulations (BALANCE.md §4 has the measurements).
 
-- **Heals are a rescue.** A healing Ultimate (Sakura, Karin, Tsunade, the Hundred Healings) now puts its big heal on the ally with the least HP left and a small one on everyone else, instead of the same top-up on all four. The medic runs to the wounded.
+- **Healers work like medics.** A healer keeps a small heal going every few seconds on whoever is hurt worst, and saves the Ultimate for the big rescue: about a quarter to a third of the bar on the ally with the least HP left (a little to everyone else). The rescue charges slower than other Ultimates, so it lands once or twice a fight, when it matters. Sakura, Karin, Tsunade and the Hundred Healings all work this way.
 - **Area Ultimates hit their target harder.** Rasen Shuriken, the Water Dragon, C4 Karura, Lava Monster and the rest are centred on their target, which takes the main hit; everything near it takes the splash. Against a boss they were far behind single-target jutsu; now they are close.
 - **Stuns are a little shorter**, so the stun kits (Shikamaru, Neji, Ay, Kamui and company) stay the control picks without being the only good ones. Ranged ninja attack a touch faster and take a little less damage; Hinata has more HP.
+- **A Kage feels like a Kage.** Every Kage-tier ninja is a step stronger (the tier multiplier), and the Ranged Kage without a stun (Onoki, Orochimaru, Mei Terumi, Obito, Naruto in Chakra Mode) hit harder and last longer on top, so none of them trails the tier. No Kage is a must-pick, and a starred-up Genin still holds its own.
 - **Every boss re-tuned** for the new rules (story and Hard), so the win rates are where they were.
 - **Replays pay real scrolls.** Replaying a cleared battle (or ⏭ Skipping it) pays far more scrolls than before, growing through the story: late in the story a few replays pay for a 10× summon. Ryo from first clears, replays and arc bonuses is a little lower, so teams finish each part a few levels above the curve instead of well above it.
 - **{{num:daily.challengesPerDay}} Daily challenges a day**, each its own boss and twist from the date, its own {{num:daily.attemptsPerDay}} attempts and its own first-clear reward. The twists are a little firmer than before.

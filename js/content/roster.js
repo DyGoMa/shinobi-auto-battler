@@ -298,7 +298,7 @@ export const ROSTER = [
   },
   {
     id: 'orochimaru', name: 'Orochimaru', short: 'Orochimaru', tier: 'kage', role: 'Ranged', natures: ['Wind', 'Earth'],
-    stats: { hp: 1.0, atk: 1.08, def: 1.0 },
+    stats: { hp: 1.12, atk: 1.2, def: 1.0 },
     ult: { name: 'Striking Shadow Snakes', type: 'single' },
     leader: { stat: 'atk', scope: { tag: 'sound' } },
     tags: ['sannin', 'sound'], unlock: { arcCleared: 'arc_tsunade' },
@@ -507,7 +507,7 @@ export const ROSTER = [
   },
   {
     id: 'onoki', name: 'Onoki', short: 'Onoki', tier: 'kage', role: 'Ranged', natures: ['Earth', 'Wind', 'Fire'],
-    stats: { hp: 0.95, atk: 1.1, def: 1.0 },
+    stats: { hp: 1.07, atk: 1.22, def: 1.0 },
     ult: { name: 'Particle Style: Atomic Dismantling Jutsu', type: 'single', nature: 'Earth' },
     leader: { stat: 'def', scope: { tag: 'stone' } },
     tags: ['stone'], unlock: { arcCleared: 'arc_summit' },
@@ -515,7 +515,7 @@ export const ROSTER = [
   },
   {
     id: 'mei', name: 'Mei Terumi', short: 'Mei', tier: 'kage', role: 'Ranged', natures: ['Water', 'Fire', 'Earth'],
-    stats: { hp: 1.0, atk: 1.06, def: 1.0 },
+    stats: { hp: 1.15, atk: 1.21, def: 1.0 },
     ult: { name: 'Lava Style: Lava Monster Jutsu', type: 'aoe', nature: 'Fire' },
     leader: { stat: 'nature', scope: { tag: 'mist' } },
     tags: ['mist'], unlock: { arcCleared: 'arc_summit' },
@@ -547,7 +547,7 @@ export const ROSTER = [
   },
   {
     id: 'obito', name: 'Obito Uchiha', short: 'Obito', tier: 'kage', role: 'Ranged', natures: ['Fire', 'Earth', 'Water'],
-    stats: { hp: 1.05, atk: 1.06, def: 1.0 },
+    stats: { hp: 1.2, atk: 1.21, def: 1.0 },
     ult: { name: 'Wood Style: Cutting Sprigs Jutsu', type: 'aoe', nature: 'Earth' },
     leader: { stat: 'crit' },
     tags: ['akatsuki', 'leaf'], unlock: { arcCleared: 'arc_birth' },
@@ -623,7 +623,7 @@ export const ROSTER = [
   {
     id: 'naruto_chakramode', formOf: 'naruto', name: 'Naruto Uzumaki (Nine-Tails Chakra Mode)', short: 'Chakra Mode',
     tier: 'kage', role: 'Ranged', natures: ['Wind'],
-    stats: { hp: 1.05, atk: 1.06, def: 1.0 },
+    stats: { hp: 1.2, atk: 1.21, def: 1.0 },
     ult: { name: 'Planet Rasengan', type: 'aoe', nature: 'Wind' },
     leader: { stat: 'startChakra' },
     tags: ['team7', 'leaf'], unlock: { achievement: 'ach_story' }, notPullable: true,

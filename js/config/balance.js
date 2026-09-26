@@ -40,9 +40,10 @@ export const BALANCE = {
     // from directly behind a Tank; mid/long fire over the line.
     // melee 55–75, reach 100–140, mid 180–280, long 300–450.
     ranges: { melee: 64, reach: 118, mid: 230, long: 380 },
-    // Stat multiplier per gacha tier. Keep genin×(1+4×starBonus) ≈ kage so every
-    // tier stays viable once starred up. Range 1.0–2.0.
-    rarityMult: { genin: 1.0, chunin: 1.12, jonin: 1.25, kage: 1.4 },
+    // Stat multiplier per gacha tier. Keep genin×(1+4×starBonus) close to kage so every
+    // tier stays viable once starred up (0.12.1: kage 1.4 → 1.5, so a Kage sits clearly
+    // above a Jonin, about 15 points in the roster audit; a 5★ Genin is still 1.4). Range 1.0–2.0.
+    rarityMult: { genin: 1.0, chunin: 1.12, jonin: 1.25, kage: 1.5 },
     // Stat multiplier by level. x = level − 1. Linear keeps "a few levels behind"
     // forgiving at any point of the campaign. growth 0.04–0.12.
     levelMult: { type: 'linear', base: 1, growth: 0.07 },
@@ -171,11 +172,17 @@ export const BALANCE = {
       tauntHit: 1.4,        // × ATK hit on the tank's target when taunting. 0–3
       // A heal ult is a rescue (0.12.1): the most injured ally (lowest share of HP left)
       // gets the focus heal, every other ally the spread heal. Each is a share of the
-      // ally's max HP plus a multiple of the caster's ATK.
-      healFocusPct: 0.12,   // share of max HP healed on the most injured ally. 0.05–0.3
+      // ally's max HP plus a multiple of the caster's ATK. It is the big heal that lands
+      // once or twice a fight: a healer's ult charges healChargeMult as fast as the
+      // others'. Between casts the healer keeps a steady small heal going (healPulse*).
+      healFocusPct: 0.28,   // share of max HP healed on the most injured ally. 0.1–0.4
       healFocusPower: 0.8,  // ...plus × caster ATK. 0–3
-      healSpreadPct: 0.01,  // share of max HP healed on every other ally. 0–0.1
+      healSpreadPct: 0.03,  // share of max HP healed on every other ally. 0–0.1
       healSpreadPower: 0.2, // ...plus × caster ATK. 0–2
+      healChargeMult: 0.4,  // a heal ult's chakra gain × this (0.4 = about one cast per 30 s: once or twice a fight). 0.3–1
+      healPulseInterval: 6, // s between a healer's steady small heals (on the field, not stunned). 2–8
+      healPulsePct: 0.015,  // share of max HP healed on the most injured ally by each steady heal. 0–0.08
+      healPulsePower: 0.2,  // ...plus × caster ATK. 0–1
       buffAtk: 0.30,        // team ATK bonus from a buff ult. 0.1–0.6
       buffDuration: 8,      // s. 4–15
       stunDuration: 1.8,    // s, for ults with the 'stun' rider. 0.5–4
@@ -245,14 +252,14 @@ export const BALANCE = {
       n_bell_3:    { hp: 1.53, atk: 1.53 },
       n_waves_5:   { hp: 0.88, atk: 0.88 },
       n_chunin_5:  { hp: 1.04, atk: 1.04 },
-      n_crush_3:   { hp: 0.70, atk: 0.70 },
+      n_crush_3:   { hp: 0.72, atk: 0.72 },
       n_crush_4:   { hp: 0.89, atk: 0.89 },
-      n_tsunade_4: { hp: 0.98, atk: 0.98 },
-      n_tea_3:     { hp: 1.34, atk: 1.34 },
+      n_tsunade_4: { hp: 0.95, atk: 0.95 },
+      n_tea_3:     { hp: 1.31, atk: 1.31 },
       n_sr_4:      { hp: 0.86, atk: 0.86 },
       n_sr_5:      { hp: 1.00, atk: 1.00 },
-      n_kuro_3:    { hp: 0.94, atk: 0.94 },
-      n_kaz_4:     { hp: 0.89, atk: 0.89 },
+      n_kuro_3:    { hp: 0.96, atk: 0.96 },
+      n_kaz_4:     { hp: 0.90, atk: 0.90 },
       n_kaz_5:     { hp: 1.14, atk: 1.14 },
       n_tenchi_4:  { hp: 1.11, atk: 1.11 },
       n_twelve_3:  { hp: 1.27, atk: 1.27 },
@@ -261,24 +268,24 @@ export const BALANCE = {
       n_three_2:   { hp: 1.11, atk: 1.11 },
       n_three_3:   { hp: 1.05, atk: 1.05 },
       n_itachi_3:  { hp: 0.97, atk: 0.97 },
-      n_jiraiya_4: { hp: 1.13, atk: 1.13 },
+      n_jiraiya_4: { hp: 1.14, atk: 1.14 },
       n_brothers_2:{ hp: 0.95, atk: 0.95 },
       n_brothers_4:{ hp: 0.84, atk: 0.84 },
       n_sixtails_3:{ hp: 1.01, atk: 1.01 },
       n_pain_5:    { hp: 0.99, atk: 0.99 },
-      n_summit_3:  { hp: 0.89, atk: 0.89 },
+      n_summit_3:  { hp: 0.88, atk: 0.88 },
       n_summit_4:  { hp: 0.85, atk: 0.85 },
       n_countdown_2:{ hp: 0.79, atk: 0.79 },
       n_countdown_4:{ hp: 0.71, atk: 0.71 },
       n_confront_4:{ hp: 0.80, atk: 0.80 },
       n_confront_5:{ hp: 0.97, atk: 0.97 },
-      n_climax_3:  { hp: 1.05, atk: 1.05 },
+      n_climax_3:  { hp: 1.06, atk: 1.06 },
       n_climax_5:  { hp: 0.79, atk: 0.79 },
       n_anbu_3:    { hp: 0.92, atk: 0.92 },
-      n_birth_2:   { hp: 0.73, atk: 0.73 },
-      n_birth_4:   { hp: 0.78, atk: 0.78 },
+      n_birth_2:   { hp: 0.71, atk: 0.71 },
+      n_birth_4:   { hp: 0.80, atk: 0.80 },
       n_kaguya_2:  { hp: 1.07, atk: 1.07 },
-      n_kaguya_4:  { hp: 0.91, atk: 0.91 },
+      n_kaguya_4:  { hp: 0.92, atk: 0.92 },
     },
     // Adds summoned by boss mechanics are this fraction of a normal enemy. 0.3–1
     addMult: 0.6,
@@ -404,43 +411,43 @@ export const BALANCE = {
     // Per-boss fine-tuning on Hard, written by `npm run autotune -- --write` (same
     // rules as enemyScaling.nodeMult; Hard falls back to the story value for other nodes).
     nodeMult: {
-      n_bell_3:    { hp: 1.42, atk: 1.42 },
+      n_bell_3:    { hp: 1.41, atk: 1.41 },
       n_waves_5:   { hp: 0.82, atk: 0.82 },
-      n_chunin_5:  { hp: 0.83, atk: 0.83 },
-      n_crush_3:   { hp: 0.72, atk: 0.72 },
-      n_crush_4:   { hp: 0.88, atk: 0.88 },
-      n_tsunade_4: { hp: 0.86, atk: 0.86 },
+      n_chunin_5:  { hp: 0.84, atk: 0.84 },
+      n_crush_3:   { hp: 0.74, atk: 0.74 },
+      n_crush_4:   { hp: 0.89, atk: 0.89 },
+      n_tsunade_4: { hp: 0.87, atk: 0.87 },
       n_tea_3:     { hp: 1.07, atk: 1.07 },
       n_sr_4:      { hp: 0.79, atk: 0.79 },
       n_sr_5:      { hp: 0.85, atk: 0.85 },
-      n_kuro_3:    { hp: 0.82, atk: 0.82 },
-      n_kaz_4:     { hp: 0.79, atk: 0.79 },
-      n_kaz_5:     { hp: 0.95, atk: 0.95 },
-      n_tenchi_4:  { hp: 0.91, atk: 0.91 },
-      n_twelve_3:  { hp: 1.09, atk: 1.09 },
-      n_hidan_3:   { hp: 0.87, atk: 0.87 },
-      n_hidan_4:   { hp: 0.91, atk: 0.91 },
-      n_three_2:   { hp: 0.93, atk: 0.93 },
+      n_kuro_3:    { hp: 0.84, atk: 0.84 },
+      n_kaz_4:     { hp: 0.84, atk: 0.84 },
+      n_kaz_5:     { hp: 0.99, atk: 0.99 },
+      n_tenchi_4:  { hp: 0.95, atk: 0.95 },
+      n_twelve_3:  { hp: 1.14, atk: 1.14 },
+      n_hidan_3:   { hp: 0.91, atk: 0.91 },
+      n_hidan_4:   { hp: 0.96, atk: 0.96 },
+      n_three_2:   { hp: 0.98, atk: 0.98 },
       n_three_3:   { hp: 1.06, atk: 1.06 },
-      n_itachi_3:  { hp: 0.81, atk: 0.81 },
+      n_itachi_3:  { hp: 0.84, atk: 0.84 },
       n_jiraiya_4: { hp: 0.82, atk: 0.82 },
-      n_brothers_2:{ hp: 0.92, atk: 0.92 },
-      n_brothers_4:{ hp: 0.76, atk: 0.76 },
-      n_sixtails_3:{ hp: 0.92, atk: 0.92 },
-      n_pain_5:    { hp: 0.83, atk: 0.83 },
-      n_summit_3:  { hp: 0.315, atk: 0.315 },
-      n_summit_4:  { hp: 0.77, atk: 0.77 },
-      n_countdown_2:{ hp: 0.70, atk: 0.70 },
-      n_countdown_4:{ hp: 0.64, atk: 0.64 },
-      n_confront_4:{ hp: 0.69, atk: 0.69 },
-      n_confront_5:{ hp: 0.86, atk: 0.86 },
+      n_brothers_2:{ hp: 0.99, atk: 0.99 },
+      n_brothers_4:{ hp: 0.77, atk: 0.77 },
+      n_sixtails_3:{ hp: 0.98, atk: 0.98 },
+      n_pain_5:    { hp: 0.88, atk: 0.88 },
+      n_summit_3:  { hp: 0.31, atk: 0.31 },
+      n_summit_4:  { hp: 0.81, atk: 0.81 },
+      n_countdown_2:{ hp: 0.75, atk: 0.75 },
+      n_countdown_4:{ hp: 0.66, atk: 0.66 },
+      n_confront_4:{ hp: 0.75, atk: 0.75 },
+      n_confront_5:{ hp: 0.91, atk: 0.91 },
       n_climax_3:  { hp: 0.85, atk: 0.85 },
-      n_climax_5:  { hp: 0.76, atk: 0.76 },
-      n_anbu_3:    { hp: 0.93, atk: 0.93 },
-      n_birth_2:   { hp: 0.60, atk: 0.60 },
+      n_climax_5:  { hp: 0.77, atk: 0.77 },
+      n_anbu_3:    { hp: 0.96, atk: 0.96 },
+      n_birth_2:   { hp: 0.61, atk: 0.61 },
       n_birth_4:   { hp: 0.60, atk: 0.60 },
-      n_kaguya_2:  { hp: 0.80, atk: 0.80 },
-      n_kaguya_4:  { hp: 0.73, atk: 0.73 },
+      n_kaguya_2:  { hp: 0.86, atk: 0.86 },
+      n_kaguya_4:  { hp: 0.78, atk: 0.78 },
     },
   },
 

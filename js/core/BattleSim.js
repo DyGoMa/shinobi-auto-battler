@@ -144,6 +144,8 @@ export class BattleSim {
       if (u.statuses.length) u.statuses = u.statuses.filter(s => s.until > this.time);
       if (u.shield > 0 && this.time >= u.shieldUntil) { u.shield = 0; this._emit({ type: 'shieldEnd', uid: u.uid }); }
     }
+    // Healers keep a steady small heal going between their big rescues (0.12.1).
+    for (const u of this.units) if (u.alive && !u.protected && u.ult?.type === 'heal') this._healPulse(u);
     // Mechanics (bosses & special enemies)
     for (const u of this.units) if (u.alive && u.mechanics.length) this._runMechanics(u, dt);
     // Telegraphs (wind-ups)
@@ -278,7 +280,9 @@ export class BattleSim {
   _gainChakra(u, amt) {
     const max = this.B.combat.chakra.max;
     const before = u.chakra;
-    u.chakra = Math.min(max, u.chakra + amt * (u.chakraGainMult ?? 1));
+    // A heal ult is the rare big rescue: it charges healChargeMult as fast (0.12.1).
+    const healMult = u.ult?.type === 'heal' ? (this.B.combat.ult.healChargeMult ?? 1) : 1;
+    u.chakra = Math.min(max, u.chakra + amt * (u.chakraGainMult ?? 1) * healMult);
     if (u.side === 'player' && before < max && u.chakra >= max) this._emit({ type: 'ultReady', uid: u.uid });
   }
 
@@ -321,11 +325,11 @@ export class BattleSim {
     return dmg;
   }
 
-  _heal(u, amount, src) {
+  _heal(u, amount, src, { pulse = false } = {}) {
     if (!u.alive) return;
     const amt = Math.max(0, Math.min(u.maxHp - u.hp, Math.round(amount)));
     u.hp += amt;
-    if (amt > 0) this._emit({ type: 'heal', uid: u.uid, amount: amt, src: src?.uid });
+    if (amt > 0) this._emit({ type: 'heal', uid: u.uid, amount: amt, src: src?.uid, pulse });
   }
 
   _kill(u) {
@@ -443,7 +447,7 @@ export class BattleSim {
         // A rescue: the most injured ally (lowest share of HP left) gets the focus
         // heal, everyone else the spread heal. The caster counts as an ally.
         const allies = this.alive(u.side);
-        const worst = allies.reduce((w, a) => (!w || a.hp / a.maxHp < w.hp / w.maxHp ? a : w), null);
+        const worst = this._mostInjured(u.side);
         const atk = this.atkOf(u);
         for (const a of allies) {
           const focus = a === worst;
@@ -457,6 +461,24 @@ export class BattleSim {
         break;
       default: break;
     }
+  }
+
+  /** The most injured ally (lowest share of HP left) on a side, the unit itself included. */
+  _mostInjured(side) {
+    return this.alive(side).reduce((w, a) => (!w || a.hp / a.maxHp < w.hp / w.maxHp ? a : w), null);
+  }
+
+  /** A healer's steady small heal: every healPulseInterval s, healPulsePct + healPulsePower × ATK on the most injured ally. */
+  _healPulse(u) {
+    const U = this.B.combat.ult;
+    if (!(U.healPulseInterval > 0)) return;
+    if (u.healPulseAt == null) u.healPulseAt = this.time + U.healPulseInterval;
+    if (this.time < u.healPulseAt) return;
+    u.healPulseAt = this.time + U.healPulseInterval;
+    if (this.isStunned(u) || u.casting) return;
+    const a = this._mostInjured(u.side);
+    if (!a || a.hp >= a.maxHp) return;
+    this._heal(a, (U.healPulsePct ?? 0) * a.maxHp + (U.healPulsePower ?? 0) * this.atkOf(u), u, { pulse: true });
   }
 
   _stun(u, dur) {

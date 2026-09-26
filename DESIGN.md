@@ -55,10 +55,10 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 
 | Role | Ult type | Effect (balance.js `combat.ult`) |
 |---|---|---|
-| Striker / Ranged | `single` | 4.2 × ATK to one target (optional `stun` rider, 2.2 s) |
-| Striker / Ranged | `aoe` | 2.3 × ATK to every enemy within 300 px of the target (not a screen wipe) |
+| Striker / Ranged | `single` | 4.2 × ATK to one target (optional `stun` rider, 1.8 s) |
+| Striker / Ranged | `aoe` | 3.7 × ATK to the target and 2.7 × ATK to every other enemy within 300 px of it (the jutsu is centred on the target; not a screen wipe) |
 | Tank | `taunt` | 5 s taunt + 50% damage reduction, plus a 1.4 × ATK hit |
-| Support | `heal` | 2.4 × caster ATK + 10% max HP to every ally |
+| Support | `heal` | The big rescue (0.12.1): 28% max HP + 0.8 × caster ATK to the ally with the least HP left, 3% + 0.2 × ATK to the rest. It charges at 0.4× the usual rate, so it lands once or twice a fight; between casts the healer heals the most injured ally 1.5% + 0.2 × ATK every 6 s (`healPulse*`) |
 | Support | `buff` | +30% team ATK for 8 s |
 
 * Ults are jutsu: they reach any enemy.
@@ -67,6 +67,7 @@ K          = defenseK curve at the attacker's level (keeps DEF relevant at every
 ### 2.4 Leader
 * The 4th slot is the **Leader**. Its passive buff is defined per character as a stat (`atk, hp, def, speed, crit, chakra, startChakra, nature`) plus an optional scope (a team tag, a nature, a role, or a tier).
 * Scoped buffs are ×1.8 stronger than whole-team buffs, and Kage leaders give ×1.45.
+* Tiers: `stats.rarityMult` Genin 1.0, Chunin 1.12, Jonin 1.25, Kage 1.5 (0.12.1: from 1.4, so the whole Kage tier sits clearly above Jonin, about 15 points in the roster audit, with no Kage a must-pick; a 5★ Genin is 1.4).
 * Example: Kakashi, the starter Leader, gives +21.6% ATK to Team 7.
 * Some nodes remove the Leader (Survival Test) or force one (the Third Hokage's Last Stand).
 * Forced ninja always play. If a node forces four, the Leader slot yields: your Leader leads only if they are one of the four, otherwise the first forced ninja does (Traps Activate! → Might Guy).

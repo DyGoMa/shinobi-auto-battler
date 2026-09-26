@@ -338,6 +338,39 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     const simA = new BattleSim({ ...cfgA, recordEvents: false }), simB = new BattleSim({ ...cfgB, recordEvents: false });
     ok(simA.runToEnd({ ultMode: 'smart' }) === simB.runToEnd({ ultMode: 'smart' }) && simA.time === simB.time, 'Hard battles are deterministic for a seed');
   }
+  // ---- 0.12.1: the heal is a rare big rescue plus a steady small heal ----
+  {
+    const hs = defaultState(C, B);
+    hs.roster.sakura = hs.roster.sakura || { level: 1, stars: 1 };
+    hs.roster.naruto = hs.roster.naruto || { level: 1, stars: 1 };
+    hs.team = { members: ['naruto', 'sakura'], leader: null };
+    const hcfg = nodeBattleConfig(hs, C.nodes[0], C, B, { seed: 5 });
+    const hsim = new BattleSim({ ...hcfg, recordEvents: false });
+    const healer = hsim.units.find(u => u.side === 'player' && u.ult?.type === 'heal');
+    const striker = hsim.units.find(u => u.side === 'player' && u.key === 'naruto');
+    ok(healer && striker, 'a healer and a striker on the field');
+    healer.chakra = 0; striker.chakra = 0;
+    hsim._gainChakra(healer, 10); hsim._gainChakra(striker, 10);
+    ok(Math.abs(healer.chakra - 10 * B.combat.ult.healChargeMult) < 1e-9 && striker.chakra === 10, 'a heal ult charges healChargeMult as fast as the others');
+    const U = B.combat.ult;
+    striker.hp = Math.round(striker.maxHp * 0.5); healer.hp = healer.maxHp;
+    hsim._healPulse(healer);
+    ok(striker.hp === Math.round(striker.maxHp * 0.5), 'the first steady heal waits a full healPulseInterval');
+    hsim.time += U.healPulseInterval;
+    hsim._healPulse(healer);
+    const want = Math.round(U.healPulsePct * striker.maxHp + U.healPulsePower * hsim.atkOf(healer));
+    ok(striker.hp === Math.round(striker.maxHp * 0.5) + want, 'every healPulseInterval the healer heals the most injured ally for healPulsePct of max HP plus healPulsePower × ATK');
+    const before = striker.hp;
+    hsim._healPulse(healer);
+    ok(striker.hp === before, 'no second steady heal before the interval is up');
+    healer.hp = Math.round(healer.maxHp * 0.3); hsim.time += U.healPulseInterval;
+    hsim._healPulse(healer);
+    ok(healer.hp > Math.round(healer.maxHp * 0.3) && striker.hp === before, 'the steady heal lands on whoever has the least HP left, the healer included');
+    striker.hp = Math.round(striker.maxHp * 0.2); healer.hp = healer.maxHp; healer.chakra = B.combat.chakra.max;
+    hsim._executeUlt(healer, 1);
+    const rescue = Math.round(U.healFocusPct * striker.maxHp + U.healFocusPower * hsim.atkOf(healer));
+    ok(striker.hp === Math.round(striker.maxHp * 0.2) + rescue, 'the heal Ultimate is the big rescue on the most injured ally (healFocusPct of max HP plus healFocusPower × ATK)');
+  }
   // ---- Session 4: the Daily challenge ----
   {
     const s = defaultState(C, B);
