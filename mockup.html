@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d11">
+  <meta name="robots" content="noindex">
+  <title>Art mockup — Shinobi Auto-Battler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Yuji+Syuku&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="mockup/mockup.css">
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M12 3 2 11h3v9h6v-6h2v6h6v-9h3z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></symbol>
+  <symbol id="i-team" viewBox="0 0 24 24"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7-1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM3 19c0-3 2.7-5 6-5s6 2 6 5v1H3zm13 1v-1c0-1.6-.6-3-1.6-4.1 2.7-.6 6.6.7 6.6 4.1v1z"/></symbol>
+  <symbol id="i-roster" viewBox="0 0 24 24"><path d="M5 3h13v18H7a2 2 0 0 1-2-2zm2 2v13h9V5zm2 2h5v2H9zm0 4h5v2H9z"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1H4zm0 3h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm3 2v2h10v-2zm0 4v2h7v-2z"/></symbol>
+  <symbol id="i-wiki" viewBox="0 0 24 24"><path d="M2 5h7a3 3 0 0 1 3 2 3 3 0 0 1 3-2h7v14h-7a3 3 0 0 0-3 2 3 3 0 0 0-3-2H2zm2 2v10h5a5 5 0 0 1 2 .5V8a1 1 0 0 0-1-1zm9 1v9.5a5 5 0 0 1 2-.5h5V7h-6a1 1 0 0 0-1 1z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9.4 5.5-2-.6a7.6 7.6 0 0 0 0-1.8l2-.6-1-2.6-2 .7a7.6 7.6 0 0 0-1.3-1.3l.7-2-2.6-1-.6 2a7.6 7.6 0 0 0-1.8 0l-.6-2-2.6 1 .7 2a7.6 7.6 0 0 0-1.3 1.3l-2-.7-1 2.6 2 .6a7.6 7.6 0 0 0 0 1.8l-2 .6 1 2.6 2-.7a7.6 7.6 0 0 0 1.3 1.3l-.7 2 2.6 1 .6-2a7.6 7.6 0 0 0 1.8 0l.6 2 2.6-1-.7-2a7.6 7.6 0 0 0 1.3-1.3l2 .7z"/></symbol>
+  <symbol id="i-ryo" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 3a7 7 0 1 1 0 14 7 7 0 0 1 0-14zm-1 3h2v8h-2z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 3h12v2h3v3a5 5 0 0 1-4.5 5 6 6 0 0 1-3.5 3.2V18h3v3H8v-3h3v-1.8A6 6 0 0 1 7.5 13 5 5 0 0 1 3 8V5h3zm-1 4v1a3 3 0 0 0 2 2.8V7zm14 0h-2v3.8a3 3 0 0 0 2-2.8z"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zm11 .5a3.5 3.5 0 0 1 0 5v-5zm0-4a7 7 0 0 1 0 13v-2a5 5 0 0 0 0-9z"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-10z"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24"><path d="M2 7h11.5a2.5 2.5 0 1 0-2.4-3.2l1.9.6a.5.5 0 1 1 .5.6H2zm0 5h16.5a2.5 2.5 0 1 1-2.4 3.2l1.9-.6a.5.5 0 1 0 .5-.6H2zm0 5h8.5a2 2 0 1 1-1.9 2.6l1.9-.6a0 0 0 0 0 0 0H2z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></symbol>
+  <symbol id="i-earth" viewBox="0 0 24 24"><path d="M2 20 8 8l3 5 2-3 3 4 2-2 4 8z"/></symbol>
+  <symbol id="i-water" viewBox="0 0 24 24"><path d="M12 2s7 7 7 12a7 7 0 0 1-14 0c0-5 7-12 7-12z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/></symbol>
+  <symbol id="i-sword" viewBox="0 0 24 24"><path d="M19.5 3 9 13.5l1.5 1.5L21 4.5zM7.5 15l-4 4 1.5 1.5 4-4zm2 2 1.5 1.5-1 1L8.5 18z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm0 4a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 8l4 4 5-7 5 7 4-4-2 12H5z"/></symbol>
+  <symbol id="i-skull" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 3 1.5 5 4 6.5V20h8v-3.5c2.5-1.5 4-3.5 4-6.5a8 8 0 0 0-8-8zm-3 7a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h3v18H4V4h3zm-1 7v11h12V9z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4 4 0 0 1 0 9z"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3 7 7 .6-5.3 4.7 1.7 7L12 17.5 5.6 21.3l1.7-7L2 9.6 9 9z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3h2v12H5V10zm2 0h6V7a3 3 0 0 0-6 0z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></symbol>
+  <symbol id="i-skip" viewBox="0 0 24 24"><path d="M4 5l10 7-10 7zM16 5h3v14h-3z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><path d="M4 8h16v10H4zm2 2v6h12v-6zm2 1h3v4H8zm5 0h3v4h-3zM11 4h2v3h-2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8 1.5-1.5L10 12l6.5-6.5z"/></symbol>
+  <symbol id="i-kunai" viewBox="0 0 24 24"><path d="M12 2 9 9l3 9 3-9zm0 16 2 2-2 2-2-2z"/></symbol>
+</svg>
+
+<header class="page-head">
+  <h1>Art mockup</h1>
+  <p>Phase 2 of the polish pass: six moments in the proposed final style. Stages, effects, UI chrome and motion are drawn in code exactly as they will ship; portraits are image slots (the code-drawn bust is what ships when an image is missing). Everything is shown at phone width. Tap a scene to replay it.</p>
+  <p><a href="./" style="color:#ffb86b">‹ Back to the game</a></p>
+</header>
+
+<!-- ====================================================== 1. Part I battle -->
+<section class="section" id="s1">
+  <h2>1 · Part I battle, mid-jutsu</h2>
+  <p class="lead">Land of Waves, Showdown on the Bridge. Kakashi's Lightning Blade lands while Zabuza winds up the Water Dragon (the wind-up plate, the target zones, the cut-in name card, per-nature impacts, floating numbers, the ready-glow on a portrait). Part I skin: paper, wood and the headband plate; warm palette.</p>
+  <div class="shots">
+    <div class="shot" data-era="p1" id="shot-p1">
+      <div class="status"><span>9:41</span><span>Part I</span></div>
+      <div class="battle">
+        <div class="hud">
+          <div class="obj">Showdown on the Bridge<small><svg class="ico"><use href="#i-crown"/></svg> Defeat the boss</small></div>
+          <div class="timer">0:24</div>
+          <button class="iconbtn" aria-label="Auto-ult"><svg class="ico"><use href="#i-auto"/></svg></button>
+          <button class="iconbtn" aria-label="Speed">1×</button>
+          <button class="iconbtn" aria-label="Pause"><svg class="ico"><use href="#i-pause"/></svg></button>
+        </div>
+        <div class="stage">
+          <canvas class="field"></canvas>
+          <div class="namecard"><div class="slot square" data-portrait="kakashi" data-look="kakashi"></div><div class="txt"><div class="who">Kakashi Hatake</div><div class="what">Lightning Blade</div></div></div>
+          <div class="readout"><div class="l1"></div><div class="l2"></div></div>
+        </div>
+        <div class="binfo"><b style="color:var(--text)">Nature Wheel</b> — each beats the next<div class="wheel"><span class="chip Fire"><svg class="ico"><use href="#i-fire"/></svg>Fire</span><span class="gt">›</span><span class="chip Wind"><svg class="ico"><use href="#i-wind"/></svg>Wind</span><span class="gt">›</span><span class="chip Lightning"><svg class="ico"><use href="#i-bolt"/></svg>Lightning</span><span class="gt">›</span><span class="chip Earth"><svg class="ico"><use href="#i-earth"/></svg>Earth</span><span class="gt">›</span><span class="chip Water"><svg class="ico"><use href="#i-water"/></svg>Water</span></div></div>
+        <div class="ultbar">
+          <button class="ult" data-unit="naruto"><div class="slot round" style="--ring:var(--r-chunin)" data-portrait="naruto" data-look="naruto"></div><div class="info"><div class="nm">Naruto</div><div class="jn">Rasengan</div><div class="bar hp"><i style="width:82%"></i></div><div class="bar ck"><i style="width:70%"></i></div></div><span class="badge stand">= STANDOFF</span></button>
+          <button class="ult" data-unit="sasuke"><div class="slot round" style="--ring:var(--r-chunin)" data-portrait="sasuke" data-look="sasuke"></div><div class="info"><div class="nm">Sasuke</div><div class="jn">Chidori</div><div class="bar hp"><i style="width:64%"></i></div><div class="bar ck"><i style="width:40%"></i></div></div></button>
+          <button class="ult ready" data-unit="kakashi"><div class="slot round" style="--ring:var(--r-jonin)" data-portrait="kakashi" data-look="kakashi"></div><div class="info"><div class="nm">Kakashi ★</div><div class="jn">Lightning Blade</div><div class="bar hp"><i style="width:90%"></i></div><div class="bar ck"><i style="width:100%"></i></div></div><span class="badge stand">= STANDOFF</span></button>
+          <button class="ult" data-unit="sakura"><div class="slot round" style="--ring:var(--r-genin)" data-portrait="sakura" data-look="sakura"></div><div class="info"><div class="nm">Sakura</div><div class="jn">Healing Jutsu</div><div class="bar hp"><i style="width:76%"></i></div><div class="bar ck"><i style="width:55%"></i></div></div></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">The lane keeps today's geometry (units on y 520–600, the announcer band clear at the top) so nothing about positions or timing changes. Badges: Kakashi's Lightning is neutral against a Water jutsu, so his ready portrait predicts a Standoff.</p>
+</section>
+
+<!-- ====================================================== 2. Shippuden battle -->
+<section class="section" id="s2">
+  <h2>2 · Shippuden battle, Jutsu Clash</h2>
+  <p class="lead">Tenchi Bridge arc, The Power of Uchiha. Naruto (Nine-Tails chakra) fires Rasengan into Sasuke's Chidori Stream: the clash beam, the slow-motion beat, and the OVERPOWER readout sized for a phone. Shippuden skin: black cloth, dark steel, crimson; cooler palette, ash in the air.</p>
+  <div class="shots">
+    <div class="shot" data-era="p2" id="shot-p2">
+      <div class="status"><span>9:41</span><span>Part II</span></div>
+      <div class="battle">
+        <div class="hud">
+          <div class="obj">The Power of Uchiha<small><svg class="ico"><use href="#i-crown"/></svg> Defeat the boss</small></div>
+          <div class="timer">0:41</div>
+          <button class="iconbtn" aria-label="Auto-ult"><svg class="ico"><use href="#i-auto"/></svg></button>
+          <button class="iconbtn" aria-label="Speed">1×</button>
+          <button class="iconbtn" aria-label="Pause"><svg class="ico"><use href="#i-pause"/></svg></button>
+        </div>
+        <div class="stage">
+          <canvas class="field"></canvas>
+          <div class="namecard"><div class="slot square" data-portrait="naruto_p2" data-look="naruto_p2"></div><div class="txt"><div class="who">Naruto Uzumaki</div><div class="what">Rasengan</div></div></div>
+          <div class="readout"><div class="l1"></div><div class="l2"></div></div>
+        </div>
+        <div class="binfo"><b style="color:var(--text)">Nature Wheel</b> — each beats the next<div class="wheel"><span class="chip Fire"><svg class="ico"><use href="#i-fire"/></svg>Fire</span><span class="gt">›</span><span class="chip Wind"><svg class="ico"><use href="#i-wind"/></svg>Wind</span><span class="gt">›</span><span class="chip Lightning"><svg class="ico"><use href="#i-bolt"/></svg>Lightning</span><span class="gt">›</span><span class="chip Earth"><svg class="ico"><use href="#i-earth"/></svg>Earth</span><span class="gt">›</span><span class="chip Water"><svg class="ico"><use href="#i-water"/></svg>Water</span></div></div>
+        <div class="ultbar">
+          <button class="ult ready" data-unit="naruto_p2"><div class="slot round" style="--ring:var(--r-jonin)" data-portrait="naruto_p2" data-look="naruto_p2"></div><div class="info"><div class="nm">Naruto ★</div><div class="jn">Rasengan</div><div class="bar hp"><i style="width:71%"></i></div><div class="bar ck"><i style="width:100%"></i></div></div><span class="badge over">▲ OVERPOWER</span></button>
+          <button class="ult" data-unit="sakura_p2"><div class="slot round" style="--ring:var(--r-genin)" data-portrait="sakura_p2" data-look="sakura_p2"></div><div class="info"><div class="nm">Sakura</div><div class="jn">Healing Jutsu</div><div class="bar hp"><i style="width:88%"></i></div><div class="bar ck"><i style="width:35%"></i></div></div></button>
+          <button class="ult" data-unit="sai"><div class="slot round" style="--ring:var(--r-chunin)" data-portrait="sai" data-look="sai"></div><div class="info"><div class="nm">Sai</div><div class="jn">Super Beast Scroll</div><div class="bar hp"><i style="width:58%"></i></div><div class="bar ck"><i style="width:62%"></i></div></div></button>
+          <button class="ult" data-unit="yamato"><div class="slot round" style="--ring:var(--r-jonin)" data-portrait="yamato" data-look="yamato"></div><div class="info"><div class="nm">Yamato</div><div class="jn">Four Pillar Prison</div><div class="bar hp"><i style="width:80%"></i></div><div class="bar ck"><i style="width:20%"></i></div></div></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Wind beats Lightning, so Naruto's badge reads OVERPOWER while the wind-up is up. The slow-motion beat is the one cinematic moment allowed in a clash (0.35× for about half a second); it is skipped at the Low VFX setting and under reduced motion.</p>
+</section>
+
+<!-- ====================================================== 3. Map node screen -->
+<section class="section" id="s3">
+  <h2>3 · Story map, a node selected</h2>
+  <p class="lead">Land of Waves in the Part I skin: the arc's stage drawn behind the path, landmark pins instead of dots, the node panel with portrait tokens, nature chips from the icon set, the power check and the fight row. The tab bar is a headband plate.</p>
+  <div class="shots">
+    <div class="shot tall" data-era="p1" id="shot-map">
+      <div class="status"><span>9:41</span><span>Part I</span></div>
+      <div class="topbar"><div class="brand"><div class="mark">忍</div>Shinobi</div><div class="spacer"></div><span class="cur"><svg class="ico"><use href="#i-scroll"/></svg>1,240</span><span class="cur"><svg class="ico"><use href="#i-ryo"/></svg>8,930</span><button class="iconbtn" aria-label="Achievements"><svg class="ico"><use href="#i-trophy"/></svg></button></div>
+      <div class="seg"><button class="on"><svg class="ico"><use href="#i-map"/></svg>Story</button><button><svg class="ico"><use href="#i-skull"/></svg>Hard</button><button><svg class="ico"><use href="#i-calendar"/></svg>Daily</button><button><svg class="ico"><use href="#i-cloud"/></svg>Boss Rush</button></div>
+      <div class="card arc-card"><div class="t"><h3>Land of Waves</h3><div class="eps">Episodes 6–19 · 2 / 5 cleared</div><div class="prog"><i style="width:40%"></i></div></div><span class="pill">Part I</span></div>
+      <div class="map-stage" id="map-stage">
+        <canvas class="field"></canvas>
+        <svg class="path" viewBox="0 0 100 62" preserveAspectRatio="none"><path d="M14 44 C 22 30, 26 30, 32 26 S 46 36, 52 41 S 64 26, 70 22 S 82 34, 88 38" fill="none" stroke="rgba(255,240,200,.75)" stroke-width="1.2" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/></svg>
+        <div class="pin cleared" style="left:14%;top:71%"><svg class="ico"><use href="#i-check"/></svg><span class="lbl">The Demon Brothers</span></div>
+        <div class="pin cleared" style="left:32%;top:42%"><svg class="ico"><use href="#i-check"/></svg><span class="lbl">Water Prison Jutsu</span></div>
+        <div class="pin current" style="left:52%;top:66%">3<span class="rec">⚡3.1k</span><span class="lbl">Zori and Waraji</span></div>
+        <div class="pin locked" style="left:70%;top:35%"><svg class="ico"><use href="#i-lock"/></svg><span class="lbl">Crystal Ice Mirrors</span></div>
+        <div class="pin boss locked" style="left:88%;top:61%"><svg class="ico"><use href="#i-crown"/></svg><span class="lbl">Showdown on the Bridge</span></div>
+      </div>
+      <div class="card node-panel">
+        <h3>3 · Zori and Waraji <span class="pill">Ep. 13 · Lv 6</span></h3>
+        <div class="blurb">Gato's samurai thugs come for Tsunami. Zori runs past everyone — protect her.</div>
+        <div class="rewards"><span class="pill warn"><svg class="ico"><use href="#i-shield"/></svg> Protect Tsunami</span><span class="pill"><svg class="ico"><use href="#i-scroll"/></svg> +40</span><span class="pill"><svg class="ico"><use href="#i-ryo"/></svg> +520</span><span class="pill">First clear</span></div>
+        <div class="enemy"><div class="slot round" data-portrait="zori" data-look="thug" data-face="left"></div><div><div class="en">Zori <span class="chip None">No nature</span></div><div class="mech"><svg class="ico"><use href="#i-kunai"/></svg> Diver — slips past your line for the escort · Iaido (telegraphed)</div></div></div>
+        <div class="enemy"><div class="slot round" data-portrait="waraji" data-look="thug" data-face="left"></div><div><div class="en">Waraji <span class="chip None">No nature</span></div><div class="mech"><svg class="ico"><use href="#i-sword"/></svg> Iaido (telegraphed, clashable)</div></div></div>
+        <div class="power"><span>Recommended <b>3,100</b> · Your team <b style="color:var(--good)">3,240</b></span><span class="pill good"><svg class="ico"><use href="#i-check"/></svg> Ready</span></div>
+        <div class="fight-row"><button class="btn"><svg class="ico"><use href="#i-team"/></svg> Team</button><button class="btn"><svg class="ico"><use href="#i-star"/></svg> Auto</button><button class="btn primary"><svg class="ico"><use href="#i-sword"/></svg> Fight!</button></div>
+      </div>
+      <div class="tabs"><div class="tab"><svg class="ico"><use href="#i-home"/></svg>Home</div><div class="tab on"><svg class="ico"><use href="#i-map"/></svg>Story</div><div class="tab"><svg class="ico"><use href="#i-team"/></svg>Team</div><div class="tab"><svg class="ico"><use href="#i-roster"/></svg>Roster</div><div class="tab"><svg class="ico"><use href="#i-scroll"/></svg>Summon</div><div class="tab"><svg class="ico"><use href="#i-wiki"/></svg>Wiki</div><div class="tab"><svg class="ico"><use href="#i-settings"/></svg>Settings</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== 4. Gacha -->
+<section class="section" id="s4">
+  <h2>4 · Summon, a Kage pull</h2>
+  <p class="lead">The new ceremony: hand seal, summoning circle, smoke, the portrait rising in tier-tinted light; a Kage whites out the screen for the full portrait and name plate. Below: the four rarity frames (Genin · Chunin · Jonin · Kage). The banner is a Part I one, so the Part I skin.</p>
+  <div class="shots">
+    <div class="shot" data-era="p1" id="shot-gacha">
+      <div class="status"><span>9:41</span><span>Summon</span></div>
+      <div class="gacha">
+        <canvas class="field"></canvas>
+        <div class="kage-card"><div class="slot frame" data-portrait="jiraiya" data-look="jiraiya"></div><div class="plate"><div class="nm">Jiraiya</div><div class="ti">Legendary Sannin · <span style="font-family:var(--font-display)">KAGE</span></div></div></div>
+      </div>
+      <div class="tiers">
+        <div class="tcard genin"><div class="slot round" style="--ring:var(--r-genin)" data-portrait="sakura" data-look="sakura"></div><span class="tier genin">Genin</span></div>
+        <div class="tcard chunin"><div class="slot round" style="--ring:var(--r-chunin)" data-portrait="naruto" data-look="naruto"></div><span class="tier chunin">Chunin</span></div>
+        <div class="tcard jonin"><div class="slot round" style="--ring:var(--r-jonin)" data-portrait="kakashi" data-look="kakashi"></div><span class="tier jonin">Jonin</span></div>
+        <div class="tcard kage"><div class="slot round" style="--ring:var(--r-kage)" data-portrait="jiraiya" data-look="jiraiya"></div><span class="tier kage">Kage</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Single pull under 3 s, a ten-pull under 6 s, tap to skip; the ceremony is era-neutral apart from the frame skin.</p>
+</section>
+
+<!-- ====================================================== 5. Dialogue -->
+<section class="section" id="s5">
+  <h2>5 · Dialogue scene</h2>
+  <p class="lead">A node intro before the Survival Test: the stage full-bleed and dimmed behind, a narrator caption at the top, the anime-style box at the bottom with the speaker's portrait, a name plate and typewriter text; the enemy side flips. Skip and Auto live top-right.</p>
+  <div class="shots">
+    <div class="shot tall" data-era="p1" id="shot-dlg">
+      <div class="status"><span>9:41</span><span>Part I</span></div>
+      <div class="stage" style="aspect-ratio:9/16;">
+        <canvas class="field"></canvas>
+        <div class="caption">Training Ground 3 · the morning of the Survival Test</div>
+        <div class="dlg-ctl"><button class="btn small">Skip</button><button class="btn small on">Auto</button></div>
+        <div class="dlg" id="dlg"><div class="slot frame" data-portrait="kakashi" data-look="kakashi"></div><div class="box"><span class="name">Kakashi</span><span class="text"></span><span class="next"></span></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Lines stay under 90 characters. The same box appears over the battle stage for boss pre-fight lines (scene 6) and mid-battle barks.</p>
+</section>
+
+<!-- ====================================================== 6. Boss intro -->
+<section class="section" id="s6">
+  <h2>6 · Boss intro</h2>
+  <p class="lead">Zabuza on the bridge: letterbox bars, a camera push-in with speed lines, the name card with the portrait cut-in and the boss's title in the brush face, then his pre-fight line. About 1.5 s, skippable, 0.8 s on replays.</p>
+  <div class="shots">
+    <div class="shot" data-era="p1" id="shot-boss">
+      <div class="status"><span>9:41</span><span>Part I</span></div>
+      <div class="battle">
+        <div class="hud">
+          <div class="obj">Showdown on the Bridge<small><svg class="ico"><use href="#i-crown"/></svg> Defeat the boss</small></div>
+          <div class="timer">0:00</div>
+          <button class="iconbtn" aria-label="Auto-ult"><svg class="ico"><use href="#i-auto"/></svg></button>
+          <button class="iconbtn" aria-label="Speed">1×</button>
+          <button class="iconbtn" aria-label="Pause"><svg class="ico"><use href="#i-pause"/></svg></button>
+        </div>
+        <div class="stage bars">
+          <canvas class="field"></canvas>
+          <div class="speedlines"></div>
+          <div class="bosscard"><div class="slot" data-portrait="zabuza" data-look="zabuza" data-face="left" data-expr="menace"></div><div class="txt"><div class="tag">BOSS · WATER STYLE</div><div class="name">Zabuza Momochi</div><div class="title">Demon of the Hidden Mist</div></div></div>
+          <div class="readout"><div class="l1"></div><div class="l2"></div></div>
+          <div class="dlg right" id="dlg-boss" style="opacity:0"><div class="slot frame" data-portrait="zabuza" data-look="zabuza" data-face="left" data-expr="menace"></div><div class="box"><span class="name">Zabuza</span><span class="text"></span><span class="next"></span></div></div>
+        </div>
+        <div class="ultbar">
+          <button class="ult" data-unit="naruto"><div class="slot round" style="--ring:var(--r-chunin)" data-portrait="naruto" data-look="naruto"></div><div class="info"><div class="nm">Naruto</div><div class="jn">Rasengan</div><div class="bar hp"><i style="width:100%"></i></div><div class="bar ck"><i style="width:0%"></i></div></div></button>
+          <button class="ult" data-unit="sasuke"><div class="slot round" style="--ring:var(--r-chunin)" data-portrait="sasuke" data-look="sasuke"></div><div class="info"><div class="nm">Sasuke</div><div class="jn">Chidori</div><div class="bar hp"><i style="width:100%"></i></div><div class="bar ck"><i style="width:0%"></i></div></div></button>
+          <button class="ult" data-unit="kakashi"><div class="slot round" style="--ring:var(--r-jonin)" data-portrait="kakashi" data-look="kakashi"></div><div class="info"><div class="nm">Kakashi ★</div><div class="jn">Lightning Blade</div><div class="bar hp"><i style="width:100%"></i></div><div class="bar ck"><i style="width:0%"></i></div></div></button>
+          <button class="ult" data-unit="sakura"><div class="slot round" style="--ring:var(--r-genin)" data-portrait="sakura" data-look="sakura"></div><div class="info"><div class="nm">Sakura</div><div class="jn">Healing Jutsu</div><div class="bar hp"><i style="width:100%"></i></div><div class="bar ck"><i style="width:0%"></i></div></div></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== 7. Spec -->
+<section class="section" id="s7">
+  <h2>7 · Portrait spec, test slots and prompts</h2>
+  <p class="lead">Generate a test portrait with one of the prompts, then load it here (it stays in this browser only). Every slot on this page switches to your image at once, so you can judge the frame, size and treatment in every context. A magenta background is keyed out on load, as the ingest tool will do.</p>
+  <div class="spec">
+    <div class="card">
+      <h3>Slots and sizes</h3>
+      <p>One 256×256 image serves every context: token (56 · 40 px), the ult bar (44 px), the dialogue frame (96 px), the cut-in (80 px), the boss card (120 px), the Kage reveal (full). Busts are framed chin to mid-chest with the eyes on the upper third, so the circle crop keeps the face.</p>
+      <div class="slotrow" data-era="p1">
+        <figure><div class="slot round" style="width:84px;height:84px;--ring:var(--r-chunin)" data-portrait="naruto" data-look="naruto"></div><figcaption>84 · Kage reveal token</figcaption></figure>
+        <figure><div class="slot round" style="width:56px;height:56px;--ring:var(--r-chunin)" data-portrait="naruto" data-look="naruto"></div><figcaption>56 · roster</figcaption></figure>
+        <figure><div class="slot round" style="width:40px;height:40px;--ring:#ff6b6b" data-portrait="zabuza" data-look="zabuza" data-face="left" data-expr="menace"></div><figcaption>40 · enemy token</figcaption></figure>
+        <figure><div class="slot square" style="width:44px;height:44px" data-portrait="naruto" data-look="naruto"></div><figcaption>44 · ult bar</figcaption></figure>
+        <figure><div class="slot frame" style="width:96px;height:96px" data-portrait="naruto_p2" data-look="naruto_p2"></div><figcaption>96 · dialogue, Part I frame</figcaption></figure>
+      </div>
+      <div class="slotrow" data-era="p2">
+        <figure><div class="slot frame" style="width:96px;height:96px" data-portrait="naruto_p2" data-look="naruto_p2"></div><figcaption>96 · dialogue, Shippuden frame</figcaption></figure>
+        <figure><div class="slot square" style="width:44px;height:44px" data-portrait="naruto_p2" data-look="naruto_p2"></div><figcaption>44 · ult bar</figcaption></figure>
+        <figure><div class="slot round" style="width:56px;height:56px;--ring:var(--r-kage)" data-portrait="naruto_p2" data-look="naruto_p2"></div><figcaption>56 · Kage ring</figcaption></figure>
+      </div>
+    </div>
+    <div class="card" id="pickers">
+      <h3>Load a test portrait</h3>
+      <div class="picker" data-id="naruto"><div class="slot square" data-portrait="naruto" data-look="naruto"></div><div><b>Naruto (Part I)</b> — prompt A<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="clear">Remove</button></div></div>
+      <div class="picker" data-id="zabuza"><div class="slot square" data-portrait="zabuza" data-look="zabuza" data-face="left" data-expr="menace"></div><div><b>Zabuza Momochi</b> — prompt B<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="clear">Remove</button></div></div>
+      <div class="picker" data-id="naruto_p2"><div class="slot square" data-portrait="naruto_p2" data-look="naruto_p2"></div><div><b>Naruto (Shippuden)</b> — prompt C<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="clear">Remove</button></div></div>
+      <div class="picker" data-id="sprite_naruto"><div class="slot square" data-portrait="sprite_naruto" data-look="naruto"></div><div><b>Naruto full-body still</b> — optional prompt D (shows on the field in scenes 1 and 6)<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn figure</div><button type="button" class="clear">Remove</button></div></div>
+      <p class="note">Files are downscaled to 512 px and kept in this browser's storage; nothing is uploaded. A committed file at <code>assets/portraits/&lt;id&gt;.png</code> or <code>.webp</code> loads by itself.</p>
+    </div>
+    <div class="card prompt"><h3>Prompt A · Naruto, Part I</h3><button class="copy" type="button">Copy</button><pre id="prompt-a"></pre></div>
+    <div class="card prompt"><h3>Prompt B · Zabuza Momochi</h3><button class="copy" type="button">Copy</button><pre id="prompt-b"></pre></div>
+    <div class="card prompt"><h3>Prompt C · Naruto, Shippuden</h3><button class="copy" type="button">Copy</button><pre id="prompt-c"></pre></div>
+    <div class="card prompt"><h3>Prompt D · full-body still (optional)</h3><button class="copy" type="button">Copy</button><pre id="prompt-d"></pre></div>
+  </div>
+</section>
+
+<!-- ====================================================== 8. Language -->
+<section class="section" id="s8">
+  <h2>8 · Palette, type, effects and icons</h2>
+  <div class="spec">
+    <div class="card"><h3>Part I palette</h3><div class="swatches" id="sw-p1"></div><p>Warm daylight. Paper and wood chrome, the headband plate for the tab bar, orange as the one hot accent.</p></div>
+    <div class="card"><h3>Shippuden palette</h3><div class="swatches" id="sw-p2"></div><p>Cooler and higher contrast. Black cloth and dark steel chrome, crimson as the accent, a red cloud only on Akatsuki surfaces.</p></div>
+    <div class="card"><h3>Nature colours (unchanged)</h3><div class="swatches" id="sw-nat"></div><p>The five nature colours stay as they are in the game today; they are already the tint of every chip, pip and floating number.</p></div>
+    <div class="card type-sample"><h3>Type</h3><div class="d">Jutsu Clash — Overpower!</div><div class="b">霧隠れの鬼人 · 口寄せの術</div><div class="s">Body stays the system font: Team power 3,240 · Recommended 3,100</div><p>Display: Anton (SIL Open Font License), for titles, name cards, numbers and readouts. Brush accent: Yuji Syuku (OFL) for the 忍 mark, boss titles and era stamps. Both self-hosted as subsets under 120 KB in Phase 3.</p></div>
+    <div class="card" style="grid-column:1/-1"><h3>Effects language per nature</h3><div class="vfx-row" id="vfx-row"></div><p>Fire: flame tongues and embers that rise. Wind: crescent blades and leaves that slice outward. Lightning: a flash, branching bolts, fast sparks. Earth: rock chunks under gravity and low dust. Water: sprays under gravity, a ground splash. Taijutsu: speed lines and a white impact star. Every technique gets its nature's default; the signatures (Rasengan, Chidori, Water Dragon…) are named overrides built from the same parts.</p></div>
+    <div class="card" style="grid-column:1/-1"><h3>Icon set (inline SVG, replaces every emoji)</h3><div class="icon-grid" id="icon-grid"></div></div>
+    <div class="card" style="grid-column:1/-1"><h3>Motion rules</h3><ul class="motion-rules">
+      <li>Idle breathe 1.3 px over 2.6 s; walk bob with a leg swing; attack: 80 ms anticipation lean, 120 ms lunge, 160 ms recover.</li>
+      <li>Hit: 60 ms white flash, 6–10 px knockback, shake 6; Ultimates and specials: hit-stop 70 ms, shake 9–12; the clash: 0.35× slow motion for about 0.5 s, shake 14 on resolution.</li>
+      <li>Cast: the hand comes forward for the wind-up; KO: the figure falls (80°) and fades over 0.5 s; clones and summons dissolve in smoke.</li>
+      <li>Camera: ±8 px idle drift; boss intro push-in to 1.07× over 1.2 s; the clash pushes to 1.08×.</li>
+      <li>UI: screens slide 6 px and fade over 0.2 s; the cut-in wipes in over 130 ms, holds 0.75 s, wipes out; readouts pop from 1.6× to 1× in 160 ms.</li>
+      <li>Low VFX or reduced motion: no particles, shake, slow motion or push-in; flashes become 40 ms fades.</li>
+    </ul></div>
+  </div>
+</section>
+
+<footer class="wrap note">Fan-made, non-commercial. Naruto © Masashi Kishimoto / Shueisha / Studio Pierrot. Original fan art and code; no official artwork, audio or logos.</footer>
+<script type="module" src="mockup/mockup.js"></script>
+</body>
+</html>
