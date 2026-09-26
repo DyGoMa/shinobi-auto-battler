@@ -12,7 +12,7 @@ import { readdirSync, existsSync, mkdirSync, renameSync, writeFileSync, readFile
 import { join, extname, basename } from 'node:path';
 import sharp from 'sharp';
 import { CONTENT } from '../js/content/index.js';
-import { buildManifest, checklistMarkdown, PORTRAIT_PX, SPRITE_PX } from './manifest-lib.mjs';
+import { buildManifest, checklistMarkdown, reuseMap, PORTRAIT_PX, SPRITE_PX } from './manifest-lib.mjs';
 import { keyBackground, bounds } from './key-lib.mjs';
 
 const args = process.argv.slice(2);
@@ -81,7 +81,7 @@ async function main() {
   const present = new Set();
   for (const dir of ['assets/portraits', 'assets/sprites']) if (existsSync(dir)) for (const f of readdirSync(dir)) if (f.endsWith('.webp')) present.add(`${dir}/${f}`);
   if (!DRY) {
-    writeFileSync('assets/index.json', JSON.stringify({ files: [...present].sort() }, null, 2) + '\n');
+    writeFileSync('assets/index.json', JSON.stringify({ files: [...present].sort(), reuse: reuseMap(manifest) }, null, 2) + '\n');
     writeFileSync('docs/ASSET_CHECKLIST.md', checklistMarkdown(manifest, present));
   }
   const missingP = manifest.portraits.filter(e => !present.has(e.file)).length, missingS = manifest.sprites.filter(e => !present.has(e.file)).length;

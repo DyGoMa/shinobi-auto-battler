@@ -10,7 +10,7 @@ import { checkWiki } from './wiki-check.mjs';
 import { GAME_VERSION } from '../js/config/version.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { STAGES, stageIdFor } from '../js/render/Stage.js';
-import { buildManifest } from './manifest-lib.mjs';
+import { buildManifest, reuseMap } from './manifest-lib.mjs';
 import { validateStory, countLines } from '../js/core/Story.js';
 import { STORY } from '../js/content/story/index.js';
 
@@ -38,6 +38,8 @@ for (const e of [...art.portraits, ...art.sprites]) { if (!e.prompt.startsWith('
 let indexed = 0;
 if (existsSync('assets/index.json')) {
   const idx = JSON.parse(readFileSync('assets/index.json', 'utf8'));
+  const want = reuseMap(JSON.parse(readFileSync('assets/manifest.json', 'utf8')));
+  if (JSON.stringify(idx.reuse || {}) !== JSON.stringify(want)) errors.push('assets/index.json has no reuse map, or an old one: enemies fought as roster ninja would draw code figures (run node tools/ingest.mjs)');
   for (const f of idx.files || []) { indexed++; if (!existsSync(f)) errors.push(`assets/index.json lists ${f}, which is not on disk (run node tools/ingest.mjs)`); if (!files.has(f)) errors.push(`assets/index.json lists ${f}, which the art manifest does not know`); }
 }
 if (existsSync('assets/manifest.json')) {

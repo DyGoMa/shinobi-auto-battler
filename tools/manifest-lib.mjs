@@ -94,6 +94,22 @@ export function buildManifest(C, { now = new Date().toISOString(), overrides = n
   return { generated: now, version: 1, style: { portrait: STYLE_ANCHOR, sprite: SPRITE_ANCHOR, faceRight: FACE_RIGHT, faceLeft: FACE_LEFT }, portraits, sprites, reuse, missingDescriptions };
 }
 
+/**
+ * The reuse map the game reads from assets/index.json: enemy id → the id whose art it wears,
+ * with chains followed to the end (e_mizuki_clash → e_mizuki, e_kakashi_bell2 → kakashi).
+ * A roster character's art is keyed by era (kakashi_p1 / kakashi_p2); the game picks the era.
+ */
+export function reuseMap(manifest) {
+  const direct = new Map((manifest.reuse || []).map(r => [r.id, r.uses]));
+  const out = {};
+  for (const id of [...direct.keys()].sort()) {
+    let to = direct.get(id); const seen = new Set([id]);
+    while (direct.has(to) && !seen.has(to)) { seen.add(to); to = direct.get(to); }
+    out[id] = to;
+  }
+  return out;
+}
+
 /** The checklist markdown: every file, who it is, and whether it exists (present: a Set of manifest file paths). */
 export function checklistMarkdown(manifest, present, { now = new Date().toISOString() } = {}) {
   const row = (e) => `| \`${e.file.split('/').pop()}\` | ${e.name} | ${e.era === 'p1' ? 'Part I' : 'Shippuden'} | ${e.facing} | ${present.has(e.file) ? '✓' : '—'} |`;

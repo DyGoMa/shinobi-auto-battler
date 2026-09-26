@@ -877,6 +877,9 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   const paths = Assets.pathsFor(['naruto', 'zabuza', 'sasuke'], 'p1');
   ok(paths.length === 3 && paths.every(p => Assets.known(p)) && new Set(paths).size === 3, 'pathsFor lists only files that exist, once each');
   ok(Assets.eraOfPart(1) === 'p1' && Assets.eraOfPart(2) === 'p2', 'story part → era');
+  Assets.setIndex(['assets/sprites/kakashi_p1.webp', 'assets/portraits/kakashi_p1.webp', 'assets/sprites/e_mizuki.webp', 'assets/sprites/e_own.webp'], { e_kakashi_bell2: 'kakashi', e_mizuki_clash: 'e_mizuki', e_own: 'kakashi' });
+  ok(Assets.spritePath('e_kakashi_bell2', 'p1') === 'assets/sprites/kakashi_p1.webp' && Assets.portraitPath('e_kakashi_bell2', 'p2') === 'assets/portraits/kakashi_p1.webp', 'an enemy with no art of its own wears the sprite and portrait of its roster twin, in the era');
+  ok(Assets.spritePath('e_mizuki_clash') === 'assets/sprites/e_mizuki.webp' && Assets.spritePath('e_own') === 'assets/sprites/e_own.webp' && Assets.spritePath('e_nobody') === null, 'reuse follows to the art of another enemy; an own file wins; no file and no reuse stays code-drawn');
   Assets.setIndex([]);
 
   const arcs = Object.values(C.arc);
