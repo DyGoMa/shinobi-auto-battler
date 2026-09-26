@@ -2,6 +2,28 @@
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
 
+## The art and VFX build (Phase 3 of the polish pass, towards 0.12.0)
+
+Commits `49d23a2` (foundations), `cd78587` (the battle), `22fe56a` (summon, map, roster) and the pipeline commit after them. No gameplay, economy or balance change: `npm run sim` and `npm run campaign` print the 0.11.0 numbers (10/10 players clear both parts, 61 scenarios). The decisions are in `docs/ART_BIBLE.md`; the audit in `docs/POLISH_AUDIT.md`.
+
+**What ships in code (works with no image at all)**
+* `js/render/Figure.js` — the ninja figure and bust (3½ heads, ink line, two-tone cel shading, hair and headgear per character, the **village symbol on every headband plate**). `lookFor(def)` turns a roster or enemy entry into a look.
+* `js/render/Stage.js` — 31 parallax stages (one per arc, a few per-node variants, the Academy, the Boss Rush cave) with weather; `stageDefFor({ node, arcId, rush })`.
+* `js/render/Effects.js` — particles per nature (Low / Medium / High), 40 signature techniques matched by name (`signatureFor`), projectiles, the clash beam, floating numbers in Anton, the wind-up plate and target zones. `Renderer.js` draws it all with a camera (pan, push-in, shake, KO falls, casting poses).
+* `js/ui/BattleScreen.js` — DOM overlays over the canvas: the Ultimate cut-in name card, the JUTSU CLASH readout with slow motion, the boss intro (bars, speed lines, the boss card with the `title` epithet, tap to skip, short on replays), the VICTORY / DEFEAT beat.
+* `js/ui/SummonScreen.js` — the ceremony on a canvas (seal → circle with a kanji ring → light → smoke and flash → cards; a Kage gets the white-out and gold plate). `StoryMapScreen.js` — the arc's stage behind the battle pins.
+* `js/render/icons.js` — a 70-icon inline SVG sprite; `dom.js` turns any emoji in a UI string into an icon as it is appended, so screen code still reads `'📜 +40'`.
+* `css/style.css` — two skins on `html[data-era]` (Part I wood and paper, Shippuden steel and red; `UIManager.setEra`), Anton and Yuji Syuku self-hosted from `assets/fonts` (112 KB).
+* Save v4: `settings.vfx` is `'low' | 'medium' | 'high'` (Settings → Effect detail; reduced motion forces Low), `musicVol` / `sfxVol` (0.6 / 0.8, for Phase 4), `storyScenes` / `dialogueAuto` and `story.seen` (for Phase 5). Content: `filler: true` on the five side-mission arcs, `title` on every story boss.
+
+**Making the pictures (any time, in any order)**
+1. `node tools/manifest.mjs` writes `assets/manifest.json` — 168 portraits and 168 sprites (the roster, two files each for the 25 dual-era characters, every enemy with its own face; 83 enemies reuse a roster portrait, mirrored by the game) — each with its full Gemini prompt (the style anchor from `tools/prompts-data.mjs`, the character as the show draws them, the village symbol, the facing) — and `docs/ASSET_CHECKLIST.md`.
+2. Generate at 1024 × 1024, save into `/incoming` as `<id>.png` or `sprite_<id>.png` (the `incoming` field; `/incoming` is git-ignored).
+3. `node tools/ingest.mjs [--flip id,id] [--dry]` keys the flat background (magenta or white, flood fill from the border, soft edge, no halo), mirrors, crops (sprites: the figure bottom-centred in a square), resizes (256² / 512²), writes WebP q82 into `assets/`, and refreshes `assets/index.json` and the checklist. The game loads only files the index lists; anything missing draws its code fallback.
+4. `npm run validate` checks the manifest and the index; `npm test` covers the migration, the assets helpers, the stages, the looks and the manifest.
+
+**Verified this session** (the desktop pane was hidden, so frames were exported from the canvas and read as images; see QA.md): the boss intro, wind-up plate, zones, numbers, the Water Dragon, the shield bubble, the summon ceremony's three beats, the map backdrop, every screen on both skins. **Not yet re-run:** the layout audit at the four sizes (needs a visible pane) and a real-phone frame-time check — both are Phase 6 items.
+
 ## 0.11.2: suggesting the install to phone players
 
 Phones and tablets that have not installed the app are told about it, without nagging. Nothing here touches a cost, a reward, a curve or a battle: `npm run sim` and `npm run campaign` print the 0.11.0 numbers. Nothing is stored in the cloud save: installing is per device, so the record is a `LocalBackend` pref (`localStorage`, wrapped in try/catch).
@@ -286,7 +308,7 @@ Settings → Audio and visuals already shows three **disabled** switches bound t
 * **Sound effects** (a separate switch from Sound) → `settings.sfx`
 * **Visual effects** (effect detail) → `settings.vfx`
 
-When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the keys in `AudioManager` (a music bus and an effects bus under the master gain) and `Effects` (detail level), and update the Wiki guides and What's new (standing rule).
+When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the keys in `AudioManager` (a music bus and an effects bus under the master gain) and `Effects` (detail level), and update the Wiki guides and What's new (standing rule). **Phase 3 did the effects half:** `settings.vfx` is now the three-level Effect detail control read by `Effects` and `Renderer`; Music and Sound effects stay disabled until Phase 4 (their `musicVol` / `sfxVol` keys are already in the save).
 
 ---
 

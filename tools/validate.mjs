@@ -8,8 +8,9 @@ import { curve, TIERS } from '../js/core/formulas.js';
 import { missingNames } from './naming.mjs';
 import { checkWiki } from './wiki-check.mjs';
 import { GAME_VERSION } from '../js/config/version.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { STAGES, stageIdFor } from '../js/render/Stage.js';
+import { buildManifest } from './manifest-lib.mjs';
 
 const errors = validateContent(CONTENT);
 
@@ -23,6 +24,20 @@ for (const arc of Object.values(CONTENT.arc)) {
 const bossIds = new Set(CONTENT.nodes.flatMap(n => (n.enemies || []).filter(e => e.boss).map(e => e.id)));
 for (const id of bossIds) { const d = CONTENT.enemy[id]; if (d && (typeof d.title !== 'string' || !d.title.trim())) errors.push(`boss ${id} has no title (the epithet on its intro card)`); }
 for (const d of Object.values(CONTENT.enemy)) if (d.title !== undefined && (typeof d.title !== 'string' || d.title.length > 40)) errors.push(`enemy ${d.id}: title must be a short string`);
+// ---- the art manifest and the asset index (tools/manifest.mjs, tools/ingest.mjs) ----------
+const art = buildManifest(CONTENT);
+const files = new Set([...art.portraits, ...art.sprites].map(e => e.file));
+for (const d of Object.values(CONTENT.char)) if (!files.has(`assets/portraits/${d.id}.webp`) && !files.has(`assets/portraits/${d.id}_p1.webp`)) errors.push(`roster ${d.id} has no portrait entry in the art manifest`);
+for (const e of [...art.portraits, ...art.sprites]) { if (!e.prompt.startsWith('STYLE ANCHOR')) errors.push(`manifest ${e.id}: the prompt must start with the style anchor`); if (!/#FF00FF/.test(e.prompt)) errors.push(`manifest ${e.id}: the prompt must ask for the flat magenta background`); if (!/FACING: the character faces the viewer's (RIGHT|LEFT)/.test(e.prompt)) errors.push(`manifest ${e.id}: the prompt must state the facing`); }
+let indexed = 0;
+if (existsSync('assets/index.json')) {
+  const idx = JSON.parse(readFileSync('assets/index.json', 'utf8'));
+  for (const f of idx.files || []) { indexed++; if (!existsSync(f)) errors.push(`assets/index.json lists ${f}, which is not on disk (run node tools/ingest.mjs)`); if (!files.has(f)) errors.push(`assets/index.json lists ${f}, which the art manifest does not know`); }
+}
+if (existsSync('assets/manifest.json')) {
+  const saved = JSON.parse(readFileSync('assets/manifest.json', 'utf8'));
+  if (saved.portraits.length !== art.portraits.length || saved.sprites.length !== art.sprites.length) errors.push('assets/manifest.json is out of date: run node tools/manifest.mjs');
+}
 
 // ---- balance.js sanity ----------------------------------------------------
 const B = BALANCE;
@@ -132,7 +147,7 @@ if (unsourced.length) console.log(`  ⚠ ${unsourced.length} name(s) have no sou
 else console.log('  names: every in-game name has a recorded source (NAMING.md)');
 console.log('  app: manifest.webmanifest, icons (192, 512, 512 maskable, 180 Apple) and sw.js check out');
 console.log(`  wiki: ${wiki.pages} pages, ${wiki.guides} guides, ${wiki.links} guide links${wiki.errors.length ? ` — ${wiki.errors.length} problem(s)` : ': every page, link and config value checks out'}`);
-console.log(`  art: ${Object.keys(STAGES).length} stages drawn, ${stagedArcs}/${Object.keys(CONTENT.arc).length} arcs staged, ${bossIds.size} story bosses titled`);
+console.log(`  art: ${Object.keys(STAGES).length} stages drawn, ${stagedArcs}/${Object.keys(CONTENT.arc).length} arcs staged, ${bossIds.size} story bosses titled; manifest ${art.portraits.length} portraits + ${art.sprites.length} sprites, ${indexed} files in assets/`);
 if (errors.length) {
   console.log(`\nFAIL — ${errors.length} problem(s):`);
   for (const e of errors) console.log('  ✗ ' + e);

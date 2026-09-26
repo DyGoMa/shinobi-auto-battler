@@ -1358,7 +1358,17 @@ All original, composed in code (Web Audio; Tone.js only if it earns its size); n
 
 ## 7. Performance and size budget
 
-### 7.1 Today's footprint (measured)
+### 7.0 After Phase 3 (measured, the art and VFX build)
+
+| Measure | Value | Against the cap |
+|---|---|---|
+| Source served | 65 JS modules, **857 KB** raw (+171 KB: Stage 54 KB, Effects 69 KB, Figure 38 KB, Renderer 17 KB, icons 12 KB, Assets 6 KB); `css/style.css` **89.7 KB** (+27 KB: the two skins and the overlays) | first install ≤ 2.5 MB ✓ |
+| Compressed | JS + CSS ≈ **258 KB gzip** (was 206) | ✓ |
+| Fonts | 2 files, **111 KB** (Anton 17 KB, Yuji Syuku 94 KB) | ≤ 120 KB ✓ |
+| Art on disk | 3 test portraits, **43 KB** (14–16 KB each at 256², WebP q82) | 168 + 168 files ≈ 6–7 MB when all are made, ≤ 12 MB ✓ |
+| Frame time | not measured on a phone this session (hidden pane); the effects budget is capped by Effect detail: Low draws no particles, Medium ≤ 280 particles, High ≤ 560 | Phase 6 |
+
+### 7.1 Before the pass (measured)
 
 | Measure | Value | How |
 |---|---|---|

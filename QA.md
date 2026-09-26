@@ -121,6 +121,12 @@ start" screens.
 
 Not testable in the pane: the install prompt, standalone mode itself, and the Google popup inside the installed app.
 
+## The art pass (Phase 3, towards 0.12)
+
+The desktop preview pane was hidden for the whole session (`document.hidden` true, zero-size layout, screenshots timed out), so the checks were made another way: a throwaway local receiver took JPEG exports of the battle canvas, the summon canvas and the map canvas, drawn by stepping the loops by hand (`battle._loop`, the ceremony's `overlay._frame`, `mapStage._start`), and every screen's DOM was read after each change. Seen and right: the boss intro (bars, card, FIGHT!), the wind-up plate with the CLASH tag and the dashed zones, the numbers and tags, the Water Dragon, the shield bubble with the absorb note, the summon's seal / circle / light beats, the bridge behind the map pins, both skins, the icons in the tabs and top bar, the roster busts. `npm test` is green (282 core tests, 61 scenarios, 10 campaign players).
+
+**Not re-run:** `auditAll` / `auditFlows` at 412×915, 360×780, 915×412 and 1280×800 — the audit needs a visible pane (hidden, every rect is 0×0). The geometry rules did not move (44 px targets, the tab bar, the grid rows); the new elements to check are the battle overlays (name card, readout, boss card) at 412×915, the map pins' labels at 360 px, the pause menu now that it is fixed to the screen, and the ceremony at 915×412. Run it before Phase 6 ships.
+
 ## 0.11.2: suggesting the install
 
 `auditInstall` (new in `tools/ui-audit.mjs`: forces the device flags, then the start-menu notice, the popup on Home, the reminder banner on Home and the Story map, and the Android, iOS and "open in Safari" step dialogs), `auditAll` and `auditFlows` are clean at **412×915** and **360×780** (http://localhost:8091, `?debug=1`). One fix on the way: the banner's ✕ was 34 px wide (now 44).

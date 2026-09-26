@@ -2,6 +2,16 @@
 
 ## Version {{cfg:version.current}}
 
+- **The game has a look now.** Every ninja is drawn in an anime style (village symbol on the headband and all), each arc fights on its own drawn stage with weather and parallax, and every jutsu has its own effects: Rasengan, Chidori, the Water Dragon, Amaterasu, sand, shadows, clay birds and more, coloured by nature.
+- **Battles read like the show.** Firing an Ultimate shows a cut-in with the ninja and the technique's name; a **Jutsu Clash** goes into slow motion with a big readout of the result; bosses get an intro card with their title (tap to skip it, and it is shorter on a replay); big hits pause for a split second; wins and losses get their moment before the results.
+- **Two skins.** Part I screens are wood, paper and orange; Shippuden screens are night steel and Akatsuki red. Summon follows its banner's arc; the Daily follows its boss.
+- **The summon ceremony:** the seal, the summoning circle with its kanji ring, the rising light, the smoke and the flash, then the cards. A Kage gets the full-screen reveal. Tap to skip; the Skip switch still shows the cards at once.
+- **The Story map** shows each arc's stage behind its battles, and side missions are labelled.
+- **Settings → Effect detail** (Low / Medium / High). Low keeps the numbers, plates and readouts and drops the particles, weather, slow motion and camera moves; your phone's "reduce motion" setting does the same.
+- **No spoilers on the Roster:** a ninja the story hasn't reached stays "???" until you get there.
+
+## Version 0.11.2
+
 - **The game suggests the app on phones.** On a phone or tablet that hasn't installed it, the start menu shows a small **Play full screen: install the app** card, and once you've finished the tutorial a one-time popup explains what you get (full screen, no browser bars, one tap from your home screen, the same save) with **Install** and **Not now**. After Not now, a slim reminder above the tab bar comes back after three days, once more a week later, and then never on its own. Nothing shows on a PC or inside the installed app.
 - **One tap where the browser allows it.** In Chrome or Edge on Android, **Install** opens the real install dialog. Elsewhere it shows short illustrated steps: the browser menu on Android (Samsung Internet, Firefox), **Share → Add to Home Screen** in Safari on an iPhone or iPad, and on an iOS in-app browser (Instagram, Facebook and the like) or Chrome for iOS a **Copy link** button to open the page in Safari. The same steps are in Settings → App (**Show me how**) and in the how-to-play guide.
 

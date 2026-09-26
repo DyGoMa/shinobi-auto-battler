@@ -1,1 +1,8 @@
-{ "files": [] }
+{
+  "files": [
+    "assets/portraits/naruto_p1.webp",
+    "assets/portraits/naruto_p2.webp",
+    "assets/portraits/zabuza.webp",
+    "assets/sprites/naruto_p1.webp"
+  ]
+}

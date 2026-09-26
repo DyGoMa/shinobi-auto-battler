@@ -29,6 +29,7 @@ import { STAGES, stageIdFor, stageDefFor, stageFromTheme } from '../js/render/St
 import { lookFor } from '../js/render/Figure.js';
 import { ICONS, EMOJI_ICON, NATURE_ICON, ROLE_ICON, hasEmoji } from '../js/render/icons.js';
 import { VFX_LEVELS } from '../js/core/SaveManager.js';
+import { buildManifest, checklistMarkdown, DUAL_ERA } from './manifest-lib.mjs';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -807,6 +808,21 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   const badIcon = Object.entries({ ...EMOJI_ICON, ...NATURE_ICON, ...ROLE_ICON }).filter(([, v]) => !ICONS[v]).map(([k]) => k);
   ok(badIcon.length === 0 && Object.keys(ICONS).length >= 60, `every emoji, nature and role maps to a drawn icon${badIcon.length ? ` (bad: ${badIcon.join(', ')})` : ''}`);
   ok(hasEmoji('📜 +40 scrolls') && hasEmoji('Tap 🗺️') && hasEmoji('✓ cleared') && !hasEmoji('plain text · 5 × 2 — done…'), 'emoji detection catches the icons the UI used and ignores punctuation');
+
+  // the art manifest (tools/manifest-lib.mjs)
+  const M = buildManifest(C, { now: '2026-01-01T00:00:00.000Z' });
+  const pfiles = new Set(M.portraits.map(e => e.file));
+  ok(Object.values(C.char).every(d => pfiles.has(`assets/portraits/${d.id}.webp`) || (pfiles.has(`assets/portraits/${d.id}_p1.webp`) && pfiles.has(`assets/portraits/${d.id}_p2.webp`))), 'every roster ninja has a portrait entry (two for the dual-era characters)');
+  ok(DUAL_ERA.every(id => C.char[id]) && DUAL_ERA.every(id => pfiles.has(`assets/portraits/${id}_p1.webp`) && pfiles.has(`assets/portraits/${id}_p2.webp`)), 'the 25 dual-era characters exist and get a Part I and a Shippuden file');
+  const covered = new Set([...M.portraits.map(e => e.id), ...M.reuse.map(r => r.id)]);
+  ok(Object.values(C.enemy).every(d => covered.has(d.id) || M.portraits.some(e => e.id === d.id)), 'every enemy either has its own portrait entry or reuses one');
+  ok(M.portraits.length === M.sprites.length && M.sprites.every(e => e.incoming === `sprite_${e.id}` && e.px === 512) && M.portraits.every(e => e.incoming === e.id && e.px === 256), 'one sprite per portrait; incoming names and pixel sizes follow the manifest rules');
+  ok(M.portraits.every(e => e.prompt.startsWith('STYLE ANCHOR') && e.prompt.includes('#FF00FF') && /FACING: the character faces the viewer's (RIGHT|LEFT)/.test(e.prompt)), 'every prompt starts with the style anchor, asks for the magenta background and states the facing');
+  ok(M.portraits.find(e => e.id === 'zabuza').facing === 'right' && M.portraits.find(e => e.id === 'e_mizuki').facing === 'left' && M.portraits.find(e => e.id === 'npc_tazuna').facing === 'right', 'player characters and civilians face right, enemies face left');
+  ok(M.portraits.find(e => e.id === 'naruto_p1').prompt.includes('Hidden Leaf Village symbol') && M.portraits.find(e => e.id === 'zabuza').prompt.includes('Hidden Mist Village symbol'), 'the prompts spell out the village symbol on the headband');
+  ok(M.missingDescriptions.length === 0, `every manifest entry has a written description${M.missingDescriptions.length ? ` (generic: ${M.missingDescriptions.join(', ')})` : ''}`);
+  const md = checklistMarkdown(M, new Set(['assets/portraits/naruto_p1.webp']), { now: '2026-01-01T00:00:00.000Z' });
+  ok(md.includes('| `naruto_p1.webp` |') && md.includes('| ✓ |') && md.includes(`## Portraits (1 / ${M.portraits.length})`), 'the checklist marks the files that exist');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);

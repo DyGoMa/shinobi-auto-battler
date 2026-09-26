@@ -251,18 +251,7 @@ a { color: var(--accent2); }
 .arc-card .eps { position: relative; font-size: .75rem; color: var(--muted); font-weight: 700; }
 .arc-card .prog { position: relative; margin-top: 12px; }
 .arc-card .lock { position: absolute; right: 14px; top: 14px; font-size: 1.1rem; }
-.node-map { position: relative; margin: 8px 0 16px; border-radius: 18px; background: linear-gradient(180deg, var(--m1, #1b2633), var(--m2, #121922)); border: 1px solid var(--line); padding: 18px 10px 26px; overflow: hidden; }
-.node-map svg.path { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.node-row { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); row-gap: 26px; }
-.node { position: relative; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; background: none; border: 0; padding: 0; min-width: 44px; }
-.node .dot { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 1.05rem; background: var(--surface2); border: 3px solid var(--line); transition: transform var(--t), box-shadow var(--t), border-color var(--t); box-shadow: var(--shadow-sm); }
-.node:hover .dot { transform: scale(1.06); }
-.node.boss .dot { width: 72px; height: 72px; font-size: 1.4rem; }
-.node.cleared .dot { background: #173524; border-color: var(--good); color: var(--good); }
-.node.current .dot { border-color: var(--accent); background: #2c1b0e; color: var(--accent2); animation: pulse 1.6s infinite; }
-.node.locked .dot { opacity: .45; }
-.node.selected .dot { box-shadow: 0 0 0 4px rgba(255,138,61,.35), var(--shadow-sm); }
-.node .lbl { font-size: .72rem; font-weight: 750; color: var(--muted); max-width: 120px; text-align: center; line-height: 1.2; }
+/* The battle pins now sit on the arc's drawn stage: see ".map-stage" in the Phase 3 block below. */
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,138,61,.55); } 50% { box-shadow: 0 0 0 10px rgba(255,138,61,0); } }
 .enemy-list { display: flex; flex-direction: column; gap: 8px; }
 .enemy-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--line); }
@@ -443,9 +432,6 @@ textarea { min-height: 90px; resize: vertical; font-family: ui-monospace, Consol
   .slots { grid-template-columns: repeat(2, 1fr); }
   .pull-buttons { grid-template-columns: 1fr; }
   .reveal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .node .dot { width: 50px; height: 50px; }
-  .node.boss .dot { width: 60px; height: 60px; }
-  .node .lbl { font-size: .64rem; max-width: 70px; }
 }
 
 /* Battle layout: fixed column so the canvas never forces overflow */
@@ -702,12 +688,6 @@ body.start-mode #screen { padding: 0; grid-area: auto; }
 .mode-note { margin: 0 0 10px; }
 .arc-fold { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin-bottom: 10px; padding: 8px 14px; border-radius: 12px; border: 1px solid #1f6b43; background: #10281c; color: var(--good); font-weight: 800; cursor: pointer; text-align: left; }
 /* Node states: the next battle glows, locked ones are greyed with a lock and a hint. */
-.node .rec { font-size: .62rem; font-weight: 800; color: var(--accent2); opacity: .9; font-variant-numeric: tabular-nums; }
-.node .hint { font-size: .6rem; font-weight: 700; color: var(--warn); max-width: 96px; text-align: center; line-height: 1.15; }
-.node.locked .dot { filter: grayscale(1); }
-.node.locked .lbl, .node.locked .rec { opacity: .5; }
-.node.current .dot { box-shadow: 0 0 16px 2px rgba(255,138,61,.55); }
-.node.current .lbl { color: var(--accent2); }
 .map-legend { margin: -8px 0 12px; }
 .power-check { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); }
 .power-check.low { border-color: #6b5a1f; }
@@ -739,7 +719,6 @@ body.start-mode #screen { padding: 0; grid-area: auto; }
 .result-actions .btn { flex: 1 1 auto; }
 @media (max-width: 480px) {
   .mode-tabs button { font-size: .74rem; padding: 6px 2px; }
-  .node .hint { max-width: 70px; }
   .fight-row > .btn { flex: 1 1 auto; }
 }
 
