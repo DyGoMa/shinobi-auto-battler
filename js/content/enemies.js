@@ -187,7 +187,7 @@ export const ENEMIES = [
     color: '#1f2937', initials: 'MT', emoji: '🪢',
   },
   {
-    id: 'e_neji_boss', name: 'Neji Hyuga', title: 'The Hyuga Prodigy', basedOn: 'neji', role: 'Striker', natures: ['Fire'],
+    id: 'e_neji_boss', name: 'Neji Hyuga', title: 'Genius of the Hyuga Clan', basedOn: 'neji', role: 'Striker', natures: ['Fire'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Gentle Fist', type: 'single' },
     mechanics: [
@@ -233,14 +233,14 @@ export const ENEMIES = [
     color: '#0891b2', initials: 'T2', emoji: '🌊',
   },
   {
-    id: 'e_orochimaru_crush', name: 'Orochimaru', title: 'Of the Legendary Sannin', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
+    id: 'e_orochimaru_crush', name: 'Orochimaru', title: 'One of the Legendary Sannin', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
     stats: { hp: 0.8, atk: 0.8, def: 1.0 },
     jutsu: { name: 'Wind Style: Great Breakthrough', nature: 'Wind', type: 'aoe' },
     mechanics: [{ type: 'telegraphAoE', name: 'Striking Shadow Snakes', nature: null, target: 'front', stun: true }],
     color: '#6b7280', initials: 'OR', emoji: '🐍',
   },
   {
-    id: 'e_gaara_boss', name: 'Gaara', title: 'Of the Hidden Sand', basedOn: 'gaara', role: 'Ranged', natures: ['Wind'],
+    id: 'e_gaara_boss', name: 'Gaara', title: 'Gaara of the Desert', basedOn: 'gaara', role: 'Ranged', natures: ['Wind'],
     stats: { hp: 1.05, atk: 0.9, def: 1.1 },
     jutsu: { name: 'Sand Coffin', type: 'single' },
     mechanics: [
@@ -279,7 +279,7 @@ export const ENEMIES = [
     color: '#6d28d9', initials: 'KB', emoji: '👓',
   },
   {
-    id: 'e_orochimaru_boss', name: 'Orochimaru', title: 'Of the Legendary Sannin', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
+    id: 'e_orochimaru_boss', name: 'Orochimaru', title: 'One of the Legendary Sannin', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
     stats: { hp: 1.0, atk: 0.85, def: 1.0 },
     jutsu: { name: 'Wind Style: Great Breakthrough', nature: 'Wind', type: 'aoe' },
     mechanics: [
@@ -309,7 +309,7 @@ export const ENEMIES = [
     color: '#0f172a', initials: 'AR', emoji: '☂️',
   },
   {
-    id: 'e_aoi_boss', name: 'Aoi Rokusho', title: "The Thunder Spirit's Thief", role: 'Striker', natures: ['Water'],
+    id: 'e_aoi_boss', name: 'Aoi Rokusho', title: 'Traitor of the Hidden Leaf', role: 'Striker', natures: ['Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Ninja Art: Senbon Rainstorm', type: 'aoe' },
     mechanics: [
@@ -408,7 +408,7 @@ export const ENEMIES = [
     color: '#a3e635', initials: 'RA', emoji: '👀',
   },
   {
-    id: 'e_raiga_boss', name: 'Raiga Kurosuki', title: 'Thunder of the Hidden Mist', role: 'Striker', natures: ['Lightning', 'Water'],
+    id: 'e_raiga_boss', name: 'Raiga Kurosuki', title: 'Of the Seven Swordsmen of the Mist', role: 'Striker', natures: ['Lightning', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Ninja Art: Lightning Ball', nature: 'Lightning', type: 'single' },
     mechanics: [
@@ -631,7 +631,7 @@ export const ENEMIES = [
     color: '#0369a1', initials: 'NU', emoji: '🐍',
   },
   {
-    id: 'e_guren_boss', name: 'Guren', title: 'The Crystal Style', role: 'Ranged', natures: ['Earth'],
+    id: 'e_guren_boss', name: 'Guren', title: 'Master of the Crystal Style', role: 'Ranged', natures: ['Earth'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Crystal Style: Jade Crystal Mirror', nature: 'Earth', type: 'single' },
     mechanics: [
@@ -737,7 +737,7 @@ export const ENEMIES = [
     color: '#450a0a', initials: 'IC', emoji: '🐦‍⬛',
   },
   {
-    id: 'e_itachi_boss', name: 'Itachi Uchiha', title: 'Of the Uchiha Clan', basedOn: 'itachi', role: 'Ranged', natures: ['Fire', 'Water', 'Wind'],
+    id: 'e_itachi_boss', name: 'Itachi Uchiha', title: 'Murderer of the Uchiha Clan', basedOn: 'itachi', role: 'Ranged', natures: ['Fire', 'Water', 'Wind'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Fire Style: Fireball Jutsu', nature: 'Fire', type: 'aoe' },
     mechanics: [
@@ -782,7 +782,7 @@ export const ENEMIES = [
     color: '#57534e', initials: 'BN', emoji: '🗡️',
   },
   {
-    id: 'e_shiranami_boss', name: 'Shiranami', title: 'Of the Tsuchigumo Clan', role: 'Ranged', natures: [],
+    id: 'e_shiranami_boss', name: 'Shiranami', title: 'Thief of the Forbidden Jutsu', role: 'Ranged', natures: [],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Word Bind Jutsu', type: 'single' },
     mechanics: [
@@ -855,7 +855,7 @@ export const ENEMIES = [
     color: '#374151', initials: 'DS', emoji: '🩻',
   },
   {
-    id: 'e_sasuke_summit_boss', name: 'Sasuke Uchiha', title: 'Of Taka', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
+    id: 'e_sasuke_summit_boss', name: 'Sasuke Uchiha', title: 'Leader of Taka', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Chidori Sharp Spear', nature: 'Lightning', type: 'single' },
     mechanics: [
@@ -1005,7 +1005,7 @@ export const ENEMIES = [
     color: '#6b7280', initials: 'TC', emoji: '👾',
   },
   {
-    id: 'e_obito_boss', name: 'Obito Uchiha', title: 'Of the Uchiha Clan', basedOn: 'obito', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
+    id: 'e_obito_boss', name: 'Obito Uchiha', title: 'The Man Behind the Mask', basedOn: 'obito', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Fire Style: Fireball Jutsu', nature: 'Fire', type: 'aoe' },
     mechanics: [
@@ -1112,7 +1112,7 @@ export const ENEMIES = [
     color: '#1e1b4b', initials: 'SU', emoji: '🟣',
   },
   {
-    id: 'e_sasuke_final_boss', name: 'Sasuke Uchiha (Rinnegan)', title: 'Of the Uchiha Clan', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
+    id: 'e_sasuke_final_boss', name: 'Sasuke Uchiha (Rinnegan)', title: 'Last of the Uchiha', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Amaterasu', nature: 'Fire', type: 'single' },
     mechanics: [

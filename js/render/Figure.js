@@ -244,7 +244,9 @@ export function drawFigure(g, look, o) {
   const aura = o.aura || look.aura;
   if (aura && !sil) { const ag = g.createRadialGradient(0, -48, 8, 0, -48, 78); ag.addColorStop(0, rgba(aura, 0.5)); ag.addColorStop(1, rgba(aura, 0)); g.fillStyle = ag; g.beginPath(); g.ellipse(0, -46, 58, 82, 0, 0, Math.PI * 2); g.fill(); }
   if (o.sprite) {
-    const img = o.sprite, hh = 100, ww = hh * (img.width / img.height);
+    // A generated sprite stands 110 units tall (the code figure is 96): its rounder proportions
+    // read shorter at the same height, so it gets a little more.
+    const img = o.sprite, hh = 110, ww = hh * (img.width / img.height);
     if (o.flash) { g.save(); g.globalAlpha *= o.flash * 0.8; g.filter = 'brightness(3)'; g.drawImage(img, -ww / 2, -hh, ww, hh); g.restore(); }
     g.drawImage(img, -ww / 2, -hh, ww, hh);
     g.restore();

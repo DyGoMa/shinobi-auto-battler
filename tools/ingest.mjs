@@ -44,7 +44,28 @@ export function keyBackground(data, W, H, { tol = 58, soft = 46 } = {}) {
     if (a > 0 && a < 1) { const grey = (p[i] + p[i + 1] + p[i + 2]) / 3; p[i] = Math.round(grey + (p[i] - grey) * a); p[i + 1] = Math.round(grey + (p[i + 1] - grey) * a); p[i + 2] = Math.round(grey + (p[i + 2] - grey) * a); }
     if (dd < tol) { const x = k % W, y = (k / W) | 0; push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1); }
   }
+  defringe(p, W, H);
   return n / (W * H);
+}
+/**
+ * The fringe pass: a JPEG (or an anti-aliased edge) blends the outline with the background, so
+ * the semi-transparent edge pixels carry a pale magenta-grey tint. Each edge pixel takes the
+ * average colour of the solid pixels within two steps of it, keeping its own alpha, so the
+ * outline's ink runs to the very edge and no halo is left.
+ */
+function defringe(p, W, H) {
+  const src = new Uint8ClampedArray(p);   // read from the copy, write into p
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4; const a = src[i + 3];
+    if (a === 0 || a >= 250) continue;
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      const j = (yy * W + xx) * 4; if (src[j + 3] < 250) continue;
+      r += src[j]; g += src[j + 1]; b += src[j + 2]; n++;
+    }
+    if (n) { p[i] = Math.round(r / n); p[i + 1] = Math.round(g / n); p[i + 2] = Math.round(b / n); }
+  }
 }
 /** The opaque bounding box of an RGBA buffer (alpha > 8), or null when empty. */
 function bounds(data, W, H) {

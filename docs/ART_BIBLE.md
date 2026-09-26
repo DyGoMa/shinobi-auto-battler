@@ -28,6 +28,8 @@ A fan-made game that looks like a late-2000s shonen TV anime on a phone: stylise
 | Village symbols | Headband plates carry the village symbol as the anime shows it (Leaf spiral, Mist lines, Sand hourglass, Sound note, Rain dashes, Cloud, Stone, Jiraiya's 油), in the prompts and in the code-drawn fallback |
 | Budget | ≤ 12 ms of main-thread work per frame on a Pixel 8a at 1×, ≤ 2.5 MB first install, ≤ 300 KB per lazy arc pack, ≤ 12 MB of assets, ≤ 150 MB memory |
 
+**Canon priority (the user's rule, after the Phase 3 review):** every detail follows the anime first (the English dub's wording, which the game uses), then the manga, and only where neither has anything an invention that fits the Naruto universe and the situation. It governs boss epithets, technique names, looks in the image prompts, dialogue and flavour text. Inventions are marked as such in HANDOFF.md so they can be replaced.
+
 ## 3. Characters
 
 ### 3.1 The battlefield figure (`mockup/figure.js`, the fallback that ships)
@@ -45,7 +47,7 @@ Unit space: the feet at (0, 0), +x forward, one unit = one logical canvas pixel 
 
 Hair variants: `spiky` (Naruto, Kakashi), `sweep` (Sasuke), `long` (Sakura, Haku), `bob`, `short`, `mane` (Jiraiya), `bald`. Headgear: the headband with the character's **village symbol engraved on the plate** (`village`: `leaf`, `mist`, `sand`, `sound`, `rain`, `cloud`, `stone`, or `oil` for Jiraiya's Mount Myoboku plate; drawn by `drawVillageSymbol()` as a simplified mark), a tilted band (Zabuza), a happuri face guard (Yamato), horns (Jiraiya), a cloth mask (Kakashi), bandages (Zabuza). Faces: two eyes with a highlight, angled brows, a short mouth line; `menace` narrows the eyes for enemies and bosses. Whiskers for Naruto. The user's rule, decided at the Phase 2 gate: in-world symbols are drawn as the anime shows them; "no official artwork" means no copied assets, not no depiction of the world's own marks.
 
-When a sprite image exists the figure is replaced by it: the image is scaled to 100 units tall, anchored at the bottom centre, mirrored for the enemy side, and given the same lean, lunge, flash (a brightened overlay) and KO transforms.
+When a sprite image exists the figure is replaced by it: the image is scaled to 110 units tall (a little more than the 96-unit code figure, because the generated chibi proportions read shorter at the same height), anchored at the bottom centre, mirrored for the enemy side, and given the same lean, lunge, flash (a brightened overlay) and KO transforms.
 
 ### 3.2 Line and shading (applies to the fallback, the busts, and the brief for generated art)
 
