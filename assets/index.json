@@ -109,5 +109,52 @@
     "e_zabuza_1": "zabuza",
     "e_zabuza_boss": "zabuza",
     "e_zabuza_re": "zabuza"
+  },
+  "figures": {
+    "assets/sprites/e_mizuki.webp": {
+      "top": 0.199,
+      "chin": 0.518,
+      "feet": 0.98
+    },
+    "assets/sprites/kakashi_p1.webp": {
+      "top": 0.285,
+      "chin": 0.543,
+      "feet": 0.98
+    },
+    "assets/sprites/kakashi_p2.webp": {
+      "top": 0.221,
+      "chin": 0.553,
+      "feet": 0.98
+    },
+    "assets/sprites/naruto_p1.webp": {
+      "top": 0.195,
+      "chin": 0.414,
+      "feet": 0.98
+    },
+    "assets/sprites/naruto_p2.webp": {
+      "top": 0.207,
+      "chin": 0.445,
+      "feet": 0.98
+    },
+    "assets/sprites/sakura_p1.webp": {
+      "top": 0.117,
+      "chin": 0.512,
+      "feet": 0.98
+    },
+    "assets/sprites/sakura_p2.webp": {
+      "top": 0.121,
+      "chin": 0.518,
+      "feet": 0.98
+    },
+    "assets/sprites/sasuke_p1.webp": {
+      "top": 0.141,
+      "chin": 0.586,
+      "feet": 0.98
+    },
+    "assets/sprites/sasuke_p2.webp": {
+      "top": 0.176,
+      "chin": 0.41,
+      "feet": 0.98
+    }
   }
 }

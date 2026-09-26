@@ -9,22 +9,23 @@ import { CONTENT as C } from '../js/content/index.js';
 import * as Assets from '../js/render/Assets.js';
 import { h, avatar } from '../js/ui/dom.js';
 import { drawFigure, lookFor } from '../js/render/Figure.js';
-import { keyBackground, leftovers, wandRemove, backgroundColor, DEFAULTS } from '../tools/key-lib.mjs';
+import { keyBackground, leftovers, wandRemove, backgroundColor, bounds, DEFAULTS } from '../tools/key-lib.mjs';
+import { REF_CM, REF_HEADS, GIANT_SCALE } from '../js/core/stature.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const MAX_SIDE = 1536;         // work at most this big in the browser (a 1024² generation is used as is)
-const state = { manifest: null, index: new Set(), overrides: { prompts: {}, status: {} }, originals: {}, entries: [], groups: [], key: null, work: null, history: [], wand: false, bg: null };
+const state = { manifest: null, index: new Set(), reuse: {}, figures: {}, overrides: { prompts: {}, status: {} }, originals: {}, entries: [], groups: [], key: null, work: null, history: [], wand: false, bg: null, marks: null };
+const HEADS_TOL = 0.06;        // a sprite within 6% of its target height in heads passes the head check
 
 // ------------------------------------------------------------------ data
 async function getJSON(url, fallback) { try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return fallback; return await r.json(); } catch { return fallback; } }
 async function loadAll() {
   state.manifest = await getJSON('assets/manifest.json', null);
   if (!state.manifest) { $('#main').replaceChildren(h('div.card', h('h2', 'No manifest'), h('p', 'Run node tools/manifest.mjs first.'))); return false; }
-  state.index = new Set((await getJSON('assets/index.json', { files: [] })).files || []);
+  await loadIndex();
   state.overrides = await getJSON('assets/art-overrides.json', { prompts: {}, status: {} });
   state.overrides.prompts = state.overrides.prompts || {}; state.overrides.status = state.overrides.status || {};
   state.originals = (await getJSON('/api/art/originals', { files: {} })).files || {};
-  Assets.setIndex([...state.index]);
   const reuse = new Map(); for (const r of state.manifest.reuse || []) { if (!reuse.has(r.uses)) reuse.set(r.uses, []); reuse.get(r.uses).push(r.id); }
   state.entries = [];
   for (const kind of ['portrait', 'sprite']) for (const e of state.manifest[kind === 'portrait' ? 'portraits' : 'sprites']) {
@@ -33,6 +34,12 @@ async function loadAll() {
   }
   groupEntries();
   return true;
+}
+/** assets/index.json: the files, the reuse map and the sprites' figure records, into the game's registry. */
+async function loadIndex() {
+  const idx = await getJSON('assets/index.json', { files: [] });
+  state.index = new Set(idx.files || []); state.reuse = idx.reuse || {}; state.figures = idx.figures || {};
+  Assets.setIndex([...state.index], state.reuse, state.figures);
 }
 /** The roster or enemy definition behind a manifest id (naruto_p1 → naruto, e_aoi_boss → the enemy). */
 function defOf(id) {
@@ -93,7 +100,7 @@ function renderList() {
 
 // ------------------------------------------------------------------ the entry
 function select(key) {
-  state.key = key; state.work = null; state.history = []; state.wand = false; state.bg = null;
+  state.key = key; state.work = null; state.history = []; state.wand = false; state.bg = null; state.marks = null;
   const e = state.entries.find(x => x.key === key);
   document.documentElement.dataset.era = e.era;
   renderList();
@@ -152,7 +159,73 @@ async function loadFromUrl(e, url, { keyed = false } = {}) {
   else { const r = keyBackground(d.data, c.width, c.height); state.bg = r.bg; info = r; g.putImageData(d, 0, 0); }
   state.work = { canvas: c, ctx: g, source: keyed ? 'game' : 'file', flip: false, info };
   state.history = [];
+  state.marks = e.kind === 'sprite' ? initialMarks(e, d.data, c.width, c.height, keyed) : null;
   renderWork(e);
+}
+
+// ------------------------------------------------------------------ head marks (sprites)
+// Two lines on the work canvas: the top of the skull (not the hair) and the chin. The soles are the
+// lowest opaque pixel. Soles-to-skull over chin-to-skull is the height in heads, checked against the
+// sprite's target (its canon height over the shared head size); the game scales soles-to-skull to the
+// canon height. Fractions of the picture's height throughout.
+function targetHeads(e) { return e.stature?.heads || null; }
+function initialMarks(e, data, W, H, keyed) {
+  const b = bounds(data, W, H);
+  const feet = b ? (b.y1 + 1) / H : 0.98;
+  const saved = keyed ? state.figures[e.file] : null;
+  if (saved && !saved.auto && saved.chin != null) return { top: saved.top, chin: saved.chin, feet, guessed: false };
+  const top = b ? (b.y0 + 0.17 * (b.y1 - b.y0 + 1)) / H : 0.2;
+  const heads = targetHeads(e) || REF_HEADS;
+  return { top, chin: top + (feet - top) / heads, feet, guessed: true };
+}
+function headCheck(e) {
+  const m = state.marks; if (!m) return null;
+  const heads = (m.feet - m.top) / Math.max(0.01, m.chin - m.top);
+  const target = targetHeads(e);
+  const off = target ? (heads - target) / target : 0;
+  return { heads, target, off, ok: !target || Math.abs(off) <= HEADS_TOL };
+}
+function marksLayer(e) {
+  const m = state.marks;
+  const layer = h('div.art-marks');
+  const line = (key, label, cls) => {
+    const el = h('div.mark.' + cls, { style: { top: `${m[key] * 100}%` } }, h('span', label));
+    el.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault(); el.setPointerCapture(ev.pointerId);
+      const move = (mv) => {
+        const r = layer.getBoundingClientRect();
+        let y = (mv.clientY - r.top) / r.height;
+        y = key === 'top' ? Math.min(Math.max(0, y), m.chin - 0.02) : Math.min(Math.max(m.top + 0.02, y), m.feet - 0.05);
+        m[key] = y; m.guessed = false; el.style.top = `${y * 100}%`; updateHeadReadout(e);
+      };
+      const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); renderPreviews(e, state.work.canvas); };
+      el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
+    });
+    return el;
+  };
+  layer.append(line('top', 'top of the skull', 'skull'), line('chin', 'chin', 'chin'), h('div.mark.feet', { style: { top: `${m.feet * 100}%` } }, h('span', 'soles')));
+  return layer;
+}
+function headReadoutEl(e) { return h('div', { id: 'headCheck' }, headReadoutContent(e)); }
+function updateHeadReadout(e) { const el = $('#headCheck'); if (el) el.replaceChildren(headReadoutContent(e)); }
+function headReadoutContent(e) {
+  const c = headCheck(e); if (!c) return h('span');
+  const st = e.stature || {};
+  if (st.kind === 'giant') return h('div.art-warn.info', 'A giant: drawn at one fixed size, so there is no head check. Put the soles line on the lowest point it stands on.');
+  const what = st.cm ? `${st.cm} cm${st.estimated ? ' (estimated)' : ''}` : 'no height yet';
+  const target = c.target ? `the target is ${c.target.toFixed(2)} heads (${what})` : `no target (${what})`;
+  if (state.marks.guessed) return h('div.art-warn.info', `Drag the cyan line to the top of the skull (under the hair) and the yellow one to the chin. Guessed now: ${c.heads.toFixed(2)} heads tall; ${target}.`);
+  if (c.ok) return h('div.art-warn.good', `✓ ${c.heads.toFixed(2)} heads tall; ${target}. Same head size as Part I Naruto.`);
+  return h('div.art-warn.bad', `⚠ ${c.heads.toFixed(2)} heads tall, but ${target}: the head is about ${Math.round(Math.abs(c.target / c.heads - 1) * 100)}% too ${c.off < 0 ? 'big' : 'small'}. Regenerate it (attach Part I Naruto's sprite as the reference), or save it anyway: the game still draws it at the right height.`);
+}
+async function saveMarks(e) {
+  const log = $('#saveLog'); const m = state.marks;
+  const r3 = (n) => Math.round(n * 1000) / 1000;
+  const r = await post('/api/art/marks', { id: e.id, top: r3(m.top), chin: r3(m.chin) });
+  if (!r.ok) { if (log) log.replaceChildren(h('div.art-warn.bad', 'Marks not saved: ' + (r.error || 'the index update failed')), r.log ? h('pre.art-log', r.log) : null); return; }
+  await loadIndex();
+  if (log) log.replaceChildren(h('div.art-warn.good', `✓ Head marks saved for ${e.file}. The game draws it at ${e.stature?.cm ?? '?'} cm now.`));
+  renderList(); renderPreviews(e, state.work.canvas);
 }
 function snapshot() { const { canvas, ctx } = state.work; state.history.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (state.history.length > 8) state.history.shift(); }
 function undo(e) { const im = state.history.pop(); if (!im) return; state.work.ctx.putImageData(im, 0, 0); renderWork(e); }
@@ -186,19 +259,22 @@ function renderWork(e) {
     const n = wandRemove(d.data, w.canvas.width, w.canvas.height, x, y);
     if (n) { w.ctx.putImageData(d, 0, 0); renderWork(e); } else state.history.pop();
   });
-  const work = h('div.art-work', view, hl);
+  const work = h('div.art-work', view, hl, state.marks ? marksLayer(e) : null);
   const flipBtn = btn(w.flip ? 'Flip back' : 'Flip', () => { snapshot(); flipCanvas(); w.flip = !w.flip; renderWork(e); }, 'ghost');
   const wandBtn = btn('🪄 Wand' + (state.wand ? ' on' : ''), () => { state.wand = !state.wand; renderWork(e); }, state.wand ? 'wandon' : 'ghost');
   const rekey = w.source === 'file' && state.bg ? btn('Key again (auto)', () => { snapshot(); const d = w.ctx.getImageData(0, 0, w.canvas.width, w.canvas.height); const r = keyBackground(d.data, w.canvas.width, w.canvas.height, { bg: state.bg }); w.ctx.putImageData(d, 0, 0); w.info = r; renderWork(e); }, 'ghost') : null;
   const undoBtn = btn('Undo', () => undo(e), 'ghost'); undoBtn.disabled = !state.history.length;
   // the game's file is 256 / 512 px: too small to re-ingest, so a fix starts from the original or a new picture
-  const saveBtn = w.source === 'game' ? h('span.small.muted', 'To change it, reprocess the original or drop a new picture, then save.') : btn('💾 Save to the game', () => save(e, check), 'primary');
+  const saveBtn = w.source === 'game'
+    ? (state.marks ? btn('📏 Save head marks', () => saveMarks(e), 'primary') : h('span.small.muted', 'To change it, reprocess the original or drop a new picture, then save.'))
+    : btn('💾 Save to the game', () => save(e, check), 'primary');
   const size = `${w.canvas.width} × ${w.canvas.height}`;
   const info = w.info.already ? `the game's file (${size}); checked for white and magenta leftovers` : `${size} · background ${state.bg ? `rgb(${state.bg.join(', ')})` : '?'} · ${Math.round(w.info.keyed * 100)}% keyed${w.info.holes ? ` · ${w.info.holes} enclosed patch${w.info.holes === 1 ? '' : 'es'} removed` : ''}`;
   wrap.replaceChildren(
     h('div.art-actions', flipBtn, rekey, wandBtn, undoBtn, saveBtn),
     h('p.tiny.muted', info),
     work,
+    state.marks ? headReadoutEl(e) : null,
     setWarnEl(check),
     h('div', { id: 'saveLog' }),
   );
@@ -239,19 +315,30 @@ function portraitContexts(e) {
 }
 function spriteContexts(e, img) {
   const def = e.def || { id: e.id, name: e.name, tier: 'genin' }; const look = lookFor(def, C); const enemy = !!def.side;
-  const c = h('canvas.art-field', { width: 760, height: 260 }); const g = c.getContext('2d');
-  const sky = g.createLinearGradient(0, 0, 0, 260); sky.addColorStop(0, e.era === 'p1' ? '#7fb2e5' : '#1b2230'); sky.addColorStop(1, e.era === 'p1' ? '#c9e3f6' : '#2a3140'); g.fillStyle = sky; g.fillRect(0, 0, 760, 260);
-  g.fillStyle = e.era === 'p1' ? '#6f9a4a' : '#3a3f4a'; g.fillRect(0, 200, 760, 60); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, 200, 760, 3);
-  const y = 200;
-  // the sprite at 1×, the code figure for scale, the sprite as a boss (×1.25) and mirrored as an enemy
-  drawFigure(g, look, { x: 110, y, facing: 1, scale: 1, t: 0, sprite: img, expression: 'set' });
-  drawFigure(g, look, { x: 230, y, facing: 1, scale: 1, t: 0, sprite: null, expression: 'set' });
-  drawFigure(g, look, { x: 390, y, facing: 1, scale: 1, boss: true, t: 0, sprite: img, expression: 'set' });
-  drawFigure(g, look, { x: 600, y, facing: -1, scale: 1, t: 0, sprite: img, expression: 'menace' });
-  g.fillStyle = 'rgba(0,0,0,0.6)'; g.font = '12px system-ui, sans-serif'; g.textAlign = 'center';
-  for (const [x, t] of [[110, 'the sprite (110 units)'], [230, 'code figure (96)'], [390, 'as a boss ×1.25'], [600, enemy ? 'enemy side' : 'mirrored (enemy side)']]) g.fillText(t, x, 240);
-  const token = h('div.ctx', h('div.tiny', 'The battlefield, at the game\'s size'), c);
-  const note = h('p.small.muted', 'The ingest crops to the figure and stands it bottom-centred in the square, so a little empty space around the figure is fine; the feet should be the lowest thing in the picture.');
+  const W = 760, H = 330, y = 290;
+  const c = h('canvas.art-field', { width: W, height: H }); const g = c.getContext('2d');
+  // the sprite at its canon height (from the marks being set, else the saved ones), beside Part I Naruto, the reference
+  const st = e.stature || {};
+  const stature = st.kind === 'giant' ? GIANT_SCALE : (st.cm || REF_CM) / REF_CM;
+  const fig = (state.marks && state.work && img.width === state.work.canvas.width) ? state.marks : (state.figures[e.file] || null);
+  const REF = 'assets/sprites/naruto_p1.webp';
+  const draw = () => {
+    const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, e.era === 'p1' ? '#7fb2e5' : '#1b2230'); sky.addColorStop(1, e.era === 'p1' ? '#c9e3f6' : '#2a3140'); g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    g.fillStyle = e.era === 'p1' ? '#6f9a4a' : '#3a3f4a'; g.fillRect(0, y, W, H - y); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, y, W, 3);
+    const ref = Assets.known(REF) ? Assets.image(REF) : null;
+    const nar = C.char.naruto;
+    if (e.file !== REF) drawFigure(g, lookFor(nar, C), { x: 100, y, facing: 1, scale: 1, stature: 1, t: 0, sprite: ref, fig: state.figures[REF] || null, expression: 'set' });
+    drawFigure(g, look, { x: 260, y, facing: 1, scale: 1, stature, t: 0, sprite: img, fig, expression: 'set' });
+    drawFigure(g, look, { x: 420, y, facing: 1, scale: 1, stature, t: 0, sprite: null, expression: 'set' });
+    drawFigure(g, look, { x: 620, y, facing: -1, scale: 1, stature, t: 0, sprite: img, fig, expression: 'menace' });
+    g.fillStyle = 'rgba(0,0,0,0.65)'; g.font = '12px system-ui, sans-serif'; g.textAlign = 'center';
+    const size = st.kind === 'giant' ? 'giant size' : `${st.cm ?? '?'} cm`;
+    for (const [x, t] of [[100, e.file === REF ? '' : `Part I Naruto (${Math.round(REF_CM)} cm)`], [260, `this sprite (${size})`], [420, 'code figure'], [620, enemy ? 'enemy side' : 'mirrored (enemy side)']]) if (t) g.fillText(t, x, y + 24);
+  };
+  draw();
+  if (Assets.known(REF) && !Assets.image(REF)) Assets.onLoad(REF, () => { if (c.isConnected) draw(); });
+  const token = h('div.ctx', h('div.tiny', 'The battlefield, at the game\'s size and canon heights'), c);
+  const note = h('p.small.muted', 'The game stands the soles on the ground and scales soles-to-skull to the canon height, so hair never makes anyone shorter. Beside Part I Naruto, the heads should look the same size.');
   return [token, note];
 }
 
@@ -278,9 +365,10 @@ async function savePrompt(e, prompt, noteEl, ta) {
 async function save(e, check) {
   const log = $('#saveLog'); if (log) log.replaceChildren(h('p.small.muted', 'Saving and ingesting…'));
   const png = state.work.canvas.toDataURL('image/png');
-  const r = await post('/api/art/save', { id: e.id, kind: e.kind, incoming: e.incoming, flip: false, leftover: check.pixels, png });
+  const head = state.marks && !state.marks.guessed ? [state.marks.top, state.marks.chin].map(n => Math.round(n * 10000) / 10000) : null;
+  const r = await post('/api/art/save', { id: e.id, kind: e.kind, incoming: e.incoming, flip: false, leftover: check.pixels, png, head });
   if (!r.ok) { if (log) log.replaceChildren(h('div.art-warn.bad', 'Not saved: ' + (r.error || 'the ingest failed')), r.log ? h('pre.art-log', r.log) : null); return; }
-  state.index.add(e.file); Assets.setIndex([...state.index]); Assets._registry.images.delete(e.file);
+  await loadIndex(); Assets._registry.images.delete(e.file);
   state.overrides.status[e.key] = { savedAt: new Date().toISOString(), leftover: check.pixels };
   state.originals = (await getJSON('/api/art/originals', { files: {} })).files || {};
   if (log) log.replaceChildren(h('div.art-warn.good', `✓ Saved: ${r.file}. The previews now show the file the game will load.`), h('pre.art-log', r.log));

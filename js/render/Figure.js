@@ -233,8 +233,14 @@ function drawBeast(g, look, o, s, f) {
  * flash (0–1), cast (0–1), ko (0–1), silhouette, aura, scarf, expression, sprite (Image|null), phase }
  * Returns the hand and chest positions (world coords) for effects.
  */
+// A sprite's soles-to-skull height at stature 1 (Part I Naruto), in units: his file drawn at 110 units
+// before canon heights, so the reference figure keeps its size.
+const SPRITE_SKULL_UNITS = 86;
+const DEFAULT_FIG = { top: 0.196, feet: 0.98 };
+
+/** o.stature: the figure's canon height relative to Part I Naruto (js/core/stature.js); o.fig: the sprite's figure record. */
 export function drawFigure(g, look, o) {
-  const s = (o.scale || 1) * (o.boss ? 1.25 : o.add ? 0.85 : 1), f = o.facing || 1, sil = !!o.silhouette, t = o.t || 0;
+  const s = (o.scale || 1) * (o.stature ?? 1), f = o.facing || 1, sil = !!o.silhouette, t = o.t || 0;
   g.save();
   g.translate(o.x, o.y);
   g.fillStyle = 'rgba(0,0,0,0.28)'; g.beginPath(); g.ellipse(0, 3 * s, 26 * s, 8 * s, 0, 0, Math.PI * 2); g.fill();
@@ -244,11 +250,11 @@ export function drawFigure(g, look, o) {
   const aura = o.aura || look.aura;
   if (aura && !sil) { const ag = g.createRadialGradient(0, -48, 8, 0, -48, 78); ag.addColorStop(0, rgba(aura, 0.5)); ag.addColorStop(1, rgba(aura, 0)); g.fillStyle = ag; g.beginPath(); g.ellipse(0, -46, 58, 82, 0, 0, Math.PI * 2); g.fill(); }
   if (o.sprite) {
-    // A generated sprite stands 110 units tall (the code figure is 96): its rounder proportions
-    // read shorter at the same height, so it gets a little more.
-    const img = o.sprite, hh = 110, ww = hh * (img.width / img.height);
-    if (o.flash) { g.save(); g.globalAlpha *= o.flash * 0.8; g.filter = 'brightness(3)'; g.drawImage(img, -ww / 2, -hh, ww, hh); g.restore(); }
-    g.drawImage(img, -ww / 2, -hh, ww, hh);
+    // Soles to the top of the skull is SPRITE_SKULL_UNITS × stature, whatever the hair adds; the soles stand on the ground.
+    const fig = o.fig || DEFAULT_FIG, span = Math.max(0.2, (fig.feet ?? 0.98) - (fig.top ?? DEFAULT_FIG.top));
+    const img = o.sprite, hh = SPRITE_SKULL_UNITS / span, ww = hh * (img.width / img.height), y0 = -(fig.feet ?? 0.98) * hh;
+    if (o.flash) { g.save(); g.globalAlpha *= o.flash * 0.8; g.filter = 'brightness(3)'; g.drawImage(img, -ww / 2, y0, ww, hh); g.restore(); }
+    g.drawImage(img, -ww / 2, y0, ww, hh);
     g.restore();
     return { handX: o.x + f * 30 * s, handY: o.y - 50 * s, chestX: o.x, chestY: o.y - 44 * s, headY: o.y - 76 * s };
   }

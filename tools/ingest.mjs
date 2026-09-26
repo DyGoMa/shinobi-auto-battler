@@ -1,5 +1,10 @@
 // tools/ingest.mjs — turns the images dropped in /incoming into game assets (docs/ART_BIBLE.md §11).
 //   node tools/ingest.mjs [--dry] [--flip id,id] [--only id] [--kind portrait|sprite] [--file name.png] [--keep]
+//                         [--head top,chin]  the head marks for the one sprite being ingested (fractions of its height)
+//                         [--index-only] [--mark id:top,chin]  rewrite the index only; --mark sets a saved sprite's marks
+//   Sprites: assets/index.json keeps `figures` (path → { top, chin, feet }, fractions of the 512² square): the top of
+//   the skull, the chin and the soles. The game scales soles-to-skull to the canon height (js/core/stature.js); a sprite
+//   nobody marked gets a guess from its opaque box (auto: true), which the art studio shows until the marks are set.
 // For each /incoming/<name>.(png|jpg|jpeg|webp) whose name matches a manifest entry's `incoming`
 // (`naruto_p1`, `sprite_naruto_p1`): validate the size and aspect, key the flat background out
 // (any colour: the median of the border, removed by flood fill from the border and then every
@@ -23,6 +28,11 @@ const FLIP = new Set((opt('--flip') || '').split(',').filter(Boolean));
 const ONLY = opt('--only');
 const KIND = opt('--kind');   // with --only: just that kind (the portrait and the sprite share an id)
 const FILE = opt('--file');   // just this file in /incoming (the art page's save)
+const INDEX_ONLY = flag('--index-only');
+const HEAD = (opt('--head') || '').split(',').map(Number).filter(n => Number.isFinite(n));   // [top, chin] of the input image
+const MARK = (() => { const m = /^([a-z0-9_]+):([\d.]+),([\d.]+)$/.exec(opt('--mark') || ''); return m ? { id: m[1], top: +m[2], chin: +m[3] } : null; })();
+const HAIR_GUESS = 0.17;   // unmarked: the top of the skull guessed 17% of the opaque height below its top (Part I Naruto measures that)
+const figures = {};        // this run's new figure records, by file
 const IN = 'incoming', DONE = join(IN, 'done');
 const MIN_SIDE = 512, ASPECT_TOL = 0.12, QUALITY = 82;
 
@@ -57,6 +67,14 @@ async function ingestOne(file) {
     const bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1;
     const side = Math.round(Math.max(bw, bh) * 1.06);
     const cut = await stage.extract({ left: b.x0, top: b.y0, width: bw, height: bh }).png().toBuffer();
+    // where the head marks and the soles land in the square (fractions of its side)
+    const placeTop = side - bh - Math.round(side * 0.02);
+    const inSquare = (yIn) => (placeTop + (yIn - b.y0)) / side;
+    const r3 = (n) => Math.round(n * 1000) / 1000;
+    const feet = r3(inSquare(b.y1 + 1));
+    figures[entry.file] = HEAD.length === 2
+      ? { top: r3(inSquare(HEAD[0] * info.height)), chin: r3(inSquare(HEAD[1] * info.height)), feet }
+      : { top: r3(inSquare(b.y0 + HAIR_GUESS * bh)), chin: null, feet, auto: true };
     // sharp resizes before it composites, so the square is built first and resized in a second pass
     const square = await sharp({ create: { width: side, height: side, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
       .composite([{ input: cut, left: Math.round((side - bw) / 2), top: side - bh - Math.round(side * 0.02) }]).png().toBuffer();
@@ -73,7 +91,7 @@ async function ingestOne(file) {
 
 async function main() {
   if (!existsSync(IN)) mkdirSync(IN, { recursive: true });
-  const files = readdirSync(IN).filter(f => /\.(png|jpe?g|webp)$/i.test(f) && (!FILE || f === FILE));
+  const files = INDEX_ONLY ? [] : readdirSync(IN).filter(f => /\.(png|jpe?g|webp)$/i.test(f) && (!FILE || f === FILE));
   const results = [];
   for (const f of files) { try { const r = await ingestOne(f); if (r) results.push(r); } catch (e) { results.push({ file: f, skip: `failed: ${e.message}` }); } }
   for (const r of results) console.log(r.skip ? `  ✗ ${r.file}: ${r.skip}` : `  ✓ ${r.file} → ${r.target} (${r.kind}, ${r.size}, ${r.keyed}% keyed${r.holes ? `, ${r.holes} enclosed patch${r.holes === 1 ? '' : 'es'} removed` : ''}${r.flip ? ', mirrored' : ''})${DRY ? ' [dry run]' : ''}`);
@@ -81,10 +99,30 @@ async function main() {
   const present = new Set();
   for (const dir of ['assets/portraits', 'assets/sprites']) if (existsSync(dir)) for (const f of readdirSync(dir)) if (f.endsWith('.webp')) present.add(`${dir}/${f}`);
   if (!DRY) {
-    writeFileSync('assets/index.json', JSON.stringify({ files: [...present].sort(), reuse: reuseMap(manifest) }, null, 2) + '\n');
+    // figures: this run's, else the ones already in the index, else a guess from the file's opaque box
+    const old = existsSync('assets/index.json') ? (JSON.parse(readFileSync('assets/index.json', 'utf8')).figures || {}) : {};
+    const figs = {};
+    for (const f of [...present].sort()) if (f.startsWith('assets/sprites/')) figs[f] = figures[f] || (old[f] && !old[f].auto ? old[f] : await guessFigure(f));
+    if (MARK) {
+      const f = `assets/sprites/${MARK.id}.webp`;
+      if (!figs[f]) throw new Error(`no sprite ${f} to mark`);
+      figs[f] = { top: MARK.top, chin: MARK.chin, feet: figs[f].feet };
+      console.log(`  ✓ head marks for ${f}: top of the skull ${MARK.top}, chin ${MARK.chin}`);
+    }
+    writeFileSync('assets/index.json', JSON.stringify({ files: [...present].sort(), reuse: reuseMap(manifest), figures: figs }, null, 2) + '\n');
     writeFileSync('docs/ASSET_CHECKLIST.md', checklistMarkdown(manifest, present));
   }
   const missingP = manifest.portraits.filter(e => !present.has(e.file)).length, missingS = manifest.sprites.filter(e => !present.has(e.file)).length;
   console.log(`\n${results.filter(r => !r.skip).length} ingested, ${results.filter(r => r.skip).length} skipped. assets/: ${present.size} files. Still missing: ${missingP} of ${manifest.portraits.length} portraits, ${missingS} of ${manifest.sprites.length} sprites (docs/ASSET_CHECKLIST.md).`);
 }
+/** An unmarked sprite's figure record from its opaque box: the soles at the bottom, the skull guessed below the hair. */
+async function guessFigure(file) {
+  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const b = bounds(data, info.width, info.height);
+  const r3 = (n) => Math.round(n * 1000) / 1000;
+  if (!b) return { top: 0.16, chin: null, feet: 0.98, auto: true };
+  const bh = b.y1 - b.y0 + 1;
+  return { top: r3((b.y0 + HAIR_GUESS * bh) / info.height), chin: null, feet: r3((b.y1 + 1) / info.height), auto: true };
+}
+
 main().catch(e => { console.error(e); process.exit(1); });

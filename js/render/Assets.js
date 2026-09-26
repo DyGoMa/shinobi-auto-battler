@@ -23,6 +23,7 @@ const registry = {
   ready: false,           // the index has been read (or failed)
   files: new Set(),       // paths that exist, from assets/index.json
   reuse: new Map(),       // enemy id → the id whose art it wears, from assets/index.json
+  figures: new Map(),     // sprite path → { top, chin, feet }: the skull, chin and soles (fractions of the image height)
   images: new Map(),      // path → Image (loaded) | null (failed)
   loading: new Map(),     // path → Promise
   listeners: new Map(),   // path → Set<fn>
@@ -39,13 +40,16 @@ export async function loadIndex({ fetchFn = globalThis.fetch, base = null } = {}
       const j = await res.json();
       for (const f of j.files || []) registry.files.add(String(f));
       for (const [id, uses] of Object.entries(j.reuse || {})) registry.reuse.set(String(id), String(uses));
+      for (const [path, fig] of Object.entries(j.figures || {})) registry.figures.set(String(path), fig);
     }
   } catch { /* offline, or no art yet */ }
   registry.ready = true;
   return registry.files.size;
 }
 /** For tests and tools: seed the index without a fetch. */
-export function setIndex(files, reuse = {}) { registry.files = new Set(files); registry.reuse = new Map(Object.entries(reuse)); registry.ready = true; }
+export function setIndex(files, reuse = {}, figures = {}) { registry.files = new Set(files); registry.reuse = new Map(Object.entries(reuse)); registry.figures = new Map(Object.entries(figures)); registry.ready = true; }
+/** A sprite's figure record (where the top of the skull and the soles are), or null. */
+export function figureOf(path) { return (path && registry.figures.get(path)) || null; }
 /** The id whose art `id` wears when it has none of its own (or null). */
 export function reusedId(id) { return registry.reuse.get(id) || null; }
 export function known(path) { return registry.files.has(path); }

@@ -7,6 +7,7 @@
 import { W as SW, H as SH, GROUND_Y as SGY, Stage, stageFromTheme, rgba } from './Stage.js';
 import { drawFigure, lookFor } from './Figure.js';
 import * as Assets from './Assets.js';
+import { statureOf } from '../core/stature.js';
 import { NATURE, FONT_DISPLAY, drawGlyph, rr } from './Effects.js';
 
 export const W = SW, H = SH, GROUND_Y = SGY;
@@ -44,6 +45,7 @@ export class Renderer {
     this.looks = new Map(); // unit key -> look
     this.t = 0;
     this.unitScale = 1;     // > 1 only on phone portrait (see resize)
+    this.statures = new Map();   // unit key|era → its canon height (statureOf)
     this.cam = { x: 0, zoom: 1 }; this.camTarget = { x: 0, zoom: 1 }; this.camX = 0;
     this.dim = 0;
   }
@@ -84,7 +86,14 @@ export class Renderer {
     return (front ? 1 : -1) * 22 * this.unitScale;
   }
   unitY(u) { return GROUND_Y + this.depthOf(u); }
-  big(u) { return this.unitScale * (u.isBoss ? 1.25 : u.isAdd ? 0.85 : 1); }
+  big(u) { return this.unitScale * this.statureOf(u).scale; }
+  /** The unit's canon height (js/core/stature.js): its own row, the art it reuses, or the ninja it is based on. */
+  statureOf(u) {
+    const k = u.key + '|' + this.era;
+    let st = this.statures.get(k);
+    if (!st) { st = statureOf(u.key, this.era || 'p1', { reuse: Assets.reusedId, basedOn: this.C?.enemy?.[u.key]?.basedOn || null }); this.statures.set(k, st); }
+    return st;
+  }
   facing(u) { return u.side === 'player' ? 1 : -1; }
   handOf(u) { const v = this._vis(u); return { x: u.x + v.knock + this.facing(u) * (30 + v.lunge * 14) * this.big(u), y: this.unitY(u) - 50 * this.big(u) }; }
   chestOf(u) { return { x: u.x + this._vis(u).knock, y: this.unitY(u) - 44 * this.big(u) }; }
@@ -109,6 +118,7 @@ export class Renderer {
     return look;
   }
   spriteOf(u) { const p = Assets.spritePath(u.key, this.era); return p ? Assets.image(p) : null; }
+  figOf(u) { return Assets.figureOf(Assets.spritePath(u.key, this.era)); }
 
   // ---------------------------------------------------------------- visual reactions (called by Effects)
   onAttack(u, amp = 1) { const v = this._vis(u); v.lunge = 1; v.lungeAmp = amp; }
@@ -202,7 +212,7 @@ export class Renderer {
       x: u.x + v.knock, y, facing: this.facing(u), scale: us, boss: u.isBoss, add: u.isAdd, t: this.t, phase: v.phase,
       walking: v.walking, walk: v.walk, lunge: v.lunge * v.lungeAmp, lean: v.lean, flash: v.flash, cast: v.cast, ko: v.ko,
       aura, scarf: nat ? NATURE[nat].color : (u.taijutsu ? '#f1f3f5' : null), expression: u.side === 'enemy' ? 'menace' : 'set',
-      sprite: this.spriteOf(u),
+      sprite: this.spriteOf(u), fig: this.figOf(u), stature: this.statureOf(u).scale,
     });
     g.restore();
     v.geo = geo;

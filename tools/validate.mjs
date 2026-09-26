@@ -13,6 +13,8 @@ import { STAGES, stageIdFor } from '../js/render/Stage.js';
 import { buildManifest, reuseMap } from './manifest-lib.mjs';
 import { validateStory, countLines } from '../js/core/Story.js';
 import { STORY } from '../js/content/story/index.js';
+import { HEIGHTS } from '../js/content/heights.js';
+import { statureOf } from '../js/core/stature.js';
 
 const errors = validateContent(CONTENT);
 
@@ -45,6 +47,20 @@ if (existsSync('assets/index.json')) {
 if (existsSync('assets/manifest.json')) {
   const saved = JSON.parse(readFileSync('assets/manifest.json', 'utf8'));
   if (saved.portraits.length !== art.portraits.length || saved.sprites.length !== art.sprites.length) errors.push('assets/manifest.json is out of date: run node tools/manifest.mjs');
+}
+
+// ---- canon heights (js/content/heights.js): every figure resolves to a height, every row is well formed
+{
+  const idx = existsSync('assets/index.json') ? JSON.parse(readFileSync('assets/index.json', 'utf8')) : { reuse: {}, figures: {}, files: [] };
+  const reuse = (k) => idx.reuse?.[k] || null;
+  for (const [id, r] of Object.entries(HEIGHTS)) {
+    if (!['human', 'beast', 'giant'].includes(r.kind)) errors.push(`heights ${id}: kind must be human, beast or giant`);
+    if (!['databook', 'anime', 'estimate'].includes(r.source)) errors.push(`heights ${id}: source must be databook, anime or estimate`);
+    if (r.kind !== 'giant' && ![r.p1, r.p2].some(n => typeof n === 'number' && n > 20 && n < 400)) errors.push(`heights ${id}: needs a height in cm for p1 or p2`);
+  }
+  for (const d of Object.values(CONTENT.char)) if (!statureOf(d.id, 'p2', { reuse }).known) errors.push(`roster ${d.id} has no height (js/content/heights.js)`);
+  for (const d of Object.values(CONTENT.enemy)) if (!statureOf(d.id, 'p2', { reuse, basedOn: d.basedOn }).known) errors.push(`enemy ${d.id} has no height: add it to js/content/heights.js, or give it basedOn`);
+  for (const f of idx.files || []) if (f.startsWith('assets/sprites/') && !idx.figures?.[f]) errors.push(`assets/index.json has no figure record for ${f} (run node tools/ingest.mjs --index-only)`);
 }
 
 // ---- balance.js sanity ----------------------------------------------------

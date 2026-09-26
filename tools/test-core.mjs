@@ -25,6 +25,7 @@ import { autoPickTeam } from '../js/core/TeamPicker.js';
 import { DEFAULT_BOT } from './common.mjs';
 import { localDateKey, nodeRewards } from '../js/core/formulas.js';
 import * as Assets from '../js/render/Assets.js';
+import { statureOf, proportionsLine, REF_CM, REF_HEADS, HEAD_CM, GIANT_SCALE } from '../js/core/stature.js';
 import { STAGES, stageIdFor, stageDefFor, stageFromTheme } from '../js/render/Stage.js';
 import { lookFor } from '../js/render/Figure.js';
 import { ICONS, EMOJI_ICON, NATURE_ICON, ROLE_ICON, hasEmoji } from '../js/render/icons.js';
@@ -880,7 +881,18 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   Assets.setIndex(['assets/sprites/kakashi_p1.webp', 'assets/portraits/kakashi_p1.webp', 'assets/sprites/e_mizuki.webp', 'assets/sprites/e_own.webp'], { e_kakashi_bell2: 'kakashi', e_mizuki_clash: 'e_mizuki', e_own: 'kakashi' });
   ok(Assets.spritePath('e_kakashi_bell2', 'p1') === 'assets/sprites/kakashi_p1.webp' && Assets.portraitPath('e_kakashi_bell2', 'p2') === 'assets/portraits/kakashi_p1.webp', 'an enemy with no art of its own wears the sprite and portrait of its roster twin, in the era');
   ok(Assets.spritePath('e_mizuki_clash') === 'assets/sprites/e_mizuki.webp' && Assets.spritePath('e_own') === 'assets/sprites/e_own.webp' && Assets.spritePath('e_nobody') === null, 'reuse follows to the art of another enemy; an own file wins; no file and no reuse stays code-drawn');
+  Assets.setIndex(['assets/sprites/naruto_p1.webp'], {}, { 'assets/sprites/naruto_p1.webp': { top: 0.195, chin: 0.414, feet: 0.98 } });
+  ok(Assets.figureOf('assets/sprites/naruto_p1.webp')?.chin === 0.414 && Assets.figureOf('assets/sprites/nobody.webp') === null, 'the figure record of a sprite (skull, chin, soles) comes from the index');
   Assets.setIndex([]);
+
+  // Canon heights: Part I Naruto is the reference, every head is his head size, giants have one size.
+  const nar1 = statureOf('naruto', 'p1'), nar2 = statureOf('naruto_p2', 'p2'), kak = statureOf('kakashi', 'p1');
+  ok(nar1.scale === 1 && nar1.cm === REF_CM && Math.abs(nar1.heads - REF_HEADS) < 1e-9, 'Part I Naruto is the reference figure (scale 1, ' + REF_HEADS + ' heads)');
+  ok(nar2.cm > nar1.cm && nar2.scale > 1 && kak.scale > nar2.scale && Math.abs(kak.heads - kak.cm / HEAD_CM) < 1e-9, 'per-era heights: Shippuden Naruto is taller than Part I, Kakashi taller still, all with the same head size');
+  ok(statureOf('e_kakashi_bell2', 'p1', { reuse: (k) => (k === 'e_kakashi_bell2' ? 'kakashi' : null) }).cm === kak.cm && statureOf('e_nobody', 'p1', { basedOn: 'kakashi' }).cm === kak.cm, 'an enemy takes its height from the art it reuses or the ninja it is based on');
+  ok(statureOf('e_manda', 'p2').scale === GIANT_SCALE && statureOf('e_manda', 'p2').kind === 'giant', 'a giant stands at the one giant size');
+  ok(!statureOf('e_nobody_at_all', 'p1').known, 'an id with no height is flagged as unknown (validate lists it)');
+  ok(/PROPORTIONS: Kakashi Hatake is 181 cm tall. Draw the figure 4.4 heads tall/.test(proportionsLine('Kakashi Hatake', 'kakashi_p1', 'p1')) && /giant creature/.test(proportionsLine('Manda', 'e_manda', 'p2')), 'the sprite prompt states the height and the head count, or the giant rule');
 
   const arcs = Object.values(C.arc);
   const missing = arcs.filter(a => { const id = stageIdFor({ arcId: a.id }); return !id || !STAGES[id]; }).map(a => a.id);

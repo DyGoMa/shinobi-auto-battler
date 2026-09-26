@@ -52,7 +52,7 @@ async function api(req, res, path) {
     return json(res, 200, { ok: r.ok, log: r.log, override: !!o.prompts[`${kind}:${id}`] });
   }
   if (path === '/api/art/save') {
-    const { id, kind, incoming, flip, leftover, png } = body;
+    const { id, kind, incoming, flip, leftover, png, head } = body;
     if (!SAFE_ID.test(String(id)) || !SAFE_ID.test(String(incoming)) || !['portrait', 'sprite'].includes(kind)) return json(res, 400, { ok: false, error: 'bad id, kind or incoming name' });
     const m = /^data:image\/png;base64,(.+)$/.exec(String(png || ''));
     if (!m) return json(res, 400, { ok: false, error: 'png must be a PNG data URL' });
@@ -60,12 +60,23 @@ async function api(req, res, path) {
     const file = join(ROOT, 'incoming', `${incoming}.png`);
     await writeFile(file, Buffer.from(m[1], 'base64'));
     const args = ['tools/ingest.mjs', '--only', id, '--kind', kind, '--file', `${incoming}.png`]; if (flip) args.push('--flip', id);
+    // a sprite's head marks (the top of the skull and the chin, fractions of the picture's height)
+    const frac = (n) => Number.isFinite(+n) && +n >= 0 && +n <= 1;
+    if (kind === 'sprite' && Array.isArray(head) && head.length === 2 && head.every(frac) && +head[0] < +head[1]) args.push('--head', `${+head[0]},${+head[1]}`);
     const r = await run(args);
     const o = await loadOverrides(); o.status = o.status || {};
     o.status[`${kind}:${id}`] = { savedAt: new Date().toISOString(), leftover: Number(leftover) || 0, flip: !!flip };
     await saveOverrides(o);
     const target = `assets/${kind === 'portrait' ? 'portraits' : 'sprites'}/${id}.webp`;
     return json(res, 200, { ok: r.ok && existsSync(join(ROOT, target)), log: r.log, file: target });
+  }
+  if (path === '/api/art/marks') {
+    // head marks for a sprite already in the game: only the index changes (tools/ingest.mjs --index-only --mark)
+    const { id, top, chin } = body;
+    const frac = (n) => Number.isFinite(+n) && +n >= 0 && +n <= 1;
+    if (!SAFE_ID.test(String(id)) || !frac(top) || !frac(chin) || +top >= +chin) return json(res, 400, { ok: false, error: 'bad id or marks' });
+    const r = await run(['tools/ingest.mjs', '--index-only', '--mark', `${id}:${+top},${+chin}`]);
+    return json(res, 200, { ok: r.ok, log: r.log });
   }
   return json(res, 404, { ok: false, error: 'no such endpoint' });
 }

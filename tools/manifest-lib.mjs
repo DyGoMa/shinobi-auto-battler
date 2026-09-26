@@ -4,12 +4,13 @@
 // which way, and the full Gemini prompt (the style anchor + the character + the facing).
 // Pure: no file system here (tools/manifest.mjs and tools/ingest.mjs write the files).
 import { STYLE_ANCHOR, SPRITE_ANCHOR, FACE_RIGHT, FACE_LEFT, VILLAGE_PLATE, DESCRIPTIONS, ALIASES } from './prompts-data.mjs';
+import { statureOf, proportionsLine } from '../js/core/stature.js';
 
 /** The dual-era characters (ART_BIBLE §3.5): a Part I and a Shippuden file each. */
 export const DUAL_ERA = ['naruto', 'sakura', 'sasuke', 'kakashi', 'shikamaru', 'choji', 'ino', 'kiba', 'shino', 'hinata', 'neji', 'lee', 'tenten', 'guy', 'asuma', 'kurenai', 'gaara', 'temari', 'kankuro', 'jiraiya', 'tsunade', 'shizune', 'orochimaru', 'kabuto', 'iruka'];
 export const PORTRAIT_PX = 256, SPRITE_PX = 512, GENERATE_PX = 1024;
 const PORTRAIT_USAGE = 'Roster, Team, Wiki and Summon tokens (56/40 px round, tier ring), the ult bar (46 px), the Ultimate cut-in, the boss intro card, the dialogue box, the Kage reveal';
-const SPRITE_USAGE = 'the battlefield figure (110 units tall at unit scale 1; bosses ×1.25, adds ×0.85), mirrored for the enemy side';
+const SPRITE_USAGE = 'the battlefield figure, drawn at the character\'s canon height (soles to the top of the skull, from the head marks set in the art studio), mirrored for the enemy side';
 const VILLAGE_OF_TAG = { leaf: 'leaf', mist: 'mist', sand: 'sand', sound: 'sound', cloud: 'cloud', stone: 'stone', rain: 'rain', akatsuki: null };
 
 /** A generic description from the data, for anything tools/prompts-data.mjs does not cover. */
@@ -39,10 +40,14 @@ export function buildManifest(C, { now = new Date().toISOString(), overrides = n
     if (d.one) return d.one;
     return d[era] || d.p2 || d.p1 || null;
   };
-  const prompt = (anchor, desc, facing) => `${anchor}\n\nCHARACTER: ${desc}\n${facing === 'left' ? FACE_LEFT : FACE_RIGHT}`;
+  const prompt = (anchor, desc, facing, extra = '') => `${anchor}\n\nCHARACTER: ${desc}\n${extra ? extra + '\n' : ''}${facing === 'left' ? FACE_LEFT : FACE_RIGHT}`;
   const push = ({ id, key, name, era, facing, desc, note = '' }) => {
     portraits.push({ id, name, era, facing, file: `assets/portraits/${id}.webp`, incoming: id, px: PORTRAIT_PX, generate: GENERATE_PX, aspect: '1:1', usage: PORTRAIT_USAGE, flip: false, note, prompt: prompt(STYLE_ANCHOR, desc, facing) });
-    sprites.push({ id, name, era, facing, file: `assets/sprites/${id}.webp`, incoming: `sprite_${id}`, px: SPRITE_PX, generate: GENERATE_PX, aspect: '1:1', usage: SPRITE_USAGE, flip: false, note, prompt: prompt(SPRITE_ANCHOR, desc, facing) });
+    // The sprite's target: its canon height and its height in heads (the studio checks the head marks against it).
+    const plain = name.replace(/\s*\((Part I|Shippuden)\)$/, '').replace(/\s+—\s+.*$/, '');
+    const st = statureOf(id, era, { reuse: (k) => ALIASES[k] || null });
+    const stature = { kind: st.kind, cm: st.cm, heads: st.heads ? Math.round(st.heads * 100) / 100 : null, estimated: st.estimated, known: st.known };
+    sprites.push({ id, name, era, facing, file: `assets/sprites/${id}.webp`, incoming: `sprite_${id}`, px: SPRITE_PX, generate: GENERATE_PX, aspect: '1:1', usage: SPRITE_USAGE, flip: false, note, stature, prompt: prompt(SPRITE_ANCHOR, desc, facing, proportionsLine(plain, id, era, { reuse: (k) => ALIASES[k] || null })) });
     void key;
   };
   // ---- the roster: player characters face right; the dual-era ones get a file per era

@@ -62,3 +62,11 @@ body.art { display: block; overflow: auto; min-height: 100vh; }
 button.wandon { outline: 2px solid #ffaa3c; }
 .art-frame .dlg, .art-frame .bosscard { opacity: 1 !important; pointer-events: none; }
 .art-frame .dlg .next { display: none; }
+/* head marks on a sprite: drag the top of the skull (cyan) and the chin (yellow); the soles line is fixed */
+.art-marks { position: absolute; inset: 0; pointer-events: none; }
+.art-marks .mark { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed; pointer-events: auto; cursor: ns-resize; touch-action: none; }
+.art-marks .mark::before { content: ''; position: absolute; left: 0; right: 0; top: -9px; height: 18px; }
+.art-marks .mark span { position: absolute; right: 6px; top: -22px; font-size: 12px; padding: 1px 6px; border-radius: 6px; background: rgba(0,0,0,0.7); white-space: nowrap; }
+.art-marks .mark.skull { border-color: #4de1ff; color: #4de1ff; }
+.art-marks .mark.chin { border-color: #ffd84d; color: #ffd84d; }
+.art-marks .mark.feet { border-color: rgba(255,255,255,0.55); color: #ddd; pointer-events: none; cursor: default; }
