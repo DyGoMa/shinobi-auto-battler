@@ -32,7 +32,7 @@ export function eraOfChar(def, C) {
 }
 
 /** Build the manifest. Returns { portraits, sprites, reuse, missingDescriptions }. */
-export function buildManifest(C, { now = new Date().toISOString() } = {}) {
+export function buildManifest(C, { now = new Date().toISOString(), overrides = null } = {}) {
   const portraits = [], sprites = [], reuse = [], missingDescriptions = [];
   const descOf = (key, era) => {
     const d = DESCRIPTIONS[key]; if (!d) return null;
@@ -87,6 +87,10 @@ export function buildManifest(C, { now = new Date().toISOString() } = {}) {
     push({ id: pid, key: pid, name: d.name + (d.title ? ` — ${d.title}` : ''), era, facing, desc, note: d.role === 'Civilian' ? 'a civilian the team protects' : '' });
     if (pid !== d.id) reuse.push({ id: d.id, uses: pid, note: 'the same picture' });
   }
+  // The art page keeps the user's own wording per image in assets/art-overrides.json (prompts: { "portrait:<id>": "..." }).
+  const ov = overrides?.prompts || {};
+  for (const e of portraits) if (ov[`portrait:${e.id}`]) { e.prompt = ov[`portrait:${e.id}`]; e.promptOverride = true; }
+  for (const e of sprites) if (ov[`sprite:${e.id}`]) { e.prompt = ov[`sprite:${e.id}`]; e.promptOverride = true; }
   return { generated: now, version: 1, style: { portrait: STYLE_ANCHOR, sprite: SPRITE_ANCHOR, faceRight: FACE_RIGHT, faceLeft: FACE_LEFT }, portraits, sprites, reuse, missingDescriptions };
 }
 

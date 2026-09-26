@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-era="p1">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Art studio — Shinobi Auto-Battler</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="art/art.css">
+</head>
+<body class="art">
+  <header class="art-head">
+    <div class="art-title"><b>忍 Art studio</b><span class="muted small" id="stats">loading…</span></div>
+    <div class="art-tools">
+      <input id="search" type="search" placeholder="Search a ninja, an enemy, an arc…" autocomplete="off">
+      <label class="small"><input type="checkbox" id="onlyMissing"> only missing</label>
+      <label class="small"><input type="checkbox" id="onlyFlagged"> only flagged</label>
+      <a class="small" href="index.html">the game ›</a>
+    </div>
+  </header>
+  <div class="art-body">
+    <nav class="art-list" id="list" aria-label="Every image, by arc"></nav>
+    <main class="art-main" id="main">
+      <div class="card art-intro">
+        <h2>How it works</h2>
+        <ol class="small">
+          <li>Pick an image on the left. Its prompt is on the right: <b>Copy</b> it into Gemini (1024 × 1024, flat magenta background), or change the wording and <b>Save prompt</b> so the manifest keeps yours.</li>
+          <li>Drop the picture you get onto the frame (or click it). The background is keyed out here, in the browser: the flat colour around the border, then any big enclosed patch of the same colour (the white under a headband). Smaller patches are only <b>flagged</b>, because the whites of the eyes look the same on a white background: check them over black, red and the checkerboard, and click a leftover with the <b>wand</b> to remove it.</li>
+          <li>Look at it where it will be used: the tokens, the Roster card, a Team slot, the dialogue box and the boss card for a portrait; the battlefield beside the code-drawn figure for a sprite. <b>Flip</b> if it faces the wrong way.</li>
+          <li><b>Save to the game</b> writes it to <code>/incoming</code> and runs the ingest (crop, resize, WebP); the previews then show the file the game will load. Nothing here is uploaded anywhere but this computer.</li>
+        </ol>
+        <p class="tiny muted">Needs the local server (<code>npm run serve</code>, or the app's preview). The list marks each image: ● done · ○ missing · ● flagged (saved with leftovers, or a prompt of your own).</p>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="art/art.js"></script>
+</body>
+</html>

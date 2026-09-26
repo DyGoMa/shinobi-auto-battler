@@ -165,6 +165,10 @@ Verified in the desktop pane (hidden, so at the DOM level with `window.__game`):
 
 **Not yet seen:** the dialogue box itself (position over a phone-portrait stage, the portrait size, the name plate on both skins) and the typewriter's pace. Check on the first visible run and in the layout audit at 412×915 and 360×780: the box must not cover the boss card's name, and the Skip / Auto buttons must stay tappable above the ult bar.
 
+## The art studio
+
+`art.html` was driven in a hidden pane through `window.__art` (select, loadFromUrl, check, wandAt, undo, save): 336 entries grouped by arc; the Shippuden Naruto's original (2000², white background) keyed with 4 enclosed patches removed and one 1,846 px eye-white flagged and outlined; the wand removes and Undo restores; Save writes `/incoming/naruto_p2.png`, the ingest runs for that file only, `assets/index.json` and `art-overrides.json` update, and the previews switch to the WebP; the saved file composited over black and red shows the pockets gone. Still to check with eyes: the page's layout at a real size, dropping a file, the wand by click, a sprite on the battlefield preview.
+
 ## 0.12.1: the balancing pass
 
 Nothing visual changed except the Daily screen, which now shows one card per challenge (three a day). The pane stayed hidden, so it was checked at the DOM level through `window.__game` on a guest save with the Land of Waves cleared: the screen renders `daily.challengesPerDay` `.daily-hero` cards (`data-slot` 0–2) with different twists, each with its own "3 of 3 attempts left" pill, its own Edit team (opens the Team Builder for that slot: "Building for 📅 Daily challenge 2: …") and Fight; a cleared slot shows "✓ Cleared today" with Fight disabled and a slot out of attempts "No attempts left"; the header counts "1 of 3 cleared"; the Home card reads "Today: Countered · Locked nature · No Ultimates. 1 of 3 cleared, 1 still open." No console errors beyond the dev server's missing `version.json`. Still to check with eyes: three cards on a phone held upright (they stack; each is the old hero card), and the results dialog's "2 more challenges still open today" after a Daily win.

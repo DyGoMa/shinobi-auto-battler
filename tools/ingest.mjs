@@ -1,9 +1,10 @@
 // tools/ingest.mjs — turns the images dropped in /incoming into game assets (docs/ART_BIBLE.md §11).
-//   node tools/ingest.mjs [--dry] [--flip id,id] [--only id] [--keep]
+//   node tools/ingest.mjs [--dry] [--flip id,id] [--only id] [--kind portrait|sprite] [--file name.png] [--keep]
 // For each /incoming/<name>.(png|jpg|jpeg|webp) whose name matches a manifest entry's `incoming`
 // (`naruto_p1`, `sprite_naruto_p1`): validate the size and aspect, key the flat background out
-// (any colour: the median of the border, removed by flood fill from the border with a soft edge
-// and a grey pull on the fringe so no halo is left), mirror it when asked, crop and resize
+// (any colour: the median of the border, removed by flood fill from the border and then every
+// enclosed patch of the same flat colour, with a soft edge and a fringe pass so no halo is left;
+// tools/key-lib.mjs, shared with art.html), mirror it when asked, crop and resize
 // (portraits 256², sprites 512² with the figure bottom-centred), write the WebP to assets/, then
 // rewrite assets/index.json and docs/ASSET_CHECKLIST.md and report what is still missing.
 // Processed files move to /incoming/done (--keep leaves them). Needs `npm install` (sharp).
@@ -12,6 +13,7 @@ import { join, extname, basename } from 'node:path';
 import sharp from 'sharp';
 import { CONTENT } from '../js/content/index.js';
 import { buildManifest, checklistMarkdown, PORTRAIT_PX, SPRITE_PX } from './manifest-lib.mjs';
+import { keyBackground, bounds } from './key-lib.mjs';
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -19,66 +21,20 @@ const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : nu
 const DRY = flag('--dry'), KEEP = flag('--keep');
 const FLIP = new Set((opt('--flip') || '').split(',').filter(Boolean));
 const ONLY = opt('--only');
+const KIND = opt('--kind');   // with --only: just that kind (the portrait and the sprite share an id)
+const FILE = opt('--file');   // just this file in /incoming (the art page's save)
 const IN = 'incoming', DONE = join(IN, 'done');
 const MIN_SIDE = 512, ASPECT_TOL = 0.12, QUALITY = 82;
 
 const manifest = existsSync('assets/manifest.json') ? JSON.parse(readFileSync('assets/manifest.json', 'utf8')) : buildManifest(CONTENT);
 const byIncoming = new Map([...manifest.portraits.map(e => [e.incoming, { ...e, kind: 'portrait' }]), ...manifest.sprites.map(e => [e.incoming, { ...e, kind: 'sprite' }])]);
 
-/** Key out the flat background in place (RGBA buffer). Returns the fraction of pixels removed. */
-export function keyBackground(data, W, H, { tol = 58, soft = 46 } = {}) {
-  const p = data;
-  const border = [];
-  for (let x = 0; x < W; x += 3) border.push(x * 4, ((H - 1) * W + x) * 4);
-  for (let y = 0; y < H; y += 3) border.push(y * W * 4, (y * W + W - 1) * 4);
-  const med = (arr) => { arr.sort((a, b) => a - b); return arr[arr.length >> 1]; };
-  const bg = [med(border.map(i => p[i])), med(border.map(i => p[i + 1])), med(border.map(i => p[i + 2]))];
-  const dist = (i) => Math.sqrt((p[i] - bg[0]) ** 2 + (p[i + 1] - bg[1]) ** 2 + (p[i + 2] - bg[2]) ** 2);
-  const seen = new Uint8Array(W * H); const stack = []; let n = 0;
-  const push = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return; const k = y * W + x; if (seen[k]) return; seen[k] = 1; if (dist(k * 4) < tol + soft) stack.push(k); };
-  for (let x = 0; x < W; x++) { push(x, 0); push(x, H - 1); }
-  for (let y = 0; y < H; y++) { push(0, y); push(W - 1, y); }
-  while (stack.length) {
-    const k = stack.pop(); const i = k * 4; const dd = dist(i); const a = dd < tol ? 0 : (dd - tol) / soft;
-    p[i + 3] = Math.round(p[i + 3] * a); n++;
-    if (a > 0 && a < 1) { const grey = (p[i] + p[i + 1] + p[i + 2]) / 3; p[i] = Math.round(grey + (p[i] - grey) * a); p[i + 1] = Math.round(grey + (p[i + 1] - grey) * a); p[i + 2] = Math.round(grey + (p[i + 2] - grey) * a); }
-    if (dd < tol) { const x = k % W, y = (k / W) | 0; push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1); }
-  }
-  defringe(p, W, H);
-  return n / (W * H);
-}
-/**
- * The fringe pass: a JPEG (or an anti-aliased edge) blends the outline with the background, so
- * the semi-transparent edge pixels carry a pale magenta-grey tint. Each edge pixel takes the
- * average colour of the solid pixels within two steps of it, keeping its own alpha, so the
- * outline's ink runs to the very edge and no halo is left.
- */
-function defringe(p, W, H) {
-  const src = new Uint8ClampedArray(p);   // read from the copy, write into p
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = (y * W + x) * 4; const a = src[i + 3];
-    if (a === 0 || a >= 250) continue;
-    let r = 0, g = 0, b = 0, n = 0;
-    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
-      const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
-      const j = (yy * W + xx) * 4; if (src[j + 3] < 250) continue;
-      r += src[j]; g += src[j + 1]; b += src[j + 2]; n++;
-    }
-    if (n) { p[i] = Math.round(r / n); p[i + 1] = Math.round(g / n); p[i + 2] = Math.round(b / n); }
-  }
-}
-/** The opaque bounding box of an RGBA buffer (alpha > 8), or null when empty. */
-function bounds(data, W, H) {
-  let x0 = W, y0 = H, x1 = -1, y1 = -1;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (data[(y * W + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-  return x1 < 0 ? null : { x0, y0, x1, y1 };
-}
-
 async function ingestOne(file) {
   const stem = basename(file, extname(file));
   const entry = byIncoming.get(stem);
   if (!entry) return { file, skip: `no manifest entry is called "${stem}" (portraits: <id>, sprites: sprite_<id>)` };
   if (ONLY && entry.id !== ONLY) return null;
+  if (KIND && entry.kind !== KIND) return null;
   const img = sharp(join(IN, file)).rotate();
   const meta = await img.metadata();
   const w = meta.width, h = meta.height;
@@ -87,7 +43,7 @@ async function ingestOne(file) {
   if (Math.abs(w / h - 1) > ASPECT_TOL) return { file, skip: `not square (${w}×${h}); generate at 1024 × 1024` };
   // raw RGBA, keyed
   const { data, info } = await img.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const keyed = keyBackground(data, info.width, info.height);
+  const { keyed, holes } = keyBackground(data, info.width, info.height);
   const flip = entry.flip || FLIP.has(entry.id);
   let stage = sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } });
   if (flip) stage = stage.flop();
@@ -112,15 +68,15 @@ async function ingestOne(file) {
     await out.webp({ quality: QUALITY, alphaQuality: 90 }).toFile(target);
     if (!KEEP) { mkdirSync(DONE, { recursive: true }); renameSync(join(IN, file), join(DONE, file)); }
   }
-  return { file, id: entry.id, kind: entry.kind, target, keyed: Math.round(keyed * 100), flip, size: `${w}×${h}` };
+  return { file, id: entry.id, kind: entry.kind, target, keyed: Math.round(keyed * 100), holes, flip, size: `${w}×${h}` };
 }
 
 async function main() {
   if (!existsSync(IN)) mkdirSync(IN, { recursive: true });
-  const files = readdirSync(IN).filter(f => /\.(png|jpe?g|webp)$/i.test(f));
+  const files = readdirSync(IN).filter(f => /\.(png|jpe?g|webp)$/i.test(f) && (!FILE || f === FILE));
   const results = [];
   for (const f of files) { try { const r = await ingestOne(f); if (r) results.push(r); } catch (e) { results.push({ file: f, skip: `failed: ${e.message}` }); } }
-  for (const r of results) console.log(r.skip ? `  ✗ ${r.file}: ${r.skip}` : `  ✓ ${r.file} → ${r.target} (${r.kind}, ${r.size}, ${r.keyed}% keyed${r.flip ? ', mirrored' : ''})${DRY ? ' [dry run]' : ''}`);
+  for (const r of results) console.log(r.skip ? `  ✗ ${r.file}: ${r.skip}` : `  ✓ ${r.file} → ${r.target} (${r.kind}, ${r.size}, ${r.keyed}% keyed${r.holes ? `, ${r.holes} enclosed patch${r.holes === 1 ? '' : 'es'} removed` : ''}${r.flip ? ', mirrored' : ''})${DRY ? ' [dry run]' : ''}`);
   // the index of what exists, and the checklist
   const present = new Set();
   for (const dir of ['assets/portraits', 'assets/sprites']) if (existsSync(dir)) for (const f of readdirSync(dir)) if (f.endsWith('.webp')) present.add(`${dir}/${f}`);

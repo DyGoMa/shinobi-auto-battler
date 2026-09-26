@@ -1,0 +1,64 @@
+/* art/art.css — the art studio (art.html). The game's css/style.css gives the skins, cards,
+   tokens, the dialogue box and the boss card; this file lays the studio out around them. */
+body.art { display: block; overflow: auto; min-height: 100vh; }
+.art-head { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.art-title { display: flex; align-items: baseline; gap: 12px; font-size: 1.15rem; }
+.art-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.art-tools input[type="search"] { min-width: 260px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); color: inherit; }
+.art-body { display: grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 54px); }
+.art-list { border-right: 1px solid var(--line); overflow-y: auto; max-height: calc(100vh - 54px); position: sticky; top: 54px; padding: 8px 0 40px; background: var(--surface); }
+.art-list h3 { margin: 12px 12px 4px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; display: flex; justify-content: space-between; }
+.art-list .row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; width: 100%; padding: 4px 10px; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.art-list .row:hover, .art-list .row.active { background: var(--surface2); }
+.art-list .row .thumb { width: 34px; height: 34px; border-radius: 8px; background: var(--surface2); overflow: hidden; display: grid; place-items: center; font-size: 0.7rem; opacity: 0.8; }
+.art-list .row .thumb img, .art-list .row .thumb canvas { width: 100%; height: 100%; object-fit: cover; }
+.art-list .row .who { font-size: 0.85rem; line-height: 1.15; }
+.art-list .row .who small { display: block; opacity: 0.65; font-size: 0.72rem; }
+.art-list .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); box-sizing: border-box; }
+.art-list .dot.done { background: #5fd38a; border-color: #5fd38a; }
+.art-list .dot.flag { background: #ff5a5a; border-color: #ff5a5a; }
+.art-list .dot.own { box-shadow: 0 0 0 2px #ffaa3c inset; }
+.art-main { padding: 16px 18px 60px; display: grid; gap: 14px; align-content: start; grid-template-columns: minmax(0, 1fr); }
+.art-main .card { margin: 0; }
+.art-two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 1100px) { .art-two { grid-template-columns: 1fr; } .art-body { grid-template-columns: 240px 1fr; } }
+@media (max-width: 760px) { .art-body { grid-template-columns: 1fr; } .art-list { position: static; max-height: 260px; border-right: 0; border-bottom: 1px solid var(--line); } }
+.art-entry-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.art-entry-head h2 { margin: 0; }
+.art-entry-head .pill { align-self: center; }
+.art-prompt textarea { width: 100%; min-height: 300px; resize: vertical; font: 0.82rem/1.4 ui-monospace, Consolas, monospace; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); color: inherit; box-sizing: border-box; }
+.art-prompt textarea.own { border-color: #ffaa3c; }
+.art-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.art-drop { position: relative; border: 2px dashed var(--line); border-radius: 14px; min-height: 120px; display: grid; place-items: center; text-align: center; padding: 14px; cursor: pointer; background: var(--surface2); }
+.art-drop.over { border-color: #ffaa3c; background: rgba(255,170,60,0.08); }
+.art-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.art-work { position: relative; display: inline-block; max-width: 100%; border-radius: 12px; overflow: hidden; background: repeating-conic-gradient(#3a3f4a 0% 25%, #262a33 0% 50%) 0 0 / 24px 24px; }
+.art-work canvas { display: block; max-width: 100%; height: auto; }
+.art-work canvas.wand { cursor: crosshair; }
+.art-work .hl { position: absolute; inset: 0; pointer-events: none; }
+.art-warn { margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; font-size: 0.9rem; }
+.art-warn.bad { background: rgba(255,90,90,0.15); color: #ff8a8a; }
+.art-warn.good { background: rgba(95,211,138,0.15); color: #7de0a3; }
+.art-warn.info { background: rgba(255,170,60,0.12); color: #ffc46e; }
+.art-bgs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.art-bgs .bg { border-radius: 12px; overflow: hidden; aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--line); position: relative; }
+.art-bgs .bg img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.art-bgs .bg span { position: absolute; left: 8px; bottom: 6px; font-size: 0.7rem; padding: 1px 6px; border-radius: 6px; background: rgba(0,0,0,0.55); color: #fff; }
+.art-bgs .bg.black { background: #000; } .art-bgs .bg.white { background: #fff; } .art-bgs .bg.red { background: #d81f1f; }
+.art-bgs .bg.checker { background: repeating-conic-gradient(#8a8f99 0% 25%, #5a5f69 0% 50%) 0 0 / 20px 20px; }
+.art-ctx { display: flex; flex-wrap: wrap; gap: 16px 22px; align-items: flex-start; }
+.art-ctx .ctx { display: grid; gap: 6px; justify-items: start; }
+.art-ctx .ctx > .tiny { opacity: 0.7; }
+.art-ctx .char-card { width: 150px; }
+.art-ctx .slot { width: 96px; }
+.art-frame { position: relative; width: 520px; max-width: 100%; height: 190px; border-radius: 12px; overflow: hidden; background: linear-gradient(#1c2230, #0d1117); border: 1px solid var(--line); }
+.art-frame .dlg, .art-frame .bosscard { position: absolute; left: 12px; right: 12px; bottom: 12px; top: auto; transform: none; margin: 0; }
+.art-frame .bosscard { top: 50%; bottom: auto; transform: translateY(-50%); }
+.art-frame .dlg.hidden, .art-frame .bosscard.hidden { display: flex; }
+.art-field { width: 100%; max-width: 760px; border-radius: 12px; border: 1px solid var(--line); display: block; }
+.art-log { white-space: pre-wrap; font: 0.75rem/1.35 ui-monospace, Consolas, monospace; background: var(--surface2); padding: 8px 10px; border-radius: 10px; max-height: 160px; overflow: auto; margin: 8px 0 0; }
+.art-kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 0.85rem; }
+.art-kv b { opacity: 0.7; font-weight: 600; }
+button.wandon { outline: 2px solid #ffaa3c; }
+.art-frame .dlg, .art-frame .bosscard { opacity: 1 !important; pointer-events: none; }
+.art-frame .dlg .next { display: none; }
