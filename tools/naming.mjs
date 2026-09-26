@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { CONTENT as C } from '../js/content/index.js';
+import { STORY_NAMES } from '../js/content/story/index.js';
 import { NAME_SOURCES as S, wikiUrl } from './naming-sources.mjs';
 
 export function collectNames() {
@@ -15,6 +16,7 @@ export function collectNames() {
   for (const e of C.enemies) { add(e.name, e.role === 'Civilian' ? 'character' : 'character'); if (e.jutsu) add(e.jutsu.name, 'jutsu'); for (const m of e.mechanics || []) add(m.name, 'jutsu'); }
   for (const a of [...C.arcs, ...(C.tutorial ? [C.tutorial] : [])]) { add(a.name, 'story'); for (const n of a.nodes || []) add(n.name, 'story'); }
   for (const b of C.banners) add(b.name, 'story');
+  for (const n of STORY_NAMES) add(n, 'story');   // people, places and techniques the dialogue names (js/content/story/)
   return uses;
 }
 
@@ -32,6 +34,7 @@ function usedAs(name) {
   for (const a of C.arcs) { if (a.name === name) out.push(a.placeholder ? 'Part II placeholder' : 'Arc'); for (const n of a.nodes || []) if (n.name === name) out.push('Node'); }
   if (C.tutorial) { if (C.tutorial.name === name) out.push('Tutorial arc'); for (const n of C.tutorial.nodes) if (n.name === name) out.push('Tutorial lesson'); }
   for (const b of C.banners) if (b.name === name) out.push('Banner');
+  if (STORY_NAMES.includes(name)) out.push('Dialogue');
   return [...new Set(out)].slice(0, 6).join('; ');
 }
 function table(names) {
@@ -56,7 +59,7 @@ export function generateTables() {
     `**Partly verified:** ${partial.length ? partial.join('; ') : 'none'}.\n`,
     '### Characters, enemies and protect targets\n', table(chars),
     '\n### Jutsu, Ultimates and boss-mechanic names\n', table(jutsu),
-    '\n### Arcs, nodes and banners\n', table(story),
+    '\n### Arcs, nodes, banners and names in the dialogue\n', table(story),
   ].join('\n');
 }
 

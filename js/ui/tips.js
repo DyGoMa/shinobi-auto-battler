@@ -3,6 +3,7 @@
 // repeats. Settings → "Show tips again" turns them back on (and resets them).
 // Every number comes from balance.js so a tip can never go stale.
 import { h, btn, pctStr, countWord } from './dom.js';
+import { storyMode } from '../core/Story.js';
 
 export const SCREEN_TIPS = {
   story: {
@@ -66,6 +67,10 @@ export function resetTips(game) {
   game.state.tips.seen = {};
   game.commit('tips');
 }
+
+/** The tip card only while the story scenes are off (Settings → Story scenes: never); otherwise a
+ *  teaching scene explains the screen on its first visit (js/content/story/teach.js). */
+export function tipUnlessScene(game, id) { return storyMode(game.state) === 'never' ? tipCard(game, id) : null; }
 
 /** The one-time tip card for a screen, or null if it was already seen / tips are off. */
 export function tipCard(game, id) {

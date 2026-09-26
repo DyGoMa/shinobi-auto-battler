@@ -3,8 +3,13 @@ import { h, btn, fmt, avatar, natureChips, stars, roleTag, tierTag, pctStr } fro
 import { characterStats, powerRating, leaderBuffText } from '../core/Ninja.js';
 import { canLevelUp, levelUp, isCharacterAvailable, levelCostFor } from '../core/Progression.js';
 import { TIERS, TIER_LABEL } from '../core/formulas.js';
-import { tipCard } from './tips.js';
+import { tipCard, tipUnlessScene } from './tips.js';
 import { screenHead, helpButton } from './chrome.js';
+
+/** The first visit after the first summon: Tsunade on Ryo and levelling (docs/STORY_PLAN.md §4). */
+export function afterRender(el, game, ui) {
+  if ((game.state.gacha?.totalPulls || 0) > 0) ui.teach('rosterFirst');
+}
 import { rosterList, sanitizeRosterView, ROSTER_SORTS } from '../core/Teams.js';
 import { recommendedPower, teamPower } from '../core/Power.js';
 import { openLevelToRecommended, openSmartSpend, targetNode } from './AutoLevelDialog.js';
@@ -37,7 +42,7 @@ export function render(game, ui, params = {}) {
 
   return h('div.screen',
     screenHead(ui, { title: 'Roster', help: 'guide/levelling', right: [h('span.pill', `${ownedCount} / ${C.roster.length} recruited`)] }),
-    tipCard(game, 'roster'),
+    tipUnlessScene(game, 'roster'),
     h('div.card.auto-level',
       h('div.row.between', h('div', h('div.tiny.muted', `Team for ${hard ? '💀 ' : ''}${node.name}`), h('b', `Power ${fmt(have)}`), h('span.small.muted', ` / recommended ${fmt(rec)}`)),
         h('div.row',

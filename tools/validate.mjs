@@ -11,8 +11,14 @@ import { GAME_VERSION } from '../js/config/version.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { STAGES, stageIdFor } from '../js/render/Stage.js';
 import { buildManifest } from './manifest-lib.mjs';
+import { validateStory, countLines } from '../js/core/Story.js';
+import { STORY } from '../js/content/story/index.js';
 
 const errors = validateContent(CONTENT);
+
+// ---- the story (Phase 5, docs/STORY_PLAN.md §3): every arc and battle has its scenes, every speaker exists, every line is short ----
+const storyErrors = validateStory(CONTENT);
+errors.push(...storyErrors);
 
 // ---- the art build (Phase 3): every arc has a stage, every story boss an epithet ----------
 let stagedArcs = 0;
@@ -148,6 +154,7 @@ else console.log('  names: every in-game name has a recorded source (NAMING.md)'
 console.log('  app: manifest.webmanifest, icons (192, 512, 512 maskable, 180 Apple) and sw.js check out');
 console.log(`  wiki: ${wiki.pages} pages, ${wiki.guides} guides, ${wiki.links} guide links${wiki.errors.length ? ` — ${wiki.errors.length} problem(s)` : ': every page, link and config value checks out'}`);
 console.log(`  art: ${Object.keys(STAGES).length} stages drawn, ${stagedArcs}/${Object.keys(CONTENT.arc).length} arcs staged, ${bossIds.size} story bosses titled; manifest ${art.portraits.length} portraits + ${art.sprites.length} sprites, ${indexed} files in assets/`);
+console.log(`  story: ${countLines()} lines across ${Object.keys(STORY).length} arcs${storyErrors.length ? ` — ${storyErrors.length} problem(s)` : ': every battle has its scenes, every speaker exists, every line is under 90 characters'}`);
 if (errors.length) {
   console.log(`\nFAIL — ${errors.length} problem(s):`);
   for (const e of errors) console.log('  ✗ ' + e);

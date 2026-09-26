@@ -351,5 +351,44 @@ set('Scroll of Sealing', 'Scroll of Seals', 'V', 'Narutopedia "English TV" (dub)
 set('Naruto Uzumaki (Nine-Tails Chakra Mode)', 'Nine-Tails Chakra Mode', 'V', 'Achievement-exclusive form (Session 4). The article has no separate English TV field, so the dub keeps "Nine-Tails Chakra Mode" (other names: Kurama Chakra Mode, Tailed Beast Chakra Mode). Debut anime ep 247 (Shippuden).');
 set('Planet Rasengan', 'Planetary Rasengan', 'V', 'Narutopedia "English TV" (dub) field of the Planetary Rasengan; Naruto is the only user (debut Shippuden ep 300, in Nine-Tails Chakra Mode).');
 
+// =============================================================================
+// PHASE 5: names the story dialogue introduces (js/content/story/index.js STORY_NAMES).
+// People, places and techniques no content file names; the dub's forms, as the lines say them.
+// =============================================================================
+for (const [n, p, st, note] of [
+  ['Akamaru', 'Akamaru', 'V', 'Article title; Kiba\'s ninken (Land of Waves, Chunin Exams lines).'],
+  ['Inari', 'Inari', 'V', 'Article title; Tazuna\'s grandson (Land of Waves lines).'],
+  ['Gato', 'Gatō', 'V', 'Article title; the dub drops the macron (Land of Waves lines).'],
+  ['Chiriku', 'Chiriku', 'V', 'Article title; head monk of the Fire Temple (Twelve Guardian Ninja lines).'],
+  ['Pa', 'Fukasaku', 'V', 'What Jiraiya and Naruto call Fukasaku in the dub ("Pa"); Narutopedia lists it under the article\'s names.'],
+  ['Ma', 'Shima', 'V', 'What Jiraiya and Naruto call Shima in the dub ("Ma").'],
+  ['Gamabunta', 'Gamabunta', 'V', 'Article title (Search for Tsunade lines).'],
+  ['Katsuyu', 'Katsuyu', 'V', 'Article title; Tsunade\'s slug (Pain\'s Assault lines).'],
+  ['Yukimaru', 'Yūkimaru', 'V', 'Article title; the dub drops the macron (Three-Tails lines).'],
+  ['Utakata', 'Utakata', 'V', 'Article title; the Six-Tails\' jinchūriki (Six-Tails lines).'],
+  ['Jashin', 'Jashin', 'V', 'Article title; Hidan\'s god (Akatsuki Suppression lines).'],
+  ['Samehada', 'Samehada', 'V', 'Article title; Kisame\'s sword (Brothers, Summit, Boss Rush lines).'],
+  ['Rin', 'Rin Nohara', 'V', 'Article title; Obito and Kakashi call her "Rin" (Climax and Birth lines).'],
+  ['Tenzo', 'Yamato', 'V', 'Yamato\'s Anbu name, Tenzō in the article; the dub drops the macron (Anbu arc closer).'],
+  ['Taka', 'Taka', 'V', 'Article title; Sasuke\'s team after Hebi (Itachi Pursuit and Brothers lines).'],
+  ['Ino-Shika-Cho', 'Ino–Shika–Chō', 'V', 'Article title; the dub says "Ino-Shika-Cho" (Confrontation lines).'],
+  ['Son Goku', 'Son Gokū', 'V', 'Article title; the Four-Tails, the dub drops the macron (Climax lines).'],
+  ['Unraikyo', 'Valley of Clouds and Lightning', 'P', 'Article title is the translated name; the dub keeps "Unraikyō" (Brothers lines). Kept as the dub says it.'],
+  ['Tanzaku Town', 'Tanzaku Quarters', 'P', 'Article title is "Tanzaku Quarters"; the dub says "Tanzaku Town" (Search for Tsunade lines).'],
+  ['Katabami Gold Mine', 'Katabami Gold Mine', 'V', 'Article title (Kurosuki Family lines).'],
+  ['Black Zetsu', 'Black Zetsu', 'V', 'Article title (Kaguya arc opener).'],
+  ['Pervy Sage', 'Jiraiya', 'V', 'Naruto\'s dub nickname for Jiraiya (Ero-sennin), listed in the article.'],
+  ['Bushy Brow', 'Rock Lee', 'V', 'Naruto\'s dub nickname for Lee, listed in the article.'],
+  ['Grandma Tsunade', 'Tsunade', 'V', 'Naruto\'s dub name for Tsunade, listed in the article.'],
+  ["Indra's Arrow", "Indra's Arrow", 'V', 'Article title; Sasuke at the Final Valley (Kaguya arc lines).'],
+  ['Daytime Tiger', 'Daytime Tiger', 'V', 'Narutopedia "English TV" (dub) field of Hirudora, Guy\'s Seventh Gate technique (Birth arc lines).'],
+  ['Sand Burial', 'Sand Waterfall Funeral', 'V', 'Narutopedia "English TV" (dub) field (Chunin Exams lines).'],
+  ['Leaf Hurricane', 'Leaf Great Whirlwind', 'V', 'Narutopedia "English TV" (dub) field (Chunin Exams lines).'],
+  ['Summoning Jutsu', 'Summoning Technique', 'V', 'Narutopedia "English TV" (dub) field (Search for Tsunade, Jiraiya and Pain lines).'],
+  ['Sage Mode', 'Sage Mode', 'V', 'Article title (Jiraiya and Pain lines).'],
+  ['Curry of Life', 'Curry of Life', 'V', 'Article title (Kurosuki Family closer).'],
+  ['Kirin', 'Kirin', 'V', 'Article title; Sasuke vs Itachi (Brothers boss lines).'],
+]) set(n, p, st, note);
+
 export const NAME_SOURCES = S;
 export const wikiUrl = (t) => `https://naruto.fandom.com/wiki/${encodeURI(t.replace(/ /g, '_'))}`;

@@ -14,6 +14,8 @@ import { bossRushRound, nodeEnemyLevel } from '../core/Progression.js';
 import { ACHIEVEMENT_CATEGORIES } from '../content/achievements.js';
 import { achievementProgress, achievementConfig, achievementText, isUnlocked, isClaimed } from '../core/Achievements.js';
 import { rewardChips } from './AchievementsScreen.js';
+import { storyLog, storyLogArcs, speakerOf, lineSide } from '../core/Story.js';
+import { eraOfPart } from '../render/Assets.js';
 
 let INDEX = null;
 let JUTSU = null;
@@ -85,6 +87,7 @@ function renderPage(game, ui, id, go, params) {
     case 'banners': return bannersPage(game, go);
     case 'banner': return bannerPage(game, game.C.banner[key], go);
     case 'boss-rush': return bossRushPage(game, go);
+    case 'story': return key ? storyArcPage(game, ui, key, go) : storyPage(game, ui, go);
     case 'achievements': return achievementsPage(game, ui, go);
     case 'achievement': return achievementPage(game, ui, game.C.achievement[key], go);
     default: return h('div.card', h('p', 'Page not found.'));
@@ -499,6 +502,43 @@ function arcPage(game, ui, arc, go) {
         first ? h('div.row.small', h('span.pill.good', `First clear 📜 ${fmt(first.scrolls)} 🪙 ${fmt(first.ryo)}`), h('span.pill', `Replay 📜 ${fmt(replay.scrolls)} 🪙 ${fmt(replay.ryo)}`)) : null,
       );
     }),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The story log (docs/STORY_PLAN.md): every scene as far as the player has got, never further
+// ---------------------------------------------------------------------------
+function storyPage(game, ui, go) {
+  const { C, state } = game;
+  const arcs = storyLogArcs(state, C);
+  const card = (x) => x.reached
+    ? rowCard(() => go(`story/${x.arc.id}`), h('div.grow', h('b', x.arc.name), h('div.tiny.muted', x.tutorial ? 'The Academy' : `${episodesLabel(x.arc.episodes)}${x.arc.filler ? ' · side mission' : ''}`)), h('span.muted', '›'))
+    : h('div.wrow.dim', { 'aria-disabled': 'true' }, h('div.grow', h('b', `🔒 ${x.arc.name}`), h('div.tiny.muted', 'Reach it in the story to read its scenes.')));
+  return h('div',
+    h('p', 'The lines before and after each battle, the bosses\' words, and every arc\'s opening and ending, as far as you have got in the story. Settings → Story scenes decides whether they play in the game; here you can read them again.'),
+    section('Tutorial and Part I', h('div.wlist', ...arcs.filter(x => x.tutorial || x.arc.part === 1).map(card))),
+    section('Part II (Shippuden)', h('div.wlist', ...arcs.filter(x => !x.tutorial && x.arc.part === 2).map(card))),
+  );
+}
+
+function storyArcPage(game, ui, arcId, go) {
+  const { C, state } = game;
+  const log = storyLog(state, C, arcId);
+  if (!log) return h('div.card', h('p', 'You have not reached this arc yet. Its scenes appear here once you do.'), btn('Story log', () => go('story'), 'primary'));
+  const era = eraOfPart(log.arc.part);
+  const line = (l) => {
+    if (l.caption != null) return h('p.wcap', l.caption);
+    const sp = speakerOf(l.who, C); const side = lineSide(l, C);
+    const a = sp.def ? avatar(sp.def, { size: 'sm', facing: side === 'right' ? -1 : 1, era, expression: sp.kind === 'enemy' ? 'menace' : 'set' }) : null;
+    if (a) a.setAttribute('aria-hidden', 'true');
+    return h('div.wline' + (side === 'right' ? '.right' : ''), a, h('div.grow', h('div.nm', sp.name), h('div.tx', l.text)));
+  };
+  const n = log.scenes.length;
+  return h('div',
+    h('p', log.arc.blurb),
+    h('div.row', h('span.pill', `${n} scene${n === 1 ? '' : 's'} so far`), link(go, `arc/${log.arc.id}`, 'The arc\'s battles ›')),
+    ...log.scenes.map(s => h('section.card.wscene', h('h3', { style: { margin: '0 0 6px' } }, s.title, s.seen ? null : h('span.pill', 'not yet watched')), ...s.lines.map(line))),
+    n ? null : h('p.muted', 'Nothing yet: open a battle of this arc first.'),
   );
 }
 

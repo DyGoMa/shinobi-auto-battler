@@ -8,10 +8,18 @@ import { eraOfPart } from '../render/Assets.js';
 import { Effects, FONT_DISPLAY } from '../render/Effects.js';
 import { drawFigure, lookFor } from '../render/Figure.js';
 import { prefersReducedMotion } from './Intro.js';
-import { tipCard } from './tips.js';
+import { tipUnlessScene } from './tips.js';
 import { screenHead } from './chrome.js';
 
 let selected = null;
+
+/** The first visit: Jiraiya on scrolls, and on arc banners once one is open (docs/STORY_PLAN.md §4). */
+export function afterRender(el, game, ui) {
+  const { C, state } = game;
+  const steps = [['teach', 'summonFirst']];
+  if (C.banners.some(b => b.type === 'arc' && isBannerUnlocked(state, b, C))) steps.push(['teach', 'bannerFirst']);
+  ui.scenes(steps);
+}
 let archiveOpen = false;   // "Past banners" expanded
 let archivePart = null;    // story part shown in the archive
 const PART_NAME = { 1: 'Part I', 2: 'Part II' };
@@ -105,7 +113,7 @@ export function render(game, ui, params) {
   const hist = (state.gacha.history || []).slice(0, 20);
   return h('div.screen',
     screenHead(ui, { title: 'Summon', help: 'guide/summoning', right: [h('span.pill', `📜 ${fmt(state.currencies.scrolls)} scrolls`)] }),
-    tipCard(game, 'summon'),
+    tipUnlessScene(game, 'summon'),
     tabs,
     hero,
     h('div.section-title', h('h2', 'Rates')),
@@ -152,7 +160,10 @@ function playAnimation(game, ui, results) {
     const tag = r.isNew ? h('span.tag', 'NEW!') : r.refund ? h('span.tag.refund', `+${fmt(r.refund)} Ryo`) : h('span.tag.up', `${r.stars}★`);
     return h('div.reveal-card.' + r.tier, tag, avatar(d, { size: r.tier === 'kage' ? 'lg' : '' }), h('div.nm', d.name), tierTag(r.tier), r.featured ? h('span.pill.accent', 'Rate-up') : null);
   });
-  const done = btn('Continue', () => { stopped = true; cancelAnimationFrame(raf); for (const t of timers) clearTimeout(t); overlay.remove(); game.audio.setLayer('shimmer', false); ui.refresh(); ui.refreshTop(); }, 'primary big');
+  const done = btn('Continue', () => {
+    stopped = true; cancelAnimationFrame(raf); for (const t of timers) clearTimeout(t); overlay.remove(); game.audio.setLayer('shimmer', false); ui.refresh(); ui.refreshTop();
+    if (results.some(r => !r.isNew)) ui.teach('dupeFirst');   // Tsunade on stars and duplicates, the first time one comes up
+  }, 'primary big');
   done.style.visibility = 'hidden';
 
   const flash = (tier) => {

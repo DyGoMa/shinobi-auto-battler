@@ -3,8 +3,11 @@
 // rewards are paid here.
 import { h, btn, fmt, avatar } from './dom.js';
 import { screenHead } from './chrome.js';
-import { tipCard } from './tips.js';
+import { tipUnlessScene } from './tips.js';
 import { ACHIEVEMENT_CATEGORIES } from '../content/achievements.js';
+
+/** The first visit: Konohamaru on achievements (docs/STORY_PLAN.md §4). */
+export function afterRender(el, game, ui) { ui.teach('achievementsFirst'); }
 import { achievementProgress, achievementConfig, achievementText, claimAchievement, claimAll, claimableAchievements, isUnlocked, isClaimed, bestFormFamily } from '../core/Achievements.js';
 
 /** "🪙 1,500 · 🎟️ ×2" for a reward object (plus the exclusive ninja, if any). */
@@ -34,7 +37,7 @@ export function render(game, ui) {
   };
   return h('div.screen',
     screenHead(ui, { title: 'Achievements', back: { label: 'Home', id: 'home' }, help: 'guide/achievements' }),
-    tipCard(game, 'achievements'),
+    tipUnlessScene(game, 'achievements'),
     h('div.card.ach-summary',
       h('div', h('div.tiny.muted', 'Unlocked'), h('div.big-num', `${unlocked} / ${all.length}`)),
       h('div.grow', h('div.bar', { role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(all.length), 'aria-valuenow': String(unlocked), 'aria-label': 'Achievements unlocked' }, h('i', { style: { width: `${(unlocked / all.length) * 100}%` } }))),

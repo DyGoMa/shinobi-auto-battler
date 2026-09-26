@@ -11,7 +11,7 @@ import { canSkip } from '../core/Skip.js';
 import { autoBuildTeam } from '../core/Teams.js';
 import { isDailyUnlocked } from '../core/Daily.js';
 import { tutorialPending, tutorialLessons, nextLessonIndex } from '../core/Tutorial.js';
-import { tipCard } from './tips.js';
+import { tipCard, tipUnlessScene } from './tips.js';
 import { screenHead } from './chrome.js';
 import { openLevelToRecommended } from './AutoLevelDialog.js';
 import { icon } from '../render/icons.js';
@@ -87,19 +87,34 @@ export function render(game, ui, params) {
     screenHead(ui, { title: hard ? 'Hard mode' : 'Story', right: [partSeg], help: hard ? 'guide/endgame' : arc ? `arc/${arc.id}` : 'arcs' }),
     modeTabs(game, ui, { part, arcId, hard, hardOpen }),
     h('p.small.muted.mode-note', hard ? `Enemies +${game.B.hardMode.levelOffset} levels, tougher bosses, more scrolls.` : hardOpen ? `Hard mode is open for ${PART_NAME[part]}.` : part === 2 ? 'Part II — Naruto: Shippuden. The story and enemy levels continue from Part I.' : 'Tap a battle to see its enemies, then fight it.'),
-    hard ? tipCard(game, 'hard') : tipCard(game, 'story'),
+    hard ? tipCard(game, 'hard') : tipUnlessScene(game, 'story'),
     foldLine,
     list,
     arc && !arc.placeholder ? arcDetail(game, ui, arc, params.nodeId, hard, V) : null,
   );
 }
 
-/** After the map is on the page: bring the current (or chosen) battle into view, and start the backdrop. */
-export function afterRender(el) {
+/** After the map is on the page: bring the current (or chosen) battle into view, start the backdrop, and play the scenes this visit owes. */
+export function afterRender(el, game = null, ui = null, params = {}) {
   const target = el.querySelector('.pin.selected') || el.querySelector('.pin.current');
   if (target) target.scrollIntoView({ block: 'center', behavior: 'auto' });
   const box = el.querySelector('.map-stage');
   if (box && box._start) box._start();
+  if (!game || !ui) return;
+  // docs/STORY_PLAN.md §4: Shikamaru's tour of the map (or of Hard mode) on the first visit, the arc's
+  // opener over its stage the first time it is opened, and ⏭ Skip explained the first time a won battle is selected.
+  const { C, state } = game;
+  const arc = box?._arc || null;
+  const steps = [];
+  if (params.hard) steps.push(['teach', 'hardFirst']);
+  else {
+    steps.push(['teach', 'storyFirst']);
+    if (arc && isArcReached(state, arc, C)) steps.push(['opener', arc.id, { host: box, era: eraOfPart(arc.part) }]);
+    const sel = el.querySelector('.pin.selected');
+    const node = sel ? C.node[sel.dataset.node] : null;
+    if (node && canSkip(state, node, C, { hard: false }).ok) steps.push(['teach', 'storySkip']);
+  }
+  ui.scenes(steps);
 }
 
 /**
@@ -132,6 +147,7 @@ function mapStage(game, arc) {
     draw(dt);
   };
   box._start = () => { draw(0); if (!still) { last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); } };
+  box._arc = arc;
   box.appendChild(h('div.stage-name', def.name));
   return box;
 }
@@ -186,7 +202,7 @@ function arcDetail(game, ui, arc, nodeId, hard, V) {
     const rec = recommendedPower(node, C, B, { hard });
     const cls = ['pin', node.isBossNode ? 'boss' : '', cleared ? 'cleared' : '', isCur ? 'current' : '', !unlocked ? 'locked' : '', sel.id === node.id ? 'selected' : ''].filter(Boolean).join('.');
     const p = posOf(i);
-    const b = h('button.' + cls, { type: 'button', style: { left: `${p.x}%`, top: `${p.y}%` }, title: hint || null, onclick: () => ui.go('story', { arcId: arc.id, nodeId: node.id, hard }),
+    const b = h('button.' + cls, { type: 'button', style: { left: `${p.x}%`, top: `${p.y}%` }, title: hint || null, dataset: { node: node.id }, onclick: () => ui.go('story', { arcId: arc.id, nodeId: node.id, hard }),
       'aria-label': `${node.name}${cleared ? ', cleared' : isCur ? ', next battle' : unlocked ? '' : `, locked: ${hint}`}. Recommended power ${fmt(rec)}.`, 'aria-current': sel.id === node.id ? 'true' : null },
       cleared ? icon('check') : !unlocked ? icon('lock') : node.isBossNode ? icon('crown') : String(i + 1),
       h('div.lbl', node.name),

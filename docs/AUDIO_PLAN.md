@@ -87,7 +87,7 @@ Every loop is 16 bars. Each track owns a phrase pool: 4–6 two-bar phrases per 
 | 8 | Battle I tense | 140 bpm, E minor | + guitar | base + kit + guitar | Part I boss nodes before the boss's first special; Daily on Part I bosses |
 | 9 | Battle II calm | 132 bpm, B minor, driving | bass, kit, strings | base + kit + lead | Part II nodes without a boss |
 | 10 | Battle II tense | 144 bpm, B minor | + guitar, brass | base + guitar + brass | Part II boss nodes; Daily on Part II bosses |
-| 11 | Boss theme | 150 bpm, F# minor, relentless | full kit, guitar, taiko, brass (choir on Kage bosses) | base + brass + choir | the last 40 % of every boss's HP, and every Hard boss from the start |
+| 11 | Boss theme | 150 bpm, F# minor, relentless | full kit, guitar, taiko, brass, choir (every boss, the user's call after listening) | base + brass + choir | the last 40 % of every boss's HP, and every Hard boss from the start |
 | 12 | Akatsuki rush | 120 bpm, C minor, ominous | choir, taiko, bass, low strings | base + kit + choir | the Boss Rush (all rounds; the kit layer from round 3) |
 | 13 | Summon | 76 bpm, E major, ceremonial | koto, bell, strings | base + shimmer | the Summon screen; the shimmer layer during the ceremony |
 

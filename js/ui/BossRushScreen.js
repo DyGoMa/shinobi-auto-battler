@@ -4,8 +4,13 @@ import { isBossRushUnlocked, resolveTeam, bossRushRound } from '../core/Progress
 import { bossRushRewards } from '../core/formulas.js';
 import { enemyToken } from './StoryMapScreen.js';
 import { teamMatchupRating } from '../core/TeamPicker.js';
-import { tipCard } from './tips.js';
+import { tipUnlessScene } from './tips.js';
 import { screenHead } from './chrome.js';
+
+/** The lobby's first visit once it is open: Jiraiya on the Akatsuki (docs/STORY_PLAN.md §4). */
+export function afterRender(el, game, ui) {
+  if (isBossRushUnlocked(game.state, game.C)) ui.teach('rushFirst');
+}
 
 export function render(game, ui) {
   const { C, B, state } = game;
@@ -17,7 +22,7 @@ export function render(game, ui) {
 
   return h('div.screen',
     screenHead(ui, { title: R.name, back: { label: 'Home', id: 'home' }, help: 'boss-rush', right: [unlocked ? h('span.pill.accent', state.bossRush.highestRound ? `Best: round ${state.bossRush.highestRound}` : 'No runs yet') : h('span.pill', '🔒 Locked')] }),
-    unlocked ? tipCard(game, 'rush') : null,
+    unlocked ? tipUnlessScene(game, 'rush') : null,
     h('p', `${countWord(R.order.length, true)} Akatsuki members back to back. Your team keeps its HP and chakra between rounds — nobody heals. After ${C.enemy[R.order[R.order.length - 1]].short || C.enemy[R.order[R.order.length - 1]].name} the rotation loops and every boss gets stronger. How far can you go?`),
     !unlocked ? h('div.warnbox', `Unlocks after clearing “${C.arc[R.unlockArc].name}”.`) : null,
     h('div.section-title', h('h2', 'Rotation')),

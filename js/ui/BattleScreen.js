@@ -6,7 +6,8 @@ import { h, btn, fmt, avatar, objectiveText } from './dom.js';
 import { BattleSim } from '../core/BattleSim.js';
 import { Renderer } from '../render/Renderer.js';
 import { Effects } from '../render/Effects.js';
-import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeCleared } from '../core/Progression.js';
+import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeCleared, isHardUnlocked } from '../core/Progression.js';
+import { sceneLines, speakerOf } from '../core/Story.js';
 import { NATURE } from '../render/Effects.js';
 import { battleTrack } from '../audio/Music.js';
 import { icon } from '../render/icons.js';
@@ -26,6 +27,8 @@ import { nodeEnemyNatures, teamMatchupRating } from '../core/TeamPicker.js';
 import { showStoryResults, statsTable } from './Results.js';
 
 const CLASH_LABEL = { overpower: '▲ OVERPOWER', standoff: '= STANDOFF', overwhelmed: '▼ WEAK' };
+// Who coaches each in-battle tip (docs/STORY_PLAN.md §4): Iruka on teams, Kakashi on natures and clashes, Shikamaru on Auto-ult.
+const TIP_WHO = { 'battle.start': 'iruka', 'battle.ult': 'kakashi', 'battle.clash': 'kakashi', 'lesson.team.start': 'iruka', 'lesson.team.ult': 'iruka', 'lesson.nature.start': 'kakashi', 'lesson.nature.effective': 'kakashi', 'lesson.clash.start': 'kakashi', 'lesson.clash.windup': 'kakashi', 'lesson.clash.overpower': 'kakashi', 'lesson.clash.standoff': 'kakashi', 'lesson.clash.overwhelmed': 'kakashi', 'lesson.clash.auto': 'shikamaru' };
 
 export class BattleScreen {
   constructor(game, ui, opts) {
@@ -102,8 +105,6 @@ export class BattleScreen {
     document.addEventListener('keydown', this._onKey);
     this.last = performance.now();
     this.raf = requestAnimationFrame(this._loop);
-    if (this.lessonType) this._tip(`lesson.${this.lessonType}.start`);
-    else this._tip('battle.start');
   }
 
   _cycleSpeed() {
@@ -170,7 +171,7 @@ export class BattleScreen {
     this._updateObjective();
     this._buildInfo();
     this._music();
-    this._intro();
+    this._storyStart();
   }
 
   // ---------------------------------------------------------------- music (docs/AUDIO_PLAN.md §5)
@@ -183,12 +184,10 @@ export class BattleScreen {
     this.game.audio.playMusic(t.id, { layers: t.layers });
     this._bossTheme = false;
   }
-  /** The boss under 40 % or enraged: the relentless theme (a choir for the great names). */
+  /** The boss under 40 % or enraged: the relentless theme with the brass and the choir (every boss, the user's call). */
   _bossMusic() {
     if (this._bossTheme) return; this._bossTheme = true;
-    const boss = this.sim.units.find(x => x.side === 'enemy' && x.isBoss);
-    const great = boss && /kage|hokage|madara|kaguya|pain|nagato|obito|itachi|orochimaru|nine_tails|ten_tails/i.test(boss.key);
-    this.game.audio.playMusic('boss', { layers: ['brass', ...(great ? ['choir'] : [])] });
+    this.game.audio.playMusic('boss', { layers: ['brass', 'choir'] });
   }
   /** The end: the loop stops, the stinger plays, the village comes back under the results. */
   _endMusic(won) {
@@ -243,7 +242,7 @@ export class BattleScreen {
   _intro() {
     this._clearTimers();
     const boss = this.sim.units.find(u => u.side === 'enemy' && u.isBoss);
-    if (!boss) return;
+    if (!boss) { this._fightStart(); return; }
     const { C, state } = this.game;
     const def = C.enemy[boss.key] || null;
     const quick = this.introSeen || !!(this.node && !this.isRush && !this.daily && isNodeCleared(state, this.node.id));
@@ -269,7 +268,7 @@ export class BattleScreen {
       const fill = (k) => { if (!this.introPause) return; v.hpReveal = k; if (k < 1) this._later(0.03, () => fill(Math.min(1, k + 0.05))); else v.hpReveal = null; };
       fill(0);
     });
-    this._later(quick ? 1.2 : 2.1, () => this._introEnd(boss));
+    this._later(quick ? 1.2 : 2.1, () => this._bossLines(boss));
   }
   _introEnd(boss) {
     if (!this.introPause) return;
@@ -280,8 +279,72 @@ export class BattleScreen {
     this._readout((this.node?.name || 'Boss Rush').toUpperCase(), 'FIGHT!', 'fight');
     this.effects.flash('#ffffff', 0.35, 0.15);
     this.game.audio.cue('fight');
+    this._fightStart();
   }
-  _skipIntro() { const boss = this.sim.units.find(u => u.side === 'enemy' && u.isBoss); this._clearTimers(); if (boss) this._introEnd(boss); else this.introPause = false; }
+  /** A tap on the stage during the boss intro: straight to the boss's lines (or to FIGHT!). A scene takes its own taps. */
+  _skipIntro() { if (this.scene) return; const boss = this.sim.units.find(u => u.side === 'enemy' && u.isBoss); this._clearTimers(); if (boss) this._bossLines(boss); else this._fightStart(); }
+  /** The sim starts (after the story and the boss intro): the clock, and the first coach tip. */
+  _fightStart() {
+    this.introPause = false; this.last = performance.now();
+    if (this._started) return;
+    this._started = true;
+    if (this.lessonType) this._tip(`lesson.${this.lessonType}.start`);
+    else this._tip('battle.start');
+  }
+
+  // ---------------------------------------------------------------- story scenes (docs/STORY_PLAN.md §5)
+  /** True when this battle's scenes count as a replay: Hard mode, a replayed lesson, or a story battle already won. */
+  _replay() { return this.hard || (this.tutorial ? !!this.tutorial.replay : !!(this.node && !this.daily && !this.isRush && isNodeCleared(this.game.state, this.node.id))); }
+  _cancelScene() { if (this.scene) { this.scene.cancel(); this.scene = null; } }
+  /** Scenes over the stage, one after another (each only if it is due), then `then`. */
+  _playSteps(steps, then, replay = this._replay()) {
+    const next = () => {
+      this.scene = null;
+      const s = steps.shift();
+      if (!s) { then(); return; }
+      const handle = this.ui.scene(s[0], s[1], { host: this.stage, era: this.era, replay, onDone: next });
+      if (handle) this.scene = handle;
+    };
+    next();
+  }
+  /** Before the fight: the arc's opener (when the map never showed it), the battle's intro lines, then the boss intro. */
+  _storyStart() {
+    this._started = false;
+    if (this.isRush) { this._rushBark(); return; }
+    if (this.daily || !this.node) { this._intro(); return; }
+    const arc = arcOf(this.node, this.game.C);
+    const steps = [];
+    if (arc && this.node.indexInArc === 0) steps.push(['opener', arc.id]);
+    steps.push(['intro', this.node.id]);
+    this.introPause = true;
+    this._playSteps(steps, () => this._intro());
+  }
+  /** The boss's lines as the last beat of its intro card ("villains get the last word"), then FIGHT!. */
+  _bossLines(boss) {
+    if (!this.introPause) return;
+    const v = this.renderer._vis(boss); v.hidden = false; v.hpReveal = null;
+    if (this.isRush || this.daily || !this.node) { this._introEnd(boss); return; }
+    this._playSteps([['boss', this.node.id]], () => this._introEnd(boss));
+  }
+  /** A Boss Rush round opens on the boss's bark, then its intro card. */
+  _rushBark() {
+    this.introPause = true;
+    this._playSteps([['rush', this.rushBoss?.def?.id]], () => this._intro());
+  }
+  /** After a win: the outro, the arc's closer when the arc was just cleared, and the teaching scene a closer opens (the Daily, the Boss Rush, Hard mode); then `then`. */
+  _storyEnd(won, { arcCleared = null, firstClear = true } = {}, then) {
+    if (!won || !this.node) { then(); return; }
+    const { C, B, state } = this.game;
+    const steps = [['outro', this.node.id]];
+    if (arcCleared) {
+      steps.push(['closer', arcCleared]);
+      if (arcCleared === B.daily.unlockArc) steps.push(['teach', 'dailyFirst']);
+      if (arcCleared === C.bossRush.unlockArc) steps.push(['teach', 'rushFirst']);
+      const arc = C.arc[arcCleared];
+      if (arc && isHardUnlocked(state, arc.part, C)) steps.push(['teach', 'hardFirst']);
+    }
+    this._playSteps(steps, then, this.hard || !firstClear);
+  }
   /** The victory or defeat card over the stage, before the results dialog. */
   _endBeat(won) {
     this.endEl.className = 'endcard ' + (won ? 'win' : 'lose'); this.endBig.textContent = won ? 'VICTORY' : 'DEFEAT';
@@ -509,7 +572,10 @@ export class BattleScreen {
     if (!tip || this.ended) { this._nextTip(); return; }
     this.tipPause = true;
     if (!this._duckTip) { this._duckTip = true; this.game.audio.duckMusic(true); this.game.audio.ui('paper'); }
-    const box = h('div.onboard', { role: 'dialog', 'aria-live': 'polite' }, ...tip.body, h('div.row', btn(tip.button || 'Got it', () => this._closeTip())));
+    const sp = TIP_WHO[id] ? speakerOf(TIP_WHO[id], this.game.C) : null;
+    const box = h('div.onboard', { role: 'dialog', 'aria-live': 'polite' },
+      sp?.def ? h('div.who', avatar(sp.def, { size: 'sm', era: this.era }), h('span', sp.name)) : null,
+      ...tip.body, h('div.row', btn(tip.button || 'Got it', () => this._closeTip())));
     box.untilUlt = !!tip.untilUlt;
     box.style.top = tip.top || '6%';
     this.tipBox = box;
@@ -594,8 +660,9 @@ export class BattleScreen {
       case 'lesson.clash.overwhelmed':
         return { body: [b('OVERWHELMED. '), 'The jutsu\'s nature beats your ninja\'s, so the Ultimate did no damage. It still blocked the jutsu, and most of its chakra came back.'] };
       case 'lesson.clash.auto':
+        // Shikamaru's lines from the story data (js/content/story/part1.js, the tutorial's teach.auto).
         return { button: 'Got it', onShow: () => { this.autoRevealed = true; this._syncAuto(); },
-          body: [b('🤖 Auto-ult '), 'is now on your battle bar (top right). Tap it and the game fires Ultimates for you: it clashes when your nature wins and holds any ninja that would be Overwhelmed. Tap again to take control back.'] };
+          body: [b('🤖 Auto-ult. '), ...(sceneLines('teach', 'auto') || [{ text: 'The button on your battle bar (top right) fires Ultimates for you: it clashes when your nature wins and holds any ninja that would be Overwhelmed. Tap again to take control back.' }]).map(l => l.text + ' ')] };
       default: return null;
     }
   }
@@ -632,7 +699,7 @@ export class BattleScreen {
       game.commit('tutorial');
       this._endMusic(won);
       this._endBeat(won);
-      this._later(1.3, () => this._tutorialResults(won, res));
+      this._later(1.3, () => this._storyEnd(won, { arcCleared: won && res?.finished ? C.tutorial.id : null, firstClear: !this.tutorial.replay }, () => this._tutorialResults(won, res)));
       return;
     }
     if (this.daily) { this._dailyEnd(won); return; }
@@ -641,7 +708,7 @@ export class BattleScreen {
     game.commit('battle');
     this._endMusic(won);
     this._endBeat(won);
-    this._later(1.3, () => this._results(won, result));
+    this._later(1.3, () => this._storyEnd(won, { arcCleared: result.arcCleared, firstClear: result.firstClear }, () => this._results(won, result)));
   }
 
   _tutorialResults(won, res) {
@@ -779,13 +846,10 @@ export class BattleScreen {
   restart() {
     this.ended = false; this.paused = false; this.pauseBtn.replaceChildren(icon('pause'));
     this.timeScale = 1; this.slowUntil = 0; this.introPause = false;
-    this._clearTimers(); this._releaseDucks();
+    this._clearTimers(); this._releaseDucks(); this._cancelScene();
+    // A retried lesson coaches again from the start (the first tip comes with _fightStart).
+    if (this.tutorial) { this.tips = { shown: new Set() }; this.autoRevealed = false; this._syncAuto(); }
     this._buildSim();
-    if (this.tutorial) {
-      // A retried lesson coaches again from the start.
-      this.tips = { shown: new Set() }; this.autoRevealed = false; this._syncAuto();
-      this._tip(`lesson.${this.lessonType}.start`);
-    }
   }
 
   /** Debug: defeat every enemy immediately. */
@@ -794,6 +858,7 @@ export class BattleScreen {
   close(goTo = null, silent = false) {
     cancelAnimationFrame(this.raf);
     this._clearTimers();
+    this._cancelScene();
     this._releaseDucks();
     document.removeEventListener('visibilitychange', this._onVis);
     document.removeEventListener('keydown', this._onKey);

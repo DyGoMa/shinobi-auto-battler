@@ -958,6 +958,30 @@ html[data-era="p2"] .dlg .name { background: var(--accent); color: #fff; border-
 @keyframes blink { 50% { opacity: 0; } }
 .dlg-ctl { position: absolute; right: 8px; top: 8px; display: flex; gap: 6px; z-index: 3; pointer-events: auto; }
 .dlg-ctl .btn { min-height: 44px; padding: 4px 12px; font-size: .78rem; background: rgba(0,0,0,.55); border-color: rgba(255,255,255,.25); color: #fff; }
+.dlg-ctl .btn.on { border-color: var(--accent2); color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2) inset; }
+/* The scene layer (js/ui/Dialogue.js): inside a stage, or a full-screen veil for the map's and the screens' scenes. */
+.scene { position: absolute; inset: 0; z-index: 6; pointer-events: auto; touch-action: manipulation; }
+.scene.scene-veil { position: fixed; z-index: 70; background: rgba(4,6,10,.8); backdrop-filter: blur(3px); animation: fadeIn var(--t) ease-out; }
+.scene.scene-veil .dlg { left: 50%; right: auto; transform: translateX(-50%); width: min(720px, 94vw); bottom: max(8%, calc(var(--safe-b) + 16px)); }
+.scene.scene-veil .caption { top: 24%; background: none; font-size: clamp(1.1rem, 4.6vw, 1.5rem); padding: 10px 24px; }
+.scene .caption { font-size: clamp(.9rem, 3.8vw, 1.1rem); padding: 10px 16px 18px; }
+.scene .dlg .text { min-height: 2.7em; white-space: pre-wrap; }
+.scene .dlg .box.pop { animation: popIn .25s ease-out; }
+.scene .dlg .avatar { flex: 0 0 auto; }
+.scene .dlg .avatar.lg { width: 22%; max-width: 128px; height: auto; }
+.scene .hidden { display: none; }
+/* A coach tip with a teacher: the portrait and the name over the text (js/ui/BattleScreen.js, TeamBuilderScreen.js). */
+.onboard .who, .coach .who { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-family: var(--font-display); font-weight: 400; letter-spacing: .06em; text-transform: uppercase; font-size: .8rem; }
+.onboard .who .avatar, .coach .who .avatar { width: 32px; height: 32px; }
+/* The Wiki's story log */
+.wline { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; }
+.wline .avatar { flex: 0 0 auto; }
+.wline.right { flex-direction: row-reverse; text-align: right; }
+.wline .nm { font-family: var(--font-display); font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--accent2); }
+.wline .tx { margin-top: 2px; }
+.wcap { text-align: center; font-family: var(--font-brush); font-size: 1.05rem; color: var(--muted); margin: 12px 0 6px; }
+.wscene + .wscene { margin-top: 14px; }
+.wscene h3 .pill { margin-left: 8px; }
 .dlg-ctl .btn.on { background: var(--accent); color: var(--primary-ink); border-color: var(--accent); }
 
 /* Story map: the arc's stage behind the battle pins (js/ui/StoryMapScreen.js). */

@@ -158,3 +158,9 @@ after the swap, and keep these rules:
 - anything tappable stays at least 44×44 (`.btn.small`, `.chip` and `.toggle` already guarantee it);
 - keep long names wrapping (character names such as "Sasuke Uchiha (Heavens' Curse Mark)" are the longest);
 - the summon reveal must still fit, or scroll, at 844×390.
+
+## The story pass (Phase 5)
+
+Verified in the desktop pane (hidden, so at the DOM level with `window.__game`): the map's first visit plays Shikamaru's tour as a full-screen veil, then the arc's opener inside the map stage, one scene at a time; leaving the screen cancels the scene and marks nothing else seen; a boss battle plays its intro lines with the sim paused, the boss card, the boss's lines, FIGHT!, and after a win its outro before the results; a battle already won plays nothing and gets the short card; "Always" plays on a replay; the Boss Rush opens on the bark; the Daily plays no scenes; Summon, Roster, Team, Boss Rush, Daily, Achievements and the Hard map play their teacher once; "Never" shows the old tip cards; the tutorial coach boxes carry Iruka and Kakashi; the Wiki's Story log lists reached arcs and locks the rest; Settings → Story has the three-way switch, the Auto toggle and the reset. Taps, Space, Escape, Skip and Auto were exercised; the music duck returns to zero after every scene.
+
+**Not yet seen:** the dialogue box itself (position over a phone-portrait stage, the portrait size, the name plate on both skins) and the typewriter's pace. Check on the first visible run and in the layout audit at 412×915 and 360×780: the box must not cover the boss card's name, and the Skip / Auto buttons must stay tappable above the ult bar.

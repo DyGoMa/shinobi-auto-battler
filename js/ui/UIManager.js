@@ -27,6 +27,8 @@ import { ensureSprite, icon } from '../render/icons.js';
 import { currentNode } from '../core/Progression.js';
 import { eraOfPart } from '../render/Assets.js';
 import { trackFor } from '../audio/Music.js';
+import { playScene } from './Dialogue.js';
+import { sceneKey, sceneLines, shouldPlay, markSeen, teachValues } from '../core/Story.js';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: 'home', mod: Home },
@@ -132,7 +134,7 @@ export class UIManager {
     this._held = false;
     if (this.startPending) { if (this.current === 'start') this._holdHistory(); else this.go('start'); return; }
     const stay = () => { try { history.pushState(null, '', this._hashFor(this.current, this.params)); } catch { /* file:// */ } };
-    if (this.battle) { stay(); if (!this.battle.paused && !this.battle.ended) this.battle.togglePause(true); return; }
+    if (this.battle) { stay(); if (this.battle.scene) this.battle.scene.skip(); else if (!this.battle.paused && !this.battle.ended) this.battle.togglePause(true); return; }
     const top = this._modals[this._modals.length - 1];
     if (top) { stay(); if (top.dismissable) top.close(); return; }
     const t = this._fromHash();
@@ -148,6 +150,7 @@ export class UIManager {
   playIntro() { this.game.audio.stopMusic(0.3); return playIntro(introPlan({ full: true, reducedMotion: prefersReducedMotion() }), { onBegin: () => this.game.audio.stinger('intro'), onDone: () => this._music() }); }
 
   go(id, params = {}, { replace = false } = {}) {
+    this._dropScenes();
     if (!SCREENS[id]) id = 'home';
     if (this.startPending && !START_SCREENS.includes(id)) id = 'start';
     if (!this.startPending && id === 'start') id = 'home';
@@ -326,6 +329,53 @@ export class UIManager {
     if (after) after();
     else if (!this.battle) this.go('home');
     return true;
+  }
+
+  // ------------------------------------------------------------- story scenes (docs/STORY_PLAN.md)
+  /** Play lines over the whole screen (a teaching scene, an arc opener from the map). The back button skips it. */
+  playScene(lines, opts = {}) {
+    const entry = { dismissable: true, close: () => handle.skip() };
+    this._modals.push(entry);
+    const drop = () => { this._modals = this._modals.filter(m => m !== entry); if (this.activeScene === handle) this.activeScene = null; };
+    const handle = playScene(this.game, lines, { ...opts, onDone: () => { drop(); if (opts.onDone) opts.onDone(); } });
+    const cancel = handle.cancel;
+    handle.cancel = () => { cancel(); drop(); };
+    this.activeScene = handle;
+    return handle;
+  }
+  /** Leaving a screen drops its scenes: the one on show and the rest of its chain (nothing is marked seen that was not shown). */
+  _dropScenes() {
+    this._sceneChain = null;
+    if (this.activeScene) this.activeScene.cancel();
+  }
+  /**
+   * Play a scene if it is due (Settings → Story scenes: the first time, always, never) and mark it
+   * seen. kind: opener | closer | intro | boss | outro | teach | rush. `host` puts the layer inside
+   * a stage; `replay` is a battle already won (its scenes are skipped in "first time" mode).
+   * Returns the handle, or null when nothing plays (onDone is then called at once).
+   */
+  scene(kind, id, { host = null, onDone = null, replay = false, era = null } = {}) {
+    const { state, C, B } = this.game;
+    const key = sceneKey(kind, id);
+    const lines = sceneLines(kind, id);
+    if (!lines || !shouldPlay(state, key, { replay })) { if (onDone) onDone(); return null; }
+    markSeen(state, key); this.game.commit('story');
+    const opts = { values: kind === 'teach' ? teachValues(C, B, state) : null, era, onDone, label: kind === 'teach' ? 'Tutorial' : 'Story scene' };
+    return host ? playScene(this.game, lines, { ...opts, host }) : this.playScene(lines, opts);
+  }
+  /** A teaching scene on a screen's first visit (js/content/story/teach.js). */
+  teach(id, opts = {}) { return this.scene('teach', id, opts); }
+  /** Scenes one after another: steps = [[kind, id, opts?], …]; a step that has nothing to play is skipped. */
+  scenes(steps, onDone = null) {
+    const chain = { steps: steps.slice() };
+    this._sceneChain = chain;
+    const next = () => {
+      if (this._sceneChain !== chain) return;   // the screen changed under the chain
+      const s = chain.steps.shift();
+      if (!s) { this._sceneChain = null; if (onDone) onDone(); return; }
+      this.scene(s[0], s[1], { ...(s[2] || {}), onDone: next });
+    };
+    next();
   }
 
   // ------------------------------------------------------------- modals

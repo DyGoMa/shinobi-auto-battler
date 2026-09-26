@@ -2,7 +2,7 @@
 // the reward and a countdown to tomorrow's. Picked from the date (js/core/Daily.js).
 import { h, btn, fmt, avatar, natureChip, objectiveText } from './dom.js';
 import { screenHead } from './chrome.js';
-import { tipCard } from './tips.js';
+import { tipUnlessScene } from './tips.js';
 import { enemyToken } from './StoryMapScreen.js';
 import { dailyFor, dailyRecord, attemptsLeft, dailyReward, dailyEnemyNature, isDailyUnlocked, TWIST_TEXT } from '../core/Daily.js';
 import { resolveTeam } from '../core/Progression.js';
@@ -15,6 +15,11 @@ export function timeToTomorrow(now = new Date()) {
   const mins = Math.max(1, Math.ceil((next - now) / 60000));
   const hrs = Math.floor(mins / 60);
   return hrs ? `${hrs} h ${mins % 60} min` : `${mins} min`;
+}
+
+/** The first visit once it is open: Might Guy on the Daily (docs/STORY_PLAN.md §4). */
+export function afterRender(el, game, ui) {
+  if (isDailyUnlocked(game.state, game.C, game.B)) ui.teach('dailyFirst');
 }
 
 export function render(game, ui) {
@@ -42,7 +47,7 @@ export function render(game, ui) {
   if (daily.rounds[0]?.part) ui.setEra(eraOfPart(daily.rounds[0].part));   // the Daily wears its boss's era
 
   return h('div.screen', head,
-    tipCard(game, 'daily'),
+    tipUnlessScene(game, 'daily'),
     h('div.card.daily-hero',
       h('div.row.between', h('div.tiny.muted', new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })),
         rec.cleared ? h('span.pill.good', '✓ Cleared today') : h('span.pill', `${left} of ${B.daily.attemptsPerDay} attempts left`)),

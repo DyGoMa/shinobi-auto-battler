@@ -314,3 +314,24 @@ ach_own_25: { target: 25, reward: { tickets: 3 } },
 Neither has content of its own; both reuse the story's battles.
 * **Hard mode** plays every node of a cleared part with `balance.hardMode` applied. After adding bosses, run `npm run autotune -- --mode=hard --write` (it writes `hardMode.nodeMult`), then `npm run sim`: every arc boss has a "Hard boss" row.
 * **The Daily challenge** picks from the final battle of every cleared arc. Twists live in `balance.daily.twists` (id, `power`, and `rounds` for the Boss gauntlet). A new twist **id** needs code: its text in `TWIST_TEXT` and its rule in `dailyBattleConfig` (`js/core/Daily.js`). Re-check with `npm run sim` (Info, "Daily challenge").
+
+## 13. Story scenes (`story/part1.js`, `story/shippuden-*.js`, `story/teach.js`)
+
+One entry per arc, keyed by arc id, in the file for its part (docs/STORY_PLAN.md §3 and §8):
+
+```js
+arc_waves: {
+  opener: [N('The Land of Waves. Three days from the Hidden Leaf.'), L('kakashi', '…'), …],   // 3–5 lines, the first time the arc opens
+  closer: [ … ],                                                                              // 3–4 lines, when the arc is cleared
+  nodes: {
+    n_waves_1: { intro: [ … ] },                                                              // every battle: 2–3 lines before the fight
+    n_waves_5: { intro: [ … ], boss: [L('e_zabuza_boss', '…'), …], outro: [ … ] },          // every boss battle: the boss's last word, and an aftermath
+  },
+  teach: { auto: [ … ] },                                                                     // optional: a teaching scene the arc owns
+},
+```
+
+* `L(who, text, side?)` is a spoken line: `who` is a roster id (name plate = its `short`), an enemy id (its name without the parenthetical, standing on the right) or `npc_…` (an escort, on the left); `N(caption)` is narration across the top. Every line stays under 90 characters; a teaching scene has at most five.
+* Voices, spoiler rules and the dub's names are in docs/STORY_PLAN.md §2; a name the dialogue introduces that no content file has goes into `STORY_NAMES` (`story/index.js`) with its source in `tools/naming-sources.mjs`.
+* Teaching scenes (`teach.js` `TEACH`) show numbers through `{{placeholders}}` (`TEACH_PLACEHOLDERS`; the values come from balance.js in `js/core/Story.js` `teachValues`). Never type a number into a line.
+* A new arc needs its entry (an opener, a closer, an intro per battle, boss lines and an outro per boss battle) and, if it joins the Boss Rush, a bark in `RUSH_BARKS`. `npm run validate` and `npm run test:core` refuse anything missing, a speaker that does not exist, a line over 90 characters or an unknown placeholder.

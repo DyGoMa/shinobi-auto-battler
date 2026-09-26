@@ -10,7 +10,7 @@ A fan-made, Naruto-universe **2D lane auto-battler** for the web.
 * **Installable (0.11.1):** a web app manifest, icons and a minimal network-first service worker; Settings → App installs it on the home screen (standalone, no browser bars), checks for updates ("Update ready — tap to reload") and the back button moves between screens. **0.11.2** suggests it to phone players: a start-menu notice, a one-time popup after the tutorial, two spaced reminders, and one-tap install where the browser allows it (illustrated steps elsewhere).
 * **Everyday shortcuts (0.11):** ⏭ Skip for battles already won (the real battle, instantly), 1× / 2× / 5× speed, ⚡ recommended power on every battle, Level to recommended and Smart spend on the Roster, ✨ Auto team, counter hints and three team presets, Roster sorting, red dots on the tabs, and a Story map with Story · Hard · Daily · Boss Rush tabs.
 
-The polish pass is under way (HANDOFF.md, docs/ART_BIBLE.md): the art and effects are in — anime-style ninja figures and busts drawn in code (with generated portraits and sprites dropped in through `tools/ingest.mjs` as they are made), a drawn stage per arc, effects per nature and signature jutsu, cut-ins, clash readouts, boss intros, the summon ceremony and two era skins. The audio is in too: thirteen loops and the stingers played live from data, and a sound for every event, all synthesised in Web Audio with no files (docs/AUDIO_PLAN.md). Story scenes are the next phase.
+The polish pass is under way (HANDOFF.md, docs/ART_BIBLE.md): the art and effects are in — anime-style ninja figures and busts drawn in code (with generated portraits and sprites dropped in through `tools/ingest.mjs` as they are made), a drawn stage per arc, effects per nature and signature jutsu, cut-ins, clash readouts, boss intros, the summon ceremony and two era skins. The audio is in too: thirteen loops and the stingers played live from data, and a sound for every event, all synthesised in Web Audio with no files (docs/AUDIO_PLAN.md). The story is in too: dialogue before and after every battle, the bosses' last words, an opening and an ending per arc, the characters teaching each screen, and a story log in the Wiki (docs/STORY_PLAN.md). QA and the release are the last phase.
 
 **Play:** https://dygoma.github.io/shinobi-auto-battler/ (add `?debug=1` for the balance debug panel)
 **Repo:** https://github.com/DyGoMa/shinobi-auto-battler
@@ -25,7 +25,7 @@ The polish pass is under way (HANDOFF.md, docs/ART_BIBLE.md): the art and effect
   * Multi-nature ninja use their best nature. Taijutsu specialists are never resisted.
   * The enemy nature preview and a live Team Builder matchup rating show matchups before you fight.
 * **Jutsu Clash** (the original system; see DESIGN.md §3): meet an enemy's telegraphed jutsu with an Ultimate, and the Nature Wheel decides the result (Overpower / Standoff / Overwhelmed).
-* **New players:** three short Academy lessons before the Survival Test (team building, the Nature Wheel, Jutsu Clash and Ultimates), skippable at any point with the same reward, plus a one-time tip on the first visit to each screen.
+* **New players:** three short Academy lessons before the Survival Test (team building, the Nature Wheel, Jutsu Clash and Ultimates), skippable at any point with the same reward, plus a character who explains each screen on the first visit (Jiraiya on summoning, Tsunade on levelling, Shikamaru on the map…).
 * **Wiki:** a page for every ninja, jutsu, enemy, arc, banner and achievement, generated from the game data, plus hand-written guides (`wiki/guides/`). Every screen has a **?** button that opens its page.
 * **Endgame:** Hard mode for each cleared part (enemies 12 levels higher, tougher bosses, scrolls again on first clears), a Daily challenge picked from the date (a beaten boss with a twist, 3 attempts), the Boss Rush, and achievements that pay Ryo, summon tickets and Rare+ summons.
 * **Data-defined content:**
@@ -73,6 +73,9 @@ js/render/                  Renderer (canvas), Effects
 js/ui/                      UIManager + one file per screen (Home, StoryMap, TeamBuilder, Roster, Summon, BossRush,
                             Daily, Achievements, Tutorial, Wiki, Settings, Battle) + tips, chrome, DebugPanel, dom helpers
 js/wiki/                    WikiData (page index), markdown (safe parser + config placeholders), text
+js/content/story/           the dialogue (part1, shippuden-a, shippuden-b), the teaching scenes and Boss Rush barks (teach)
+js/core/Story.js            the scene rules (once / always / never, the seen map, speakers, placeholders, the story log, validation)
+js/ui/Dialogue.js           plays a scene: typewriter, portraits, tap / Skip / Auto, in a stage or full screen
 js/audio/AudioManager.js    Web Audio synth
 wiki/guides/                the Wiki's hand-written guides (markdown)
 assets/                     fonts (Anton, Yuji Syuku subsets), portraits/ and sprites/ (WebP, made by tools/ingest.mjs), index.json (what exists), manifest.json (every picture wanted, with its prompt)

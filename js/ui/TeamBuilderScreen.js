@@ -9,11 +9,16 @@ import { recommendedPower, teamPower } from '../core/Power.js';
 import { leaderBuffText } from '../core/Ninja.js';
 import { tutorialLessons } from '../core/Tutorial.js';
 import { dailyFor, dailyRecord, attemptsLeft, dailyContent, dailyTeamNode, TWIST_TEXT } from '../core/Daily.js';
-import { tipCard } from './tips.js';
+import { tipUnlessScene } from './tips.js';
 import { screenHead } from './chrome.js';
 
 let selectedSlot = 0;          // 0..2 members, 3 = leader
 let roleFilter = 'All';
+
+/** The first visit outside the tutorial: Shikamaru on presets, counters and Auto (docs/STORY_PLAN.md §4). */
+export function afterRender(el, game, ui, params = {}) {
+  if (params.tutorialLesson == null) ui.teach('teamFirst');
+}
 
 export function render(game, ui, params) {
   const { C, B, state } = game;
@@ -110,10 +115,12 @@ export function render(game, ui, params) {
     else if (unlocked) ui.startBattle({ node, hard });
     else ui.toast('That battle is still locked: clear the one before it first.');
   };
+  // Lesson 1's coach box is Iruka's (docs/STORY_PLAN.md §4).
   const coach = lessonNode ? h('div.coach',
     h('div.row.between', h('b', `🎓 Lesson ${params.tutorialLesson + 1}: team building`), params.replay ? null : btn('Skip tutorial', () => ui.skipTutorial(), 'ghost small')),
-    h('p.small', 'Tap a slot, then tap a ninja to put them there (tap a filled slot twice to empty it). The ★ Leader slot is your fourth fighter and gives the whole team a buff: try different Leaders and watch "Leader buff" change.'),
-    h('p.small', 'When you\'re happy with your team, press ', h('b', '⚔️ Fight!'), '.')) : null;
+    C.char.iruka ? h('div.who', avatar(C.char.iruka, { size: 'sm' }), h('span', C.char.iruka.short || 'Iruka')) : null,
+    h('p.small', 'Tap a slot, then a ninja to put them there. Tap a filled slot twice to empty it. The ★ Leader slot is your fourth fighter, and the Leader\'s buff lifts everyone: try a few and watch "Leader buff" change.'),
+    h('p.small', 'Happy with your team? Press ', h('b', '⚔️ Fight!'), ' and show me what you\'ve learned.')) : null;
 
   return h('div.screen',
     screenHead(ui, { title: 'Team Builder', help: 'guide/team-composition', back: daily ? { label: 'Daily', id: 'daily' } : null, right: [
@@ -124,7 +131,7 @@ export function render(game, ui, params) {
         }, '', { title: 'Build the best team you own for this fight (power and nature counters)' }),
         btn(unlocked ? '⚔️ Fight!' : daily ? (dailyRecord(state, daily.dateKey).cleared ? '✓ Cleared' : 'No attempts left') : '🔒 Locked', fight, 'primary', { disabled: !unlocked })] }),
     coach,
-    lessonNode ? null : tipCard(game, 'team'),
+    lessonNode ? null : tipUnlessScene(game, 'team'),
     daily ? h('div.warnbox', `${TWIST_TEXT[daily.twist.id].icon} ${TWIST_TEXT[daily.twist.id].text(daily)}`) : null,
     h('div.card',
       h('div.row.between',

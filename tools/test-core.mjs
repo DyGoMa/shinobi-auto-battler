@@ -36,6 +36,9 @@ import { Scheduler } from '../js/audio/Scheduler.js';
 import { MusicPlayer, TRACKS, TRACK_IDS, phraseSequence, parsePhrase, trackFor, battleTrack, playStinger } from '../js/audio/Music.js';
 import { soundSignature } from '../js/audio/Sfx.js';
 import { FakeAudioContext, fakeWindow, fakeClock, drive } from './fake-audio.mjs';
+import { storyMode, sceneKey, shouldPlay, markSeen, resetSeen, sceneLines, speakerOf, lineSide, fill, teachValues, validateStory, countLines, storyLog, storyLogArcs, LINE_MAX } from '../js/core/Story.js';
+import { STORY, TEACH, RUSH_BARKS } from '../js/content/story/index.js';
+import { buildWikiIndex, parentOf } from '../js/wiki/WikiData.js';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -886,6 +889,52 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(trackFor({ screen: 'summon' }).id === 'summon' && trackFor({ screen: 'tutorial' }).id === 'academy' && trackFor({ screen: 'rush' }).id === 'rush' && trackFor({ screen: 'daily', bossPart: 2 }).id === 'map2', 'Summon, the tutorial, the Boss Rush lobby and the Daily pick their loops');
   ok(battleTrack({ kind: 'lesson' }).id === 'academy' && battleTrack({ part: 1 }).id === 'battle1' && battleTrack({ part: 1, boss: true }).id === 'battle1tense' && battleTrack({ part: 2 }).id === 'battle2' && battleTrack({ part: 2, boss: true }).id === 'battle2tense' && battleTrack({ part: 2, boss: true, hard: true }).id === 'boss' && battleTrack({ kind: 'rush' }).id === 'rush', 'a battle starts calm or tense by boss and part; Hard bosses open on the boss theme; lessons on the Academy; the rush on its loop');
   ok(soundSignature('Rasengan')?.cast === 'whirl' && soundSignature('Chidori')?.impact === 'crack' && soundSignature('Water Style: Water Dragon Jutsu')?.impact === 'rush' && soundSignature('Tailed Beast Bomb')?.impact === 'boom' && soundSignature('Kunai') === null, 'signature sounds match technique names; the rest use the nature');
+}
+
+// ---- Phase 5: the story scenes (docs/STORY_PLAN.md), pure rules over the save and the data ----
+{
+  const errs = validateStory(C);
+  ok(errs.length === 0, `the story data validates: every arc has an opener and a closer, every battle an intro, every boss its lines and an outro, every speaker exists, every line under ${LINE_MAX} characters${errs.length ? ` (${errs.slice(0, 3).join('; ')})` : ''}`);
+  const storyNodes = [C.tutorial, ...C.arcs].flatMap(a => a.nodes);
+  ok(storyNodes.every(n => sceneLines('intro', n.id)) && storyNodes.filter(n => n.isBossNode).every(n => sceneLines('boss', n.id) && sceneLines('outro', n.id)), 'sceneLines finds every intro, and the boss lines and outro of every boss battle');
+  ok(C.bossRush.order.every(id => sceneLines('rush', id)) && !!sceneLines('teach', 'summonFirst') && !!sceneLines('teach', 'auto') && sceneLines('teach', 'nope') === null && sceneLines('intro', 'n_nope') === null, 'the barks and the teaching scenes (global and an arc\'s own) resolve; unknown ids give null');
+  ok(countLines() > 800, `the story is ${countLines()} lines`);
+  const badStory = validateStory(C, { story: { ...STORY, arc_waves: { ...STORY.arc_waves, opener: [{ who: 'nobody', text: 'x'.repeat(120) }], nodes: { ...STORY.arc_waves.nodes, n_waves_1: { intro: [{ caption: 'ok' }], boss: [{ who: 'naruto', text: 'fine', side: 'up' }] } } } } });
+  ok(badStory.some(e => /unknown speaker/.test(e)) && badStory.some(e => /characters/.test(e)) && badStory.some(e => /side/.test(e)), 'validateStory reports unknown speakers, long lines and bad sides');
+  ok(validateStory(C, { teach: { ...TEACH, summonFirst: TEACH.summonFirst.concat(TEACH.summonFirst) } }).some(e => /max 5/.test(e)) && validateStory(C, { teach: { ...TEACH, x: [{ who: 'naruto', text: 'a {{nope}} b' }] } }).some(e => /placeholder/.test(e)), 'teaching scenes are capped at five lines and may only use known placeholders');
+  ok(validateStory(C, { barks: { ...RUSH_BARKS, e_br_pain: [] } }).some(e => /bark/.test(e)), 'a Boss Rush boss without a bark is reported');
+  // the modes and the seen map
+  const s5 = defaultState(C, B);
+  const k = sceneKey('intro', C.nodes[0].id);
+  ok(storyMode(s5) === 'first' && shouldPlay(s5, k) && !shouldPlay(s5, k, { replay: true }), 'a fresh save plays a scene the first time, but not on a replayed battle');
+  markSeen(s5, k); ok(!shouldPlay(s5, k) && s5.story.seen[k] > 0, 'once seen it does not play again');
+  s5.settings.storyScenes = 'always'; ok(shouldPlay(s5, k) && shouldPlay(s5, k, { replay: true }), '"always" plays every scene, replays included');
+  s5.settings.storyScenes = 'never'; ok(!shouldPlay(s5, sceneKey('intro', C.nodes[1].id)), '"never" plays nothing');
+  s5.settings.storyScenes = 'first'; resetSeen(s5); ok(shouldPlay(s5, k), 'Settings → Reset forgets the seen scenes');
+  const migrated = migrate(JSON.parse(JSON.stringify({ ...s5, story: { seen: { [k]: 5 } } })), C, B);
+  ok(migrated.story.seen[k] === 5, 'the seen map survives a save migration');
+  // speakers, sides, placeholders
+  ok(speakerOf('naruto', C).name === 'Naruto' && speakerOf('naruto', C).side === 'left' && speakerOf('e_zabuza_boss', C).side === 'right' && speakerOf('e_zabuza_boss', C).kind === 'enemy' && speakerOf('npc_tazuna', C).side === 'left' && speakerOf('npc_tazuna', C).kind === 'npc', 'roster ninja and escorts stand on the left, enemies on the right');
+  ok(!/\(/.test(speakerOf('e_pain_deva', C).name) && speakerOf('e_tobi', C).name === 'Tobi' && speakerOf('narrator', C).kind === 'narrator', 'name plates drop the parenthetical and never spoil (Tobi stays Tobi)');
+  ok(lineSide({ who: 'e_zabuza_boss', text: 'x' }, C) === 'right' && lineSide({ who: 'e_zabuza_boss', text: 'x', side: 'left' }, C) === 'left', 'a line\'s own side wins');
+  const tv = teachValues(C, B, s5);
+  ok(tv.pity === String(B.gacha.pity) && tv.rushCount === 'Seven' && tv.starBonus === `${Math.round(B.stats.starBonus * 100)}%` && !!tv.tenTier && fill('by the {{pity}}th, {{nope}}', tv) === `by the ${B.gacha.pity}th, {{nope}}`, 'the teaching values come from balance.js and fill() leaves unknown keys alone');
+  ok(Object.values(TEACH).flat().every(l => !/\{\{/.test(fill(l.text, tv))), 'every placeholder in every teaching scene resolves');
+  // the story log is spoiler-safe by progress
+  const fresh = defaultState(C, B);
+  const first = C.arcs[0];
+  const later = C.arcs[1];
+  ok(storyLog(fresh, C, later.id) === null && storyLogArcs(fresh, C).find(x => x.arc.id === later.id).reached === false, 'an arc not yet reached has no log');
+  const log0 = storyLog(fresh, C, first.id);
+  ok(!!log0 && log0.scenes[0].kind === 'opener' && log0.scenes.some(sc => sc.kind === 'intro' && sc.key === sceneKey('intro', first.nodes[0].id)) && !log0.scenes.some(sc => sc.kind === 'boss' || sc.kind === 'outro' || sc.kind === 'closer'), 'the first arc shows its opener and the first battle\'s intro only');
+  for (const n of first.nodes) fresh.progress.cleared[n.id] = { clears: 1 };
+  const log1 = storyLog(fresh, C, first.id);
+  const hasBoss = first.nodes.some(n => n.isBossNode);
+  ok((!hasBoss || (log1.scenes.some(sc => sc.kind === 'boss') && log1.scenes.some(sc => sc.kind === 'outro'))) && log1.scenes[log1.scenes.length - 1].kind === 'closer', 'a cleared arc shows its boss lines, outros and ending');
+  ok(!!storyLog(fresh, C, later.id) && storyLog(fresh, C, later.id).scenes.length >= 2, 'clearing an arc reaches the next one\'s opener and first intro');
+  ok(storyLog(fresh, C, C.tutorial.id).scenes.length > 0 && storyLog(fresh, C, 'arc_nope') === null, 'the tutorial always has a log; an unknown arc has none');
+  const widx = buildWikiIndex(C, B);
+  ok(widx.byId.has('story') && widx.byId.has(`story/${first.id}`) && widx.byId.has(`story/${C.tutorial.id}`) && parentOf(`story/${first.id}`) === 'story', 'the Wiki has a story log page per arc under "story"');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);

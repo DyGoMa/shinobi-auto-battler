@@ -7,6 +7,7 @@ import { FIREBASE_SDK_VERSION } from '../save/FirebaseBackend.js';
 import { GAME_VERSION } from '../config/version.js';
 import { tipCard, tipsEnabled, resetTips } from './tips.js';
 import { screenHead } from './chrome.js';
+import { storyMode, resetSeen } from '../core/Story.js';
 import { installModel, signInFallback } from '../core/Pwa.js';
 import { UPDATE_READY_TEXT } from './pwa.js';
 import { showSteps, pageLink } from './install.js';
@@ -55,6 +56,16 @@ export function render(game, ui) {
       row('Replay the tutorial', 'The three Academy lessons again (no extra reward).', btn('🎓 Replay', () => ui.openTutorial({ replay: true }), 'small')),
       row('Replay the intro', 'The splash and the opening scene from when you first started the game.', btn('🎬 Replay', () => ui.playIntro(), 'small')),
       row('The Wiki', 'Guides and every ninja, jutsu, enemy and battle.', btn('📚 Open', () => ui.openWiki('home'), 'small')),
+    ),
+
+    h('div.card.gap',
+      h('h2', 'Story'),
+      row('Story scenes', { first: 'Each scene plays once: the lines before and after a battle, the boss\'s words, and the characters who explain each screen. Battles you replay skip them.', always: 'Every scene plays every time, replays included.', never: 'No scenes. The one-time tip cards explain the screens instead.' }[storyMode(state)],
+        seg('Story scenes', [['first', 'First time'], ['always', 'Always'], ['never', 'Never']], storyMode(state), (v) => set('storyScenes', v)), 'set-story'),
+      row('Auto-advance dialogue', 'Lines move on by themselves a moment after they finish. The Auto button in a scene switches this too.',
+        toggle(!!s.dialogueAuto, (on) => { s.dialogueAuto = on; game.commit('settings'); }, 'Auto-advance dialogue')),
+      row('Play the scenes again', 'Forgets which scenes you have seen, so each plays once more. The Wiki\'s Story log keeps every scene you have reached.',
+        btn('↻ Reset', () => { resetSeen(state); game.commit('story'); ui.toast('Every scene will play once more.', 'good'); }, 'small')),
     ),
 
     h('div.card.gap',

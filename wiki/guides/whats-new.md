@@ -2,6 +2,11 @@
 
 ## Version {{cfg:version.current}}
 
+- **The story talks.** Every battle opens with a few lines from its characters over the stage, a boss gets the last word on its intro card, and a win has a short aftermath; each arc has an opening and an ending of its own. Tap to move on, **Skip ⏭** to skip a scene, **Auto** to let it run. A battle you replay plays no scenes.
+- **The characters teach the screens.** Jiraiya explains summoning, banners and the Boss Rush; Tsunade the Roster and duplicates; Shikamaru the map, ⏭ Skip and the Team Builder; Might Guy the Daily; Kakashi Hard mode; Konohamaru achievements. Iruka and Kakashi coach the tutorial, and Shikamaru introduces Auto-ult. Each once.
+- **Settings → Story:** play the scenes the first time, always, or never (the old tip cards come back), switch on auto-advance, or reset the scenes to see them again.
+- **Wiki → Story log:** every scene you have reached, arc by arc, to read again whenever you like.
+- **The Akatsuki bark** before each Boss Rush round.
 - **The game has a look now.** Every ninja is drawn in an anime style (village symbol on the headband and all), each arc fights on its own drawn stage with weather and parallax, and every jutsu has its own effects: Rasengan, Chidori, the Water Dragon, Amaterasu, sand, shadows, clay birds and more, coloured by nature.
 - **Battles read like the show.** Firing an Ultimate shows a cut-in with the ninja and the technique's name; a **Jutsu Clash** goes into slow motion with a big readout of the result; bosses get an intro card with their title (tap to skip it, and it is shorter on a replay); big hits pause for a split second; wins and losses get their moment before the results.
 - **Two skins.** Part I screens are wood, paper and orange; Shippuden screens are night steel and Akatsuki red. Summon follows its banner's arc; the Daily follows its boss.

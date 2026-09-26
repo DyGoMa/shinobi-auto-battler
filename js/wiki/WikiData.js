@@ -38,6 +38,7 @@ export const REFERENCE = [
   { id: 'arcs', title: 'Arcs and battles', icon: '🗺️', blurb: 'Every battle: objective, enemies, team rules and rewards.' },
   { id: 'banners', title: 'Banners and rates', icon: '🎴', blurb: 'Every summon banner, its featured ninja and exact rates.' },
   { id: 'boss-rush', title: 'Boss Rush', icon: '☁️', blurb: 'The Akatsuki rotation, their specials and round rewards.' },
+  { id: 'story', title: 'Story log', icon: '📖', blurb: 'Every scene you have reached, arc by arc: read the story again any time.' },
 ];
 
 /** Where each screen's ? button points. `story` uses the arc on screen when there is one. */
@@ -55,7 +56,7 @@ export function parentOf(id) {
   if (!id || id === 'home') return null;
   if (!id.includes('/')) return 'home'; // guides' and sections' parent (note: the section "jutsu" is also a page kind)
   const kind = id.slice(0, id.indexOf('/'));
-  return { character: 'characters', jutsu: 'jutsu', enemy: 'enemies', arc: 'arcs', banner: 'banners', achievement: 'achievements' }[kind] || 'home';
+  return { character: 'characters', jutsu: 'jutsu', enemy: 'enemies', arc: 'arcs', banner: 'banners', achievement: 'achievements', story: 'story' }[kind] || 'home';
 }
 
 /** Every distinct jutsu name (Ultimates, enemy jutsu, named boss mechanics) and who uses it. */
@@ -134,6 +135,8 @@ export function buildWikiIndex(C, B, extras = {}) {
   }
   for (const a of [C.tutorial, ...C.arcs].filter(Boolean)) {
     add({ id: `arc/${a.id}`, kind: 'arc', title: a.name, sub: a === C.tutorial ? 'Tutorial' : `Part ${a.part === 1 ? 'I' : 'II'} · arc`, keywords: (a.nodes || []).map(n => n.name) });
+    // The story log: one page per arc (js/core/Story.js storyLog shows only the scenes the player has reached).
+    add({ id: `story/${a.id}`, kind: 'story', title: a.name, sub: 'Story log', keywords: ['story', 'scenes', 'dialogue'] });
   }
   for (const b of C.banners) add({ id: `banner/${b.id}`, kind: 'banner', title: b.name, sub: b.type === 'standard' ? 'Banner · always open' : `Banner · ${C.arc[b.arc]?.name}`, keywords: (b.featured || []).map(id => C.char[id]?.name).filter(Boolean) });
   for (const a of achievements) add({ id: `achievement/${a.id}`, kind: 'achievement', title: a.name, sub: `Achievement · ${a.category}`, keywords: [a.description].filter(Boolean) });

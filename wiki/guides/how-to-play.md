@@ -16,8 +16,14 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 - **Roster**: every ninja in the game, with sorting and filters. Spend Ryo here to level them up, by hand or with **⬆ Level to recommended** and **💰 Smart spend**. See [Levelling and economy](wiki:guide/levelling).
 - **Summon**: spend scrolls to recruit ninja. See [Summoning and pity](wiki:guide/summoning).
 - **Wiki**: this reference. Every screen has a **?** button that opens its page here.
-- **Settings**: sound, battle options, tips, your cloud save, and **App** (install the game on your home screen, check for updates).
+- **Settings**: sound and music, effect detail, battle options, the story scenes, tips, your cloud save, and **App** (install the game on your home screen, check for updates).
 - **🏆 Achievements** (top of the screen): goals across the whole game, and their rewards.
+
+## The story scenes
+
+Before a battle its characters say a few lines over the stage, a boss gets the last word on its intro card, and a win has a short aftermath; each arc opens and ends with a scene of its own. Tap the stage (or press Space) to finish a line and move on, **Skip ⏭** to skip the scene, and **Auto** to let the lines run by themselves. A battle you replay (or ⏭ Skip) plays no scenes. **Settings → Story** chooses First time, Always or Never, and the Wiki's [Story log](wiki:story) keeps every scene you have reached.
+
+The first visit to each screen brings a character to explain it: Jiraiya on summoning, Tsunade on Ryo and levelling, Shikamaru on the map and the Team Builder, and so on. With the scenes set to Never, the one-time tip cards take their place.
 
 ## A battle, step by step
 
