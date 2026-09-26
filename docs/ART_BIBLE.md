@@ -23,7 +23,9 @@ A fan-made game that looks like a late-2000s shonen TV anime on a phone: stylise
 | Boss intro | Name card, portrait cut-in, camera push, a pre-fight line; about 1.5 s, skippable, 0.8 s on replays |
 | Icons | About 40 inline SVG icons replace every emoji; emoji stay only in the data as the last fallback |
 | Fonts | Anton (display) and Yuji Syuku (brush accent), both SIL Open Font License, self-hosted subsets under 120 KB; body stays the system font |
-| Backgrounds from Gemini | Flat magenta (#FF00FF), keyed out by the ingest tool, flagged for a manual cut-out when the key is poor |
+| Backgrounds from Gemini | Flat magenta (#FF00FF) requested; the ingest tool keys whatever flat colour it finds at the border by flood fill (so a white background still works, but magenta is safer because white appears inside the art), and flags a file for a manual cut-out when the key is poor |
+| Facing | Player characters face right, enemies left; the ingest checklist records the facing of each file and a `flip` flag mirrors one that came out the wrong way (Gemini gets this wrong about one time in four) |
+| Village symbols | Headband plates carry the village symbol as the anime shows it (Leaf spiral, Mist lines, Sand hourglass, Sound note, Rain dashes, Cloud, Stone, Jiraiya's 油), in the prompts and in the code-drawn fallback |
 | Budget | ≤ 12 ms of main-thread work per frame on a Pixel 8a at 1×, ≤ 2.5 MB first install, ≤ 300 KB per lazy arc pack, ≤ 12 MB of assets, ≤ 150 MB memory |
 
 ## 3. Characters
@@ -41,7 +43,7 @@ Unit space: the feet at (0, 0), +x forward, one unit = one logical canvas pixel 
 | Shadow | ellipse 52×16 at the feet | never rotates with a KO |
 | Sash | 24×7 at the neck | the unit's active nature colour, white for taijutsu (unchanged from today) |
 
-Hair variants: `spiky` (Naruto, Kakashi), `sweep` (Sasuke), `long` (Sakura, Haku), `bob`, `short`, `mane` (Jiraiya), `bald`. Headgear: the headband with a plain plate (no village symbol, by rule), a tilted band (Zabuza), a happuri face guard (Yamato), horns (Jiraiya), a cloth mask (Kakashi), bandages (Zabuza). Faces: two eyes with a highlight, angled brows, a short mouth line; `menace` narrows the eyes for enemies and bosses. Whiskers for Naruto.
+Hair variants: `spiky` (Naruto, Kakashi), `sweep` (Sasuke), `long` (Sakura, Haku), `bob`, `short`, `mane` (Jiraiya), `bald`. Headgear: the headband with the character's **village symbol engraved on the plate** (`village`: `leaf`, `mist`, `sand`, `sound`, `rain`, `cloud`, `stone`, or `oil` for Jiraiya's Mount Myoboku plate; drawn by `drawVillageSymbol()` as a simplified mark), a tilted band (Zabuza), a happuri face guard (Yamato), horns (Jiraiya), a cloth mask (Kakashi), bandages (Zabuza). Faces: two eyes with a highlight, angled brows, a short mouth line; `menace` narrows the eyes for enemies and bosses. Whiskers for Naruto. The user's rule, decided at the Phase 2 gate: in-world symbols are drawn as the anime shows them; "no official artwork" means no copied assets, not no depiction of the world's own marks.
 
 When a sprite image exists the figure is replaced by it: the image is scaled to 100 units tall, anchored at the bottom centre, mirrored for the enemy side, and given the same lean, lunge, flash (a brightened overlay) and KO transforms.
 
@@ -224,6 +226,7 @@ Under 3 s for one, under 6 s for ten, tap to skip. Beats: the summoner's silhoue
 ## 11. Assets and fallbacks
 
 * `assets/manifest.json` (Phase 3) lists every image: id, file, pixel size, aspect, usage, era, and the Gemini prompt built from the style anchor in `mockup.html` §7.
-* `tools/ingest.mjs` reads `/incoming`, validates size and aspect, keys magenta, crops to the frame rules, resizes, writes WebP to `assets/`, and updates `docs/ASSET_CHECKLIST.md`.
+* `tools/ingest.mjs` reads `/incoming`, validates size and aspect, keys the flat background by flood fill from the border (magenta or white), mirrors files marked `flip`, crops to the frame rules, resizes, writes WebP to `assets/`, and updates `docs/ASSET_CHECKLIST.md`.
+* The first four test images (Phase 2 gate): three came back as asked; the Shippuden Naruto came back on white and facing left, which the flood-fill keying and the flip flag handle without a regeneration. The prompts now spell out the facing (which ear is visible, where the nose points) and forbid white explicitly.
 * Loading: per-arc packs (the arc's stage is code, so a pack is its portraits and sprites), fetched when the arc opens on the map and cached by the network-first worker as they pass. A missing file never throws: the loader resolves to null and the renderer draws the figure or the bust.
 * Budget: portraits 256² WebP at quality 82 ≈ 12–20 KB each (95 files ≈ 1.6 MB); sprites 512 tall ≈ 25–40 KB each (≈ 160 files ≈ 5 MB); icons and stages are code; fonts ≤ 120 KB. Total ≈ 7 MB, under the 12 MB cap; the first install (shell, code, fonts, the tutorial and Part I arc 1 pack) ≈ 0.6 MB.

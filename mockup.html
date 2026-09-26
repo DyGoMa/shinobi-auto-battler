@@ -229,7 +229,7 @@
 <!-- ====================================================== 7. Spec -->
 <section class="section" id="s7">
   <h2>7 · Portrait spec, test slots and prompts</h2>
-  <p class="lead">Generate a test portrait with one of the prompts, then load it here (it stays in this browser only). Every slot on this page switches to your image at once, so you can judge the frame, size and treatment in every context. A magenta background is keyed out on load, as the ingest tool will do.</p>
+  <p class="lead">Generate a test portrait with one of the prompts, then load it here (it stays in this browser only). Every slot on this page switches to your image at once, so you can judge the frame, size and treatment in every context. A flat background (the magenta the prompts ask for, or the white Gemini sometimes gives instead) is keyed out on load, as the ingest tool will do; Flip mirrors a portrait that came out facing the wrong way.</p>
   <div class="spec">
     <div class="card">
       <h3>Slots and sizes</h3>
@@ -249,10 +249,10 @@
     </div>
     <div class="card" id="pickers">
       <h3>Load a test portrait</h3>
-      <div class="picker" data-id="naruto"><div class="slot square" data-portrait="naruto" data-look="naruto"></div><div><b>Naruto (Part I)</b> — prompt A<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="clear">Remove</button></div></div>
-      <div class="picker" data-id="zabuza"><div class="slot square" data-portrait="zabuza" data-look="zabuza" data-face="left" data-expr="menace"></div><div><b>Zabuza Momochi</b> — prompt B<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="clear">Remove</button></div></div>
-      <div class="picker" data-id="naruto_p2"><div class="slot square" data-portrait="naruto_p2" data-look="naruto_p2"></div><div><b>Naruto (Shippuden)</b> — prompt C<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="clear">Remove</button></div></div>
-      <div class="picker" data-id="sprite_naruto"><div class="slot square" data-portrait="sprite_naruto" data-look="naruto"></div><div><b>Naruto full-body still</b> — optional prompt D (shows on the field in scenes 1 and 6)<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn figure</div><button type="button" class="clear">Remove</button></div></div>
+      <div class="picker" data-id="naruto"><div class="slot square" data-portrait="naruto" data-look="naruto"></div><div><b>Naruto (Part I)</b> — prompt A<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="flip">Flip</button> <button type="button" class="clear">Remove</button></div></div>
+      <div class="picker" data-id="zabuza"><div class="slot square" data-portrait="zabuza" data-look="zabuza" data-face="left" data-expr="menace"></div><div><b>Zabuza Momochi</b> — prompt B<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="flip">Flip</button> <button type="button" class="clear">Remove</button></div></div>
+      <div class="picker" data-id="naruto_p2"><div class="slot square" data-portrait="naruto_p2" data-look="naruto_p2"></div><div><b>Naruto (Shippuden)</b> — prompt C<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn bust</div><button type="button" class="flip">Flip</button> <button type="button" class="clear">Remove</button></div></div>
+      <div class="picker" data-id="sprite_naruto"><div class="slot square" data-portrait="sprite_naruto" data-look="naruto"></div><div><b>Naruto full-body still</b> — optional prompt D (shows on the field in scenes 1 and 6)<br><label>Choose image<input type="file" accept="image/*"></label><div class="st">no image loaded · code-drawn figure</div><button type="button" class="flip">Flip</button> <button type="button" class="clear">Remove</button></div></div>
       <p class="note">Files are downscaled to 512 px and kept in this browser's storage; nothing is uploaded. A committed file at <code>assets/portraits/&lt;id&gt;.png</code> or <code>.webp</code> loads by itself.</p>
     </div>
     <div class="card prompt"><h3>Prompt A · Naruto, Part I</h3><button class="copy" type="button">Copy</button><pre id="prompt-a"></pre></div>

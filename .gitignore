@@ -6,3 +6,5 @@ Thumbs.db
 test-results/
 # Written by the Pages deploy (.github/workflows/pages.yml); never committed.
 version.json
+# Gemini drops for tools/ingest.mjs (Phase 3); never committed.
+incoming/

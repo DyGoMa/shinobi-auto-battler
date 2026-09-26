@@ -16,17 +16,39 @@ const PORTRAIT_IDS = ['naruto', 'zabuza', 'naruto_p2', 'sprite_naruto'];
 const store = { img: {} };
 
 function loadImage(src) { return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; }); }
-/** Key out a flat magenta background (what the ingest tool will do), with a soft edge and fringe clean-up. */
-function keyMagenta(c) {
-  const g = c.getContext('2d'); const d = g.getImageData(0, 0, c.width, c.height); const p = d.data; let keyed = 0;
-  for (let i = 0; i < p.length; i += 4) {
-    const r = p[i], gg = p[i + 1], b = p[i + 2];
-    const dist = Math.sqrt((255 - r) ** 2 + gg ** 2 + (255 - b) ** 2);
-    if (dist < 110) { p[i + 3] = 0; keyed++; }
-    else if (dist < 170) { const a = (dist - 110) / 60; p[i + 3] = Math.round(p[i + 3] * a); const m = Math.min(r, b); p[i] = Math.round(lerp(m, r, a)); p[i + 2] = Math.round(lerp(m, b, a)); }
+/**
+ * Key out a flat background of any colour (what the ingest tool will do): the colour is the
+ * median of the border pixels, and only the region connected to the border is removed (a
+ * flood fill), so a white collar inside the art survives a white background. Magenta is
+ * still what the prompts ask for, because it never appears inside the art. Soft edge, and
+ * the fringe is pulled toward grey so no halo is left. Returns true when something was keyed.
+ */
+export function keyBackground(c, { tol = 58, soft = 46 } = {}) {
+  const g = c.getContext('2d'); const W = c.width, H = c.height; const d = g.getImageData(0, 0, W, H); const p = d.data;
+  const border = []; for (let x = 0; x < W; x += 3) border.push(x * 4, ((H - 1) * W + x) * 4); for (let y = 0; y < H; y += 3) border.push(y * W * 4, (y * W + W - 1) * 4);
+  const med = (arr) => { arr.sort((a, b) => a - b); return arr[arr.length >> 1]; };
+  const bg = [med(border.map(i => p[i])), med(border.map(i => p[i + 1])), med(border.map(i => p[i + 2]))];
+  const dist = (i) => Math.sqrt((p[i] - bg[0]) ** 2 + (p[i + 1] - bg[1]) ** 2 + (p[i + 2] - bg[2]) ** 2);
+  const seen = new Uint8Array(W * H); const stack = []; let n = 0;
+  const push = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return; const k = y * W + x; if (seen[k]) return; seen[k] = 1; if (dist(k * 4) < tol + soft) stack.push(k); };
+  for (let x = 0; x < W; x++) { push(x, 0); push(x, H - 1); } for (let y = 0; y < H; y++) { push(0, y); push(W - 1, y); }
+  while (stack.length) {
+    const k = stack.pop(); const i = k * 4; const dd = dist(i); const a = dd < tol ? 0 : (dd - tol) / soft;
+    p[i + 3] = Math.round(p[i + 3] * a); n++;
+    if (a > 0 && a < 1) { const grey = (p[i] + p[i + 1] + p[i + 2]) / 3; p[i] = Math.round(grey + (p[i] - grey) * a); p[i + 1] = Math.round(grey + (p[i + 1] - grey) * a); p[i + 2] = Math.round(grey + (p[i + 2] - grey) * a); }
+    if (dd < tol) { const x = k % W, y = (k / W) | 0; push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1); }
   }
-  if (keyed > p.length / 4 * 0.02) g.putImageData(d, 0, 0);
-  return keyed > p.length / 4 * 0.02;
+  const keyed = n > W * H * 0.02;
+  if (keyed) g.putImageData(d, 0, 0);
+  return keyed;
+}
+/** Mirror a stored portrait (a player character generated facing left, say). */
+async function flipPortrait(id) {
+  const img = store.img[id]; if (!img) return;
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d');
+  g.translate(c.width, 0); g.scale(-1, 1); g.drawImage(img, 0, 0);
+  let data; try { data = c.toDataURL('image/webp', 0.9); if (!data.startsWith('data:image/webp')) data = c.toDataURL('image/png'); } catch { data = c.toDataURL('image/png'); }
+  setPortrait(id, await loadImage(data), true);
 }
 function renderSlot(el) {
   const id = el.dataset.portrait; const look = LOOKS[el.dataset.look || id] || LOOKS.thug; const face = el.dataset.face === 'left' ? -1 : 1;
@@ -46,7 +68,7 @@ async function pickFile(id, file) {
     const raw = await loadImage(url);
     const c = document.createElement('canvas'); const S = 512; c.width = S; c.height = Math.round(S * raw.height / raw.width) || S;
     c.getContext('2d').drawImage(raw, 0, 0, c.width, c.height);
-    keyMagenta(c);
+    keyBackground(c);
     let data; try { data = c.toDataURL('image/webp', 0.9); if (!data.startsWith('data:image/webp')) data = c.toDataURL('image/png'); } catch { data = c.toDataURL('image/png'); }
     setPortrait(id, await loadImage(data), true);
   } finally { URL.revokeObjectURL(url); }
@@ -61,6 +83,7 @@ function setupPortraits() {
     const id = pk.dataset.id;
     $('input', pk).addEventListener('change', (e) => { const f = e.target.files?.[0]; if (f) pickFile(id, f).catch(err => { console.warn(err); $('.st', pk).textContent = 'could not read that image'; }); e.target.value = ''; });
     $('.clear', pk).addEventListener('click', () => clearPortrait(id));
+    $('.flip', pk)?.addEventListener('click', () => flipPortrait(id).catch(console.warn));
   }
   refreshSlots();
 }
@@ -339,21 +362,27 @@ function scene6() {
 
 // ============================================================ spec: prompts, swatches, nature demos, icons
 const STYLE_ANCHOR = `STYLE ANCHOR (keep this block identical in every prompt):
-Original fan-art character portrait in the look of a late-2000s Japanese shonen TV anime: clean cel shading with exactly two tones (base colour and one darker shadow), medium-thick dark brown outlines of even weight, flat saturated colours, no gradients, no painterly texture, no 3D render, no photo realism. Bust crop from the top of the hair to mid-chest, three-quarter view, eyes on the upper third of the frame, mouth closed, determined expression, looking slightly past the viewer. Square image, 1024 x 1024. Plain flat magenta background, hex #FF00FF, filling every pixel behind the character. No props, no text, no logo, no watermark, no border, no signature.`;
+Original fan-art character portrait in the look of a late-2000s Japanese shonen TV anime: clean cel shading with exactly two tones (base colour and one darker shadow), medium-thick dark brown outlines of even weight, flat saturated colours, no gradients, no rim light, no painterly texture, no 3D render, no photo realism. Bust crop from the top of the hair to mid-chest, three-quarter view, eyes on the upper third of the frame, mouth closed, determined expression, looking slightly past the viewer. Square image, 1024 x 1024. BACKGROUND: one flat solid magenta colour, hex #FF00FF, filling every pixel behind the character; not white, not a gradient, nothing else in the background. No props, no text, no watermark, no border, no signature.`;
+const FACE_RIGHT = `FACING: the character faces the viewer's RIGHT. The head and shoulders are turned toward the right edge of the image; the visible ear is on the left side of the face; the nose points right.`;
+const FACE_LEFT = `FACING: the character faces the viewer's LEFT. The head and shoulders are turned toward the left edge of the image; the visible ear is on the right side of the face; the nose points left.`;
 const PROMPTS = {
   a: `${STYLE_ANCHOR}
 
-CHARACTER: Naruto Uzumaki as a 12-year-old genin from the first part of the series. Spiky bright golden-blond hair, big blue eyes, three thin whisker-like marks on each cheek, a wide confident grin held closed. He wears an orange tracksuit jacket with blue shoulders and a white fluffy collar, zipped up. A blue cloth forehead protector tied across his forehead with a PLAIN polished metal plate (no symbol engraved on it). Facing the viewer's RIGHT (his body turned toward the right edge of the image). Warm daylight lighting from the upper left.`,
+CHARACTER: Naruto Uzumaki as a 12-year-old genin from the first part of the series. Spiky bright golden-blond hair, big blue eyes, three thin whisker-like marks on each cheek, a wide confident grin held closed. He wears an orange tracksuit jacket with blue shoulders and a white fluffy collar, zipped up. A blue cloth forehead protector tied across his forehead with a polished metal plate engraved with the Hidden Leaf Village symbol (a spiral ending in a small triangular leaf flick). Warm daylight lighting from the upper left.
+${FACE_RIGHT}`,
   b: `${STYLE_ANCHOR}
 
-CHARACTER: Zabuza Momochi, a tall adult rogue ninja from the Hidden Mist. Short spiky black hair, no eyebrows, small sharp menacing eyes, the lower half of his face wrapped in white bandages like a mask. His forehead protector is tied sideways at an angle on his head with a PLAIN metal plate (no symbol). Bare muscular arms, a sleeveless dark grey top, grey and white camouflage arm warmers, the wrapped hilt of a giant cleaver sword rising behind his shoulder. Facing the viewer's LEFT (his body turned toward the left edge of the image). Cool misty grey-blue lighting.`,
+CHARACTER: Zabuza Momochi, a tall adult rogue ninja from the Hidden Mist. Short spiky black hair, no eyebrows, small sharp menacing eyes, the lower half of his face wrapped in white bandages like a mask. His forehead protector is tied sideways at an angle on his head, its metal plate engraved with the Hidden Mist Village symbol (four short wavy horizontal lines). Bare muscular arms, a sleeveless dark grey top, grey and white camouflage arm warmers, the wrapped hilt of a giant cleaver sword rising behind his shoulder. Cool misty grey-blue lighting.
+${FACE_LEFT}`,
   c: `${STYLE_ANCHOR}
 
-CHARACTER: Naruto Uzumaki as a 16-year-old from the second part of the series (Shippuden). Taller and leaner face, spiky golden-blond hair, blue eyes, three whisker-like marks on each cheek, a confident half-smile held closed. He wears an orange and black tracksuit jacket with a high collar, zipped up, and a BLACK cloth forehead protector with a long black band and a PLAIN polished metal plate (no symbol). Facing the viewer's RIGHT. Cooler, higher-contrast lighting from the upper left with a faint cool rim light on the hair.`,
+CHARACTER: Naruto Uzumaki as a 16-year-old from the second part of the series (Shippuden). Taller and leaner face, spiky golden-blond hair, blue eyes, three whisker-like marks on each cheek, a confident half-smile held closed. He wears an orange and black tracksuit jacket with a high collar, zipped up, and a BLACK cloth forehead protector with a long black band, its polished metal plate engraved with the Hidden Leaf Village symbol (a spiral ending in a small triangular leaf flick). Cooler, higher-contrast lighting from the upper left.
+${FACE_RIGHT}`,
   d: `STYLE ANCHOR (keep this block identical in every prompt):
-Original fan-art character sprite in the look of a late-2000s Japanese shonen TV anime, redrawn in a stylised chibi-adjacent proportion of about three and a half heads tall (large head, short body, simple hands and feet), clean cel shading with exactly two tones, medium-thick dark brown outlines of even weight, flat saturated colours, no gradients, no painterly texture, no 3D render. FULL BODY, standing in a relaxed ready stance, feet apart, arms at the sides, the whole figure visible with a small margin, feet at the bottom centre. Three-quarter view facing the viewer's RIGHT. Square image, 1024 x 1024. Plain flat magenta background, hex #FF00FF, filling every pixel behind the character. No props, no text, no logo, no watermark, no border, no shadow on the ground.
+Original fan-art character sprite in the look of a late-2000s Japanese shonen TV anime, redrawn in a stylised chibi-adjacent proportion of about three and a half heads tall (large head, short body, simple hands and feet), clean cel shading with exactly two tones, medium-thick dark brown outlines of even weight, flat saturated colours, no gradients, no rim light, no painterly texture, no 3D render. FULL BODY, standing in a relaxed ready stance, feet apart, arms at the sides, the whole figure visible with a small margin, feet at the bottom centre. Square image, 1024 x 1024. BACKGROUND: one flat solid magenta colour, hex #FF00FF, filling every pixel behind the character; not white, not a gradient. No props, no text, no watermark, no border, no shadow on the ground.
 
-CHARACTER: Naruto Uzumaki as a 12-year-old genin: spiky golden-blond hair, blue eyes, three whisker-like marks on each cheek, an orange tracksuit with blue shoulders and a white collar, blue sandals, a blue cloth forehead protector with a PLAIN metal plate (no symbol).`,
+CHARACTER: Naruto Uzumaki as a 12-year-old genin: spiky golden-blond hair, blue eyes, three whisker-like marks on each cheek, an orange tracksuit with blue shoulders and a white collar, blue sandals, a blue cloth forehead protector with a metal plate engraved with the Hidden Leaf Village symbol (a spiral ending in a small triangular leaf flick).
+${FACE_RIGHT}`,
 };
 function setupPrompts() {
   for (const k of ['a', 'b', 'c', 'd']) $('#prompt-' + k).textContent = PROMPTS[k];
@@ -398,6 +427,6 @@ async function boot() {
   };
   requestAnimationFrame(frame);
   // For debugging in the console: window.__mock.step(0.033) advances every scene by hand.
-  window.__mock = { scenes, errors, step(dt = 1 / 30) { for (const s of scenes) { s.step(dt); s.draw(dt); } } };
+  window.__mock = { scenes, errors, store, pickFile, keyBackground, step(dt = 1 / 30) { for (const s of scenes) { s.step(dt); s.draw(dt); } } };
 }
 boot().catch(err => { console.error(err); document.body.insertAdjacentHTML('afterbegin', `<p style="color:#ff5d5d;padding:12px">Mockup error: ${String(err.message || err)}</p>`); });
