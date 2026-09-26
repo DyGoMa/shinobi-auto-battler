@@ -16,6 +16,7 @@ import { screenHead } from './chrome.js';
 import { openLevelToRecommended } from './AutoLevelDialog.js';
 import { icon } from '../render/icons.js';
 import { Stage, stageDefFor, W as STAGE_W, GROUND_Y } from '../render/Stage.js';
+import { eraOfPart } from '../render/Assets.js';
 import { prefersReducedMotion } from './Intro.js';
 
 const PART_NAME = { 1: 'Part I', 2: 'Part II' };
@@ -62,6 +63,7 @@ export function render(game, ui, params) {
   const part = params.part || (params.arcId ? C.arc[params.arcId]?.part : storyCur?.part) || 1;
   const hardOpen = isHardUnlocked(state, part, C);
   const hard = !!params.hard && hardOpen;
+  ui.setEra(eraOfPart(part));   // the map wears the part on show
   const V = view(game, hard);
   const cur = V.current(part);
   const arcs = C.arcs.filter(a => a.part === part);

@@ -13,17 +13,22 @@ export function prefersReducedMotion() {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
 }
 
-/** Plays the intro. Returns { skip(), done: Promise } (done resolves when it ends or is skipped). */
-export function playIntro(plan, { onDone = null } = {}) {
+/**
+ * Plays the intro. Returns { skip(), done: Promise } (done resolves when it ends or is skipped).
+ * gate: the scene waits for a tap ("Tap to begin"), so the first gesture unlocks the audio and
+ * the intro plays with its music; onBegin fires as the timeline starts (the intro stinger).
+ */
+export function playIntro(plan, { onDone = null, onBegin = null, gate = false } = {}) {
   const root = h('div#intro', { role: 'dialog', 'aria-label': 'Intro' });
-  const splash = h('div.intro-splash', h('div.brand-mark.big', { 'aria-hidden': 'true' }, '忍'), h('div.intro-name', 'Shinobi Auto-Battler'));
+  const gated = gate && plan.scene;
+  const splash = h('div.intro-splash', h('div.brand-mark.big', { 'aria-hidden': 'true' }, '忍'), h('div.intro-name', 'Shinobi Auto-Battler'), gated ? h('div.intro-tap', 'Tap to begin') : null);
   const skip = btn('Skip', () => finish(), 'ghost small intro-skip', { 'aria-label': 'Skip the intro' });
   root.append(splash, skip);
   document.body.appendChild(root);
 
   const timers = [];
   const at = (ms, fn) => timers.push(setTimeout(fn, ms));
-  let finished = false, resolve;
+  let finished = false, resolve, begun = false;
   const done = new Promise((r) => { resolve = r; });
   // Android back (and the browser's back button) skips: one history entry to pop.
   const onPop = () => finish();
@@ -37,16 +42,22 @@ export function playIntro(plan, { onDone = null } = {}) {
     if (onDone) onDone();
     resolve();
   };
-  root.addEventListener('pointerdown', (e) => { if (!skip.contains(e.target)) finish(); });
+  root.addEventListener('pointerdown', (e) => { if (skip.contains(e.target)) return; if (gated && !begun) begin(); else finish(); });
 
-  // Timeline
+  // Timeline (from the tap, when gated)
   const t0 = plan.splashMs;
-  at(Math.max(0, t0 - 200), () => splash.classList.add('out'));
-  if (!plan.scene) { at(t0, finish); return { skip: finish, done }; }
-  at(t0, () => {
+  const begin = () => {
+    if (begun) return; begun = true;
+    splash.querySelector('.intro-tap')?.remove();
+    if (onBegin) { try { onBegin(); } catch { /* audio not ready */ } }
+    at(Math.max(0, t0 - 200), () => splash.classList.add('out'));
+    if (!plan.scene) { at(t0, finish); return; }
+    at(t0, scene);
+  };
+  const scene = () => {
     splash.remove();
     const title = h('div.intro-title', h('div.brand-mark.big', { 'aria-hidden': 'true' }, '忍'), h('h1', 'Shinobi Auto-Battler'), h('p', 'A fan-made Naruto auto-battler'));
-    const scene = h('div.intro-scene', h('div.intro-ground', { 'aria-hidden': 'true' }), title);
+    const sceneEl = h('div.intro-scene', h('div.intro-ground', { 'aria-hidden': 'true' }), title);
     if (plan.effects) {
       // Five silhouettes: staggered starts, three depths (scale and lane), a walk bob.
       const lanes = [[0, 1.7, 0], [110, 1.45, 14], [240, 1.9, -12], [380, 1.55, 6], [520, 1.7, -5]];
@@ -54,19 +65,20 @@ export function playIntro(plan, { onDone = null } = {}) {
         const runner = h('div.runner', { 'aria-hidden': 'true' }, h('div.bob', h('div.head'), h('div.body')));
         // Custom properties need setProperty (h()'s style object can't set them).
         runner.style.setProperty('--d', `${delay}ms`); runner.style.setProperty('--s', String(scale)); runner.style.setProperty('--dy', `${dy}px`);
-        scene.appendChild(runner);
+        sceneEl.appendChild(runner);
       }
       at(t0 + INTRO.run, () => {
         title.classList.add('slam');
         root.classList.add('shake');
-        scene.appendChild(h('div.intro-flash', { 'aria-hidden': 'true' }));
+        sceneEl.appendChild(h('div.intro-flash', { 'aria-hidden': 'true' }));
       });
       at(t0 + INTRO.run + INTRO.slam, finish);
     } else {
       title.classList.add('fade');
       at(t0 + INTRO.reducedTitle, finish);
     }
-    root.appendChild(scene);
-  });
+    root.appendChild(sceneEl);
+  };
+  if (!gated) begin();
   return { skip: finish, done };
 }

@@ -9,6 +9,10 @@
 - **The Story map** shows each arc's stage behind its battles, and side missions are labelled.
 - **Settings → Effect detail** (Low / Medium / High). Low keeps the numbers, plates and readouts and drops the particles, weather, slow motion and camera moves; your phone's "reduce motion" setting does the same.
 - **No spoilers on the Roster:** a ninja the story hasn't reached stays "???" until you get there.
+- **A soundtrack.** Thirteen loops played live by the game, no files: a title theme, the village, the map (Part I on shamisen and taiko, Part II on bass, drums and strings), the Academy, calm and tense battle themes for each part, a relentless boss theme that takes over when a boss drops under 40 % or enrages, the Akatsuki loop for the Boss Rush and a ceremonial theme for Summon. Stingers for the intro, victory, defeat, a Kage summon, the boss intro and cleared rounds. The music ducks under dialogs, pauses, cut-ins and clashes.
+- **Sound effects for everything.** Each nature has its own cast and impact; Rasengan whirls, Chidori chirps, the Water Dragon rushes, a Tailed Beast Bomb charges and booms; shields, enrages, revives, KOs and the survive timer's last seconds all speak; buttons tick in the era's flavour (wood and paper in Part I, metal in Shippuden).
+- **Settings → Audio:** Music and Sound effects each get a switch and a slider, next to the mute.
+- **Tap to begin** on a first visit, so the intro plays with its music (browsers only allow sound after a tap).
 
 ## Version 0.11.2
 

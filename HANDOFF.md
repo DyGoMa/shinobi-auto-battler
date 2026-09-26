@@ -2,6 +2,19 @@
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
 
+## The audio build (Phase 4 of the polish pass, towards 0.12.0)
+
+All audio is synthesised with Web Audio at play time: no files, no samples, no voices. Built to `docs/AUDIO_PLAN.md`. No gameplay change.
+
+* `js/audio/Synth.js` — the voices (Karplus–Strong plucks for shamisen, koto and bass; breathy flutes for shakuhachi and fue; taiko, a drum kit, a driven guitar, strings, FM brass, formant choir, FM bells, era ticks), a generated reverb impulse, a delay and a soft limiter. Every voice schedules nodes at an absolute time into a bus.
+* `js/audio/Scheduler.js` — the 25 ms tick / 120 ms lookahead clock; injectable timers.
+* `js/audio/Music.js` — the 13 loops as data (tempo, root, scale, a 16-bar progression, parts with phrase pools in a two-bar eighth-note notation, drum patterns in sixteenths, layers), `MusicPlayer` (phrase choice by seed per pass, always opening and resolving on phrase 0; layers as gain nodes; crossfades), the stingers, and the pure state machine `trackFor()` / `battleTrack()`.
+* `js/audio/Sfx.js` — the cue table: a cast and an impact per nature, signature sounds by technique name, mechanics, KOs, the interface (era ticks, toggles, tabs, dialogs, toasts, coins, rises, the ceremony) and the dialogue blip for Phase 5; throttles per cue, widened at 2× and 5×.
+* `js/audio/AudioManager.js` — the context and the unlock on the first gesture (a queued music start plays then), buses master → music (with a counted duck) / sfx (limiter) / ui, `apply(settings)` for `muted` / `music` / `sfx` / `musicVol` / `sfxVol`, the visibility suspend, and the old surface (`hit()`, `clash()`, `victory()` …) kept for the screens.
+* Wiring: `UIManager.render()` → `_music()` after every screen; `modal()` ducks; `toast()` pings; a delegated click listener ticks every button; `BattleScreen` picks its loop in `_buildSim()`, plays the boss stinger in the intro, switches to the boss theme under 40 % HP or on an enrage, drops the lead layer when one ally is left, ducks under pauses, tips, cut-ins and clashes, and ends with a stinger then the village; `SummonScreen` adds the shimmer layer and the ceremony's cues; `Intro.js` gates a first visit on "Tap to begin" so the intro stinger plays; Settings has the switches and sliders.
+* Tests: `tools/fake-audio.mjs` stands in for the context; 25 core tests cover the unlock and the queue, the buses and clamping, ducking, throttles, visibility, the scheduler's timing, a full pass of every loop with nothing scheduled late, the seeded phrases, the state machine and the signature table.
+* **Not measurable here:** how it sounds. The desktop pane was hidden all session, so the engine was exercised (contexts, scheduling, cues, no errors) but never heard. Listen on the first visible run and tune `vol` per part in `Music.js` and the cue levels in `Sfx.js`; the mix was set by ear on paper (docs/AUDIO_PLAN.md §7).
+
 ## The art and VFX build (Phase 3 of the polish pass, towards 0.12.0)
 
 Commits `49d23a2` (foundations), `cd78587` (the battle), `22fe56a` (summon, map, roster) and the pipeline commit after them. No gameplay, economy or balance change: `npm run sim` and `npm run campaign` print the 0.11.0 numbers (10/10 players clear both parts, 61 scenarios). The decisions are in `docs/ART_BIBLE.md`; the audit in `docs/POLISH_AUDIT.md`.
@@ -310,7 +323,7 @@ Settings → Audio and visuals already shows three **disabled** switches bound t
 * **Sound effects** (a separate switch from Sound) → `settings.sfx`
 * **Visual effects** (effect detail) → `settings.vfx`
 
-When the pass lands: drop `{ disabled: true }` in `SettingsScreen.js`, read the keys in `AudioManager` (a music bus and an effects bus under the master gain) and `Effects` (detail level), and update the Wiki guides and What's new (standing rule). **Phase 3 did the effects half:** `settings.vfx` is now the three-level Effect detail control read by `Effects` and `Renderer`; Music and Sound effects stay disabled until Phase 4 (their `musicVol` / `sfxVol` keys are already in the save).
+**Done in Phases 3 and 4:** `settings.vfx` is the three-level Effect detail control read by `Effects` and `Renderer`; Music and Sound effects are live switches with sliders (`settings.music` / `sfx` / `musicVol` / `sfxVol`), read by `AudioManager.apply()`.
 
 ---
 

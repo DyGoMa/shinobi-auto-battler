@@ -1,6 +1,6 @@
 # AUDIO_PLAN.md — music and sound for Shinobi Auto-Battler
 
-*Phase 2 of the polish pass. Decided with the user in Phase 1 (every recommended pick). Phase 4 builds to this document. All audio is original and synthesised in code with Web Audio: no files, no samples, no copyrighted or ripped material, no voices. "In the spirit of the anime's score" means the instrumentation and the mood, never its melodies.*
+*Phase 2 of the polish pass. Decided with the user in Phase 1 (every recommended pick). **Built in Phase 4** (`js/audio/`, see HANDOFF.md "The audio build"): everything below is in the game except the three-slider layout (two sliders plus the mute switch shipped) and the reward count-up ticks. The mix was set on paper and must be tuned by ear on the first visible run. All audio is original and synthesised in code with Web Audio: no files, no samples, no copyrighted or ripped material, no voices. "In the spirit of the anime's score" means the instrumentation and the mood, never its melodies.*
 
 ## 1. Decisions locked in Phase 1
 

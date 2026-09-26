@@ -67,13 +67,13 @@ export function render(game, ui, params) {
     if (!canAfford(state, count, B)) { ui.toast(`Not enough scrolls — you need ${fmt(pullCost(count, B) - state.currencies.scrolls)} more.`, 'bad'); return; }
     const res = pull(state, banner.id, count, C, game.rng, B);
     if (!res.ok) { ui.toast(res.error, 'bad'); return; }
-    game.commit('pull');
+    game.commit('pull'); game.audio.ui('drum');
     playAnimation(game, ui, res.results);
   };
   const doTicket = (kind) => {
     const res = ticketPull(state, banner.id, kind, C, game.rng, B);
     if (!res.ok) { ui.toast(res.error, 'bad'); return; }
-    game.commit('pull');
+    game.commit('pull'); game.audio.ui('drum');
     playAnimation(game, ui, res.results);
   };
   const tickets = state.currencies.tickets || 0, rare = state.currencies.rareTickets || 0;
@@ -142,7 +142,7 @@ function playAnimation(game, ui, results) {
   const fx = h('div.burst-layer');   // the DOM sparks of a rare reveal, in their own fixed layer
   overlay.append(stage, fx);
   document.body.appendChild(overlay);
-  if (!instant) game.audio.scroll();
+  game.audio.setLayer('shimmer', true);
   let skipped = false, finished = false, raf = 0, stopped = false;
   const timers = [];
   const later = (s, fn) => timers.push(setTimeout(fn, s * 1000));
@@ -152,7 +152,7 @@ function playAnimation(game, ui, results) {
     const tag = r.isNew ? h('span.tag', 'NEW!') : r.refund ? h('span.tag.refund', `+${fmt(r.refund)} Ryo`) : h('span.tag.up', `${r.stars}★`);
     return h('div.reveal-card.' + r.tier, tag, avatar(d, { size: r.tier === 'kage' ? 'lg' : '' }), h('div.nm', d.name), tierTag(r.tier), r.featured ? h('span.pill.accent', 'Rate-up') : null);
   });
-  const done = btn('Continue', () => { stopped = true; cancelAnimationFrame(raf); for (const t of timers) clearTimeout(t); overlay.remove(); ui.refresh(); ui.refreshTop(); }, 'primary big');
+  const done = btn('Continue', () => { stopped = true; cancelAnimationFrame(raf); for (const t of timers) clearTimeout(t); overlay.remove(); game.audio.setLayer('shimmer', false); ui.refresh(); ui.refreshTop(); }, 'primary big');
   done.style.visibility = 'hidden';
 
   const flash = (tier) => {
@@ -218,13 +218,13 @@ function playAnimation(game, ui, results) {
   const fired = new Set();
   const beats = [
     [0.15, () => { for (let i = 0; i < 20; i++) effects.emit({ x: cx + (Math.random() * 120 - 60), y: 900, vx: Math.random() * 80 - 40, vy: -(120 + Math.random() * 120), life: 0.8, size: 4, shape: 'circle', color: '#9be3ff', add: true }); }],
-    [0.9, () => effects.ring(cx, cy, '#ffd66b', { r1: 320, width: 10, dur: 0.6, ellipse: 0.36 })],
-    [1.9, () => { effects.smoke(cx, 940, 40, '#e6dccb', 0.75); effects.flash('#fff6d8', 0.5, 0.25); }],
+    [0.9, () => { effects.ring(cx, cy, '#ffd66b', { r1: 320, width: 10, dur: 0.6, ellipse: 0.36 }); game.audio.ui('circle'); }],
+    [1.9, () => { effects.smoke(cx, 940, 40, '#e6dccb', 0.75); effects.flash('#fff6d8', 0.5, 0.25); game.audio.ui('poof'); }],
     [2.3, () => {
       effects.flash(kage ? '#ffffff' : hexA(tierColor, 1), kage ? 1 : 0.7, kage ? 0.5 : 0.3);
       effects.ring(cx, 620, tierColor, { r1: 700, width: 14, dur: 0.9 });
       for (let i = 0; i < (kage ? 60 : 30); i++) { const a = Math.random() * Math.PI * 2, sp = 200 + Math.random() * 500; effects.emit({ x: cx, y: 620, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, grav: 300, life: 0.9 + Math.random() * 0.6, size: 4 + Math.random() * 5, shape: 'star', color: Math.random() < 0.5 ? tierColor : '#fff5cc', add: true }); }
-      if (kage) { game.audio.pullReveal('kage'); kageIn(); later(1.9, showCards); } else showCards();
+      if (kage) { game.audio.stinger('kage'); kageIn(); later(1.9, showCards); } else showCards();
     }],
   ];
   const frame = (now) => {

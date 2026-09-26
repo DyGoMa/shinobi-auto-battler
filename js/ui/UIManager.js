@@ -26,6 +26,7 @@ import { introPlan } from '../core/StartFlow.js';
 import { ensureSprite, icon } from '../render/icons.js';
 import { currentNode } from '../core/Progression.js';
 import { eraOfPart } from '../render/Assets.js';
+import { trackFor } from '../audio/Music.js';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: 'home', mod: Home },
@@ -75,12 +76,24 @@ export class UIManager {
     ensureSprite(document);
     for (const el of document.querySelectorAll('.ico-slot[data-icon]')) el.replaceChildren(icon(el.dataset.icon));
     for (const t of TABS) {
-      const b = h('button.tab', { type: 'button', dataset: { tab: t.id }, onclick: () => { this.game.audio.click(); this.go(t.id); } },
+      const b = h('button.tab', { type: 'button', dataset: { tab: t.id }, onclick: () => this.go(t.id) },
         h('span.ti', { 'aria-hidden': 'true' }, icon(t.icon)), h('span.tl', t.label));
       this.tabbar.appendChild(b);
     }
     document.getElementById('brand').addEventListener('click', () => this.go('home'));
-    document.getElementById('ach-btn').addEventListener('click', () => { this.game.audio.click(); this.go('achievements'); });
+    document.getElementById('ach-btn').addEventListener('click', () => this.go('achievements'));
+    // Every button gets a quiet tick in the era's flavour (docs/AUDIO_PLAN.md §6.4); the summon
+    // ceremony and the battle's own cues speak for themselves.
+    document.addEventListener('click', (e) => {
+      const el = e.target.closest?.('button, a.wlink, .chip'); if (!el || el.disabled) return;
+      const a = this.game.audio;
+      if (el.closest('.pull-overlay') || el.closest('.stage')) return;
+      if (el.classList.contains('toggle')) a.ui(el.getAttribute('aria-checked') === 'true' ? 'toggleOn' : 'toggleOff');
+      else if (el.classList.contains('tab')) a.ui('tab');
+      else if (el.classList.contains('back-btn') || el.classList.contains('ghost')) a.ui('back');
+      else if (el.classList.contains('pin')) a.ui('pin');
+      else a.ui('tap');
+    });
     const mute = document.getElementById('mute-btn');
     mute.addEventListener('click', () => {
       const s = this.game.state.settings; s.muted = !s.muted;
@@ -131,8 +144,8 @@ export class UIManager {
     this.go(t.id, t.params);
   }
 
-  /** Settings → Replay intro: the full splash and scene again. */
-  playIntro() { return playIntro(introPlan({ full: true, reducedMotion: prefersReducedMotion() })); }
+  /** Settings → Replay intro: the full splash and scene again (the audio is unlocked by now, so no gate). */
+  playIntro() { this.game.audio.stopMusic(0.3); return playIntro(introPlan({ full: true, reducedMotion: prefersReducedMotion() }), { onBegin: () => this.game.audio.stinger('intro'), onDone: () => this._music() }); }
 
   go(id, params = {}, { replace = false } = {}) {
     if (!SCREENS[id]) id = 'home';
@@ -167,6 +180,15 @@ export class UIManager {
     this.era = e;
     document.documentElement.dataset.era = e;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[e]);
+    this.game.audio.setEra(e);
+  }
+  /** The loop this screen wants (docs/AUDIO_PLAN.md §5); a battle picks its own. */
+  _music() {
+    if (this.battle) return;
+    const id = this.current; const params = this.params || {};
+    const part = id === 'story' || id === 'daily' ? (this.era === 'p2' ? 2 : 1) : (this.storyEra() === 'p2' ? 2 : 1);
+    const t = trackFor({ screen: id, part, hard: !!params.hard, bossPart: id === 'daily' ? part : null });
+    this.game.audio.playMusic(t.id, { layers: t.layers });
   }
 
   /** Draw the current screen. `enter` plays the fade-in (navigation only, not refreshes). */
@@ -190,6 +212,7 @@ export class UIManager {
       if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     }
     this.refreshTop();
+    this._music();
   }
 
   /** One extra history entry while the menu is up, so the back button stays on the menu. */
@@ -312,7 +335,9 @@ export class UIManager {
     veil.appendChild(box);
     const entry = { dismissable, close: () => close() };
     this._modals.push(entry);
-    const close = () => { veil.remove(); document.removeEventListener('keydown', onKey); this._modals = this._modals.filter(m => m !== entry); if (onClose) onClose(); };
+    this.game.audio.duckMusic(true); this.game.audio.ui('open');
+    let closed = false;
+    const close = () => { if (closed) return; closed = true; veil.remove(); document.removeEventListener('keydown', onKey); this._modals = this._modals.filter(m => m !== entry); this.game.audio.duckMusic(false); this.game.audio.ui('close'); if (onClose) onClose(); };
     const onKey = (e) => { if (e.key === 'Escape' && dismissable) close(); };
     if (dismissable) veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
     document.addEventListener('keydown', onKey);
@@ -347,6 +372,7 @@ export class UIManager {
     if (sticky) for (const old of this.toastRoot.querySelectorAll('.toast.sticky')) if (old.dataset.text === text) return;
     const t = h(onclick ? 'button.toast' : 'div.toast', { role: 'status', type: onclick ? 'button' : null, dataset: { text }, onclick: onclick ? () => { t.remove(); onclick(); } : null }, text);
     if (kind) t.classList.add(kind);
+    this.game.audio.ui(kind === 'bad' ? 'error' : 'ping');
     if (sticky) t.classList.add('sticky');
     this.toastRoot.appendChild(t);
     if (!sticky) setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 320); }, 3200);

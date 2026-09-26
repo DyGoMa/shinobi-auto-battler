@@ -26,7 +26,7 @@ export function render(game, ui) {
   const claim = (id) => {
     const r = claimAchievement(state, id, C, B);
     if (!r.ok) return;
-    game.audio.achievement?.();
+    game.audio.achievement?.(); game.audio.ui('coins');
     game.commit('claim');
     if (r.character) announceCharacter(game, ui, r.character);
     else ui.toast('Reward claimed!', 'good');

@@ -13,6 +13,12 @@ import { showSteps, pageLink } from './install.js';
 
 const row = (title, sub, control, id) => h('div.setting', { id },
   h('div.setting-text', h('b', title), sub ? h('div.tiny.muted', sub) : null), control);
+/** A 0–1 volume slider (44 px tall); the value is applied as it moves and saved on release. */
+const slider = (label, value, onChange) => {
+  const el = h('input.vol', { type: 'range', min: '0', max: '100', step: '5', value: String(Math.round(value * 100)), 'aria-label': label });
+  el.addEventListener('input', () => onChange(Number(el.value) / 100));
+  return el;
+};
 
 export function render(game, ui) {
   const { state, save, cloud } = game;
@@ -53,9 +59,9 @@ export function render(game, ui) {
 
     h('div.card.gap',
       h('h2', 'Audio and visuals'),
-      row('Sound', 'Turns every game sound on or off.', toggle(!s.muted, (on) => { s.muted = !on; game.audio.setMuted(s.muted); game.commit('settings'); ui.refreshTop(); }, 'Sound')),
-      row('Music', 'Arrives with the soundtrack update.', toggle(s.music !== false, () => {}, 'Music (coming soon)', { disabled: true }), 'set-music'),
-      row('Sound effects', 'A separate switch for effects arrives with the audio update.', toggle(s.sfx !== false, () => {}, 'Sound effects (coming soon)', { disabled: true }), 'set-sfx'),
+      row('Sound', 'Turns every game sound on or off.', toggle(!s.muted, (on) => { s.muted = !on; game.audio.apply(s); game.commit('settings'); ui.refreshTop(); }, 'Sound')),
+      row('Music', 'The soundtrack: a loop for every screen and battle, all played live by the game.', h('div.row.tight', slider('Music volume', s.musicVol ?? 0.6, (v) => { s.musicVol = v; game.audio.apply(s); game.commit('settings'); }), toggle(s.music !== false, (on) => { s.music = on; game.audio.apply(s); game.commit('settings'); }, 'Music')), 'set-music'),
+      row('Sound effects', 'Hits, jutsu, the interface and the summon ceremony.', h('div.row.tight', slider('Sound effects volume', s.sfxVol ?? 0.8, (v) => { s.sfxVol = v; game.audio.apply(s); game.commit('settings'); }), toggle(s.sfx !== false, (on) => { s.sfx = on; game.audio.apply(s); game.commit('settings'); }, 'Sound effects')), 'set-sfx'),
       row('Effect detail', { low: 'Low: hits, jutsu and readouts only, no weather or particles. The choice under "reduce motion" too.', medium: 'Medium (recommended): the full effects at phone-friendly counts.', high: 'High: every particle, weather and camera move. Best on a fast phone or a computer.' }[VFX_LEVELS.includes(s.vfx) ? s.vfx : 'medium'],
         seg('Effect detail', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High']], VFX_LEVELS.includes(s.vfx) ? s.vfx : 'medium', (v) => set('vfx', v)), 'set-vfx'),
     ),

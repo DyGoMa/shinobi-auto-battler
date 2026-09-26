@@ -97,7 +97,7 @@ export function openDetail(game, ui, d) {
     const doLevel = (times) => {
       let done = 0, spent = 0;
       for (let i = 0; i < times; i++) { const r = levelUp(state, d.id, B); if (!r.ok) break; done++; spent += r.cost; }
-      if (done) { game.audio.levelUp(); game.commit('levelup'); ui.toast(`${d.short} reached Lv ${state.roster[d.id].level} (−${fmt(spent)} Ryo)`, 'good'); }
+      if (done) { game.audio.levelUp(state.roster[d.id].level >= B.stats.levelCap ? 'max' : done >= 5 ? 'five' : 'one'); game.commit('levelup'); ui.toast(`${d.short} reached Lv ${state.roster[d.id].level} (−${fmt(spent)} Ryo)`, 'good'); }
       rerender();
       if (done) { const a = holder.querySelector('.avatar'); if (a) { a.classList.add('levelup', 'bump'); } }
     };

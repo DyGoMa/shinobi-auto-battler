@@ -23,13 +23,14 @@ async function boot() {
   // The art index (assets/index.json): which portraits and sprites exist. Nothing waits on
   // it; a slot draws its code-drawn fallback and swaps the image in when it arrives.
   loadAssetIndex().catch(() => {});
-  // The intro starts first, so the splash is up while the game loads behind it.
-  const intro = playIntro(introPlan({ seen: introSeen(), reducedMotion: prefersReducedMotion() }));
+  // The intro starts first, so the splash is up while the game loads behind it. A first visit
+  // waits for a tap ("Tap to begin"): that tap unlocks the audio, so the intro plays with its music.
+  const audio = new AudioManager();
+  const intro = playIntro(introPlan({ seen: introSeen(), reducedMotion: prefersReducedMotion() }), { gate: !introSeen(), onBegin: () => audio.stinger('intro') });
   setIntroSeen();
   const errs = validateContent(CONTENT);
   if (errs.length) console.warn(`[content] ${errs.length} validation problem(s):\n` + errs.join('\n'));
 
-  const audio = new AudioManager();
   const local = new LocalBackend();
   // Inside the installed app (standalone) the Google popup gets a fast-cancel fallback (FirebaseBackend).
   const cloud = new FirebaseBackend(undefined, { standalone: isStandalone() });
@@ -72,7 +73,7 @@ async function boot() {
     save.save(reason);
     if (ui) { ui.refreshTop(); if (fresh.length) ui.achievementsUnlocked(fresh); }
   };
-  audio.setMuted(!!save.state.settings.muted);
+  audio.apply(save.state.settings);
 
   // The build stamp on the menu and in Settings: version.json is written by the Pages
   // deploy; a local checkout has none and shows "dev".
@@ -85,7 +86,7 @@ async function boot() {
   let lastState = save.state;
   save.onChange((s) => {
     if (s !== lastState) {
-      lastState = s; audio.setMuted(!!s.settings.muted);
+      lastState = s; audio.apply(s.settings);
       const fresh = unlockNow(s);
       if (fresh.length) save.save('achievements');
       ui.onStateReplaced();

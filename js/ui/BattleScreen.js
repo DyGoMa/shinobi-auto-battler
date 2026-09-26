@@ -8,6 +8,7 @@ import { Renderer } from '../render/Renderer.js';
 import { Effects } from '../render/Effects.js';
 import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeCleared } from '../core/Progression.js';
 import { NATURE } from '../render/Effects.js';
+import { battleTrack } from '../audio/Music.js';
 import { icon } from '../render/icons.js';
 import { stageDefFor } from '../render/Stage.js';
 import * as Assets from '../render/Assets.js';
@@ -109,6 +110,7 @@ export class BattleScreen {
     const speeds = this.game.B.qol.battleSpeeds;
     this.speed = speeds[(speeds.indexOf(this.speed) + 1) % speeds.length];
     this.speedBtn.textContent = `${this.speed}×`;
+    this.game.audio.setSpeed(this.speed);
     this._labelSpeed();
     this.game.state.settings.speed = this.speed;
     this.game.commit('settings');
@@ -167,7 +169,40 @@ export class BattleScreen {
     this._buildPortraits();
     this._updateObjective();
     this._buildInfo();
+    this._music();
     this._intro();
+  }
+
+  // ---------------------------------------------------------------- music (docs/AUDIO_PLAN.md §5)
+  /** The loop this fight starts with: calm or tense by boss and part, the Academy for lessons, the Akatsuki loop for the rush. */
+  _music() {
+    const boss = this.sim.units.some(u => u.side === 'enemy' && u.isBoss);
+    const t = battleTrack({ kind: this.tutorial ? 'lesson' : this.isRush ? 'rush' : this.daily ? 'daily' : 'story', part: this.era === 'p2' ? 2 : 1, boss, hard: this.hard });
+    if (this.isRush && this.round < 3) t.layers = t.layers.filter(l => l !== 'kit');   // the kit joins from round 3
+    this.game.audio.setSpeed(this.speed);
+    this.game.audio.playMusic(t.id, { layers: t.layers });
+    this._bossTheme = false;
+  }
+  /** The boss under 40 % or enraged: the relentless theme (a choir for the great names). */
+  _bossMusic() {
+    if (this._bossTheme) return; this._bossTheme = true;
+    const boss = this.sim.units.find(x => x.side === 'enemy' && x.isBoss);
+    const great = boss && /kage|hokage|madara|kaguya|pain|nagato|obito|itachi|orochimaru|nine_tails|ten_tails/i.test(boss.key);
+    this.game.audio.playMusic('boss', { layers: ['brass', ...(great ? ['choir'] : [])] });
+  }
+  /** The end: the loop stops, the stinger plays, the village comes back under the results. */
+  _endMusic(won) {
+    const a = this.game.audio; a.stopMusic(0.4);
+    if (won) a.victory(); else if (this.sim.endReason === 'retreat') a.stinger('retreat'); else a.defeat();
+    this._later(2.8, () => { if (this.ended && this.ui.battle === this) a.playMusic(this.ui.storyEra() === 'p2' ? 'village2' : 'village'); });
+  }
+  /** A short duck under a cut-in or a clash (counted, so closing the battle releases what is still held). */
+  _duckFor(seconds) { this._ducks = (this._ducks || 0) + 1; this.game.audio.duckMusic(true); this._later(seconds, () => { if (this._ducks > 0) { this._ducks--; this.game.audio.duckMusic(false); } }); }
+  _releaseDucks() {
+    const a = this.game.audio;
+    while ((this._ducks || 0) > 0) { this._ducks--; a.duckMusic(false); }
+    if (this._duckPause) { this._duckPause = false; a.duckMusic(false); }
+    if (this._duckTip) { this._duckTip = false; a.duckMusic(false); }
   }
 
   // ---------------------------------------------------------------- overlays and the boss intro
@@ -230,6 +265,7 @@ export class BattleScreen {
       this.bcName.textContent = boss.name; this.bcTitle.textContent = def?.title || '';
       this.bossCardEl.classList.toggle('quick', quick);
       this._show(this.bossCardEl, quick ? 0.9 : 1.6);
+      this.game.audio.stinger('bossIntro');
       const fill = (k) => { if (!this.introPause) return; v.hpReveal = k; if (k < 1) this._later(0.03, () => fill(Math.min(1, k + 0.05))); else v.hpReveal = null; };
       fill(0);
     });
@@ -243,6 +279,7 @@ export class BattleScreen {
     const v = this.renderer._vis(boss); v.hidden = false; v.hpReveal = null;
     this._readout((this.node?.name || 'Boss Rush').toUpperCase(), 'FIGHT!', 'fight');
     this.effects.flash('#ffffff', 0.35, 0.15);
+    this.game.audio.cue('fight');
   }
   _skipIntro() { const boss = this.sim.units.find(u => u.side === 'enemy' && u.isBoss); this._clearTimers(); if (boss) this._introEnd(boss); else this.introPause = false; }
   /** The victory or defeat card over the stage, before the results dialog. */
@@ -298,7 +335,6 @@ export class BattleScreen {
     if (this.paused || this.ended) return;
     const res = this.sim.fireUlt(uid);
     if (res.ok) {
-      this.game.audio.ultFire();
       // A coach tip that asked for an Ultimate ("tap Sasuke now!") closes itself.
       if (this.tipBox?.untilUlt) this._closeTip();
     } else {
@@ -316,6 +352,7 @@ export class BattleScreen {
     if (this.ended) return;
     this.paused = force == null ? !this.paused : force;
     this.pauseBtn.replaceChildren(icon(this.paused ? 'play' : 'pause'));
+    if (this.paused !== !!this._duckPause) { this._duckPause = this.paused; this.game.audio.duckMusic(this.paused); }
     const pl = this.paused ? 'Resume' : 'Pause'; this.pauseBtn.title = pl; this.pauseBtn.setAttribute('aria-label', pl);
     this.stage.querySelector('.pause-veil')?.remove();
     if (this.paused) {
@@ -349,7 +386,7 @@ export class BattleScreen {
     this.close({ id: 'home' });
   }
 
-  _forfeit() { this.paused = false; this.stage.querySelector('.pause-veil')?.remove(); this.sim.state = 'lost'; this.sim.endReason = 'retreat'; }
+  _forfeit() { this.paused = false; if (this._duckPause) { this._duckPause = false; this.game.audio.duckMusic(false); } this.stage.querySelector('.pause-veil')?.remove(); this.sim.state = 'lost'; this.sim.endReason = 'retreat'; }
 
   // ---------------------------------------------------------------- loop
   _loop(ts) {
@@ -368,7 +405,7 @@ export class BattleScreen {
         // Default 'smart' = clash-aware: fires counter-nature ninja into wind-ups and
         // holds ults that would be Overwhelmed (Settings → Auto-ult mode).
         this.sim.botUlts(this.game.state.settings.autoUltMode === 'asap' ? 'asap' : 'smart');
-        if (this.sim.stats.ults > before) this.game.audio.ultFire();
+        void before;
       }
       this.sim.step(dt);
       const events = this.sim.drainEvents();
@@ -384,16 +421,36 @@ export class BattleScreen {
     if (!this.ended && this.sim.state !== 'running') this._onEnd();
   }
 
+  /** The sound of every sim event (docs/AUDIO_PLAN.md §6): the nature's cast and impact, the signature techniques by name, the mechanics, the KOs. */
   _sounds(events) {
     const a = this.game.audio;
     for (const e of events) {
+      const u = e.uid != null ? this.sim.unit(e.uid) : null;
       switch (e.type) {
-        case 'damage':
-          if (e.relation > 0) a.effective(); else if (e.crit) a.crit(); else if (e.relation < 0) a.resisted(); else a.hit();
+        case 'damage': {
+          const src = this.sim.unit(e.src);
+          const nature = e.nature || src?.activeNature || null;
+          const power = e.kind === 'ult' ? 1.5 : e.kind === 'special' ? 1.1 : e.crit ? 0.9 : 0.5;
+          const name = e.kind === 'ult' ? this._lastUltName : e.kind === 'special' ? this._lastSpecialName : null;
+          a.impact(nature, power, name);
+          if (e.relation > 0) a.effective(); else if (e.relation < 0) a.resisted(); else if (e.crit) a.crit();
+          if (u?.isBoss && u.alive && u.hp / u.maxHp < 0.4) this._bossMusic();
           break;
+        }
         case 'ultReady': a.ultReady(); break;
-        case 'clash': a.clash(e.outcome); break;
-        case 'telegraph': a.telegraph(); break;
+        case 'ult': this._lastUltName = e.name; a.ultFire(e.nature, e.name); this._duckFor(1.1); break;
+        case 'clash': a.clash(e.outcome); this._duckFor(1.6); break;
+        case 'telegraph': this._lastSpecialName = e.name; a.telegraph(e.nature, e.name, e.windup, !!e.special); break;
+        case 'jutsuLand': a.impact(e.nature, 1.1, e.name); break;
+        case 'death':
+          if (!u) break;
+          a.ko(u.isBoss ? 'boss' : u.protected ? 'escort' : u.side === 'player' ? 'ally' : 'enemy');
+          if (u.side === 'player' && this.sim.units.filter(x => x.side === 'player' && x.alive && !x.protected).length <= 1) a.setLayer('lead', false);
+          break;
+        case 'heal': a.mechanic('heal'); break;
+        case 'enrage': a.mechanic('enrage'); this._bossMusic(); break;
+        case 'shield': case 'shieldBreak': case 'revive': case 'swap': case 'summon': case 'rally': case 'stun': case 'immune': case 'reflectWarn': case 'reflect': case 'buff':
+          a.mechanic(e.type); break;
         default: break;
       }
     }
@@ -421,7 +478,9 @@ export class BattleScreen {
     const t = this.sim.time;
     const surv = this.sim.surviveSeconds();
     if (!this.isRush && surv && (this.sim.objective.type === 'survive' || this.sim.objective.type === 'protect')) {
-      this.timerEl.textContent = `⏳ ${Math.max(0, Math.ceil(surv - t))}s`;
+      const left = Math.max(0, Math.ceil(surv - t));
+      this.timerEl.textContent = `⏳ ${left}s`;
+      if (left <= 5 && left > 0 && !this.ended) this.game.audio.cue('timerTick');
     } else {
       this.timerEl.textContent = `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
     }
@@ -449,6 +508,7 @@ export class BattleScreen {
     const tip = this._tipContent(id);
     if (!tip || this.ended) { this._nextTip(); return; }
     this.tipPause = true;
+    if (!this._duckTip) { this._duckTip = true; this.game.audio.duckMusic(true); this.game.audio.ui('paper'); }
     const box = h('div.onboard', { role: 'dialog', 'aria-live': 'polite' }, ...tip.body, h('div.row', btn(tip.button || 'Got it', () => this._closeTip())));
     box.untilUlt = !!tip.untilUlt;
     box.style.top = tip.top || '6%';
@@ -459,6 +519,7 @@ export class BattleScreen {
   _closeTip() {
     if (this.tipBox) { this.tipBox.remove(); this.tipBox = null; }
     this.tipPause = false; this.last = performance.now();
+    if (this._duckTip) { this._duckTip = false; this.game.audio.duckMusic(false); }
     this._nextTip();
   }
   _nextTip() { const next = this.tips.queue?.shift(); if (next) this._showTip(next); }
@@ -550,7 +611,7 @@ export class BattleScreen {
         recordBattle(state, { won: true, mode: 'rush', sim: this.sim }, B);
         this.rushRewards.scrolls += rw.scrolls; this.rushRewards.ryo += rw.ryo;
         game.commit('bossrush');
-        game.audio.victory();
+        game.audio.stinger('roundClear');
         this._intermission(rw);
         return;
       }
@@ -558,7 +619,7 @@ export class BattleScreen {
       state.bossRush.runs = (state.bossRush.runs || 0) + 1;
       recordBattle(state, { won: false, mode: 'rush', sim: this.sim }, B);
       game.commit('bossrush');
-      game.audio.defeat();
+      this._endMusic(false);
       this._endBeat(false);
       this._later(1.3, () => this._rushResults());
       return;
@@ -569,7 +630,7 @@ export class BattleScreen {
       // the last lesson is won (or the tutorial is skipped).
       const res = won ? completeLesson(state, this.tutorial.index, C, B, { replay: this.tutorial.replay }) : null;
       game.commit('tutorial');
-      won ? game.audio.victory() : game.audio.defeat();
+      this._endMusic(won);
       this._endBeat(won);
       this._later(1.3, () => this._tutorialResults(won, res));
       return;
@@ -578,7 +639,7 @@ export class BattleScreen {
     const result = completeNode(state, this.node, won, C, B, { time: this.sim.time }, { hard: this.hard });
     recordBattle(state, { won, mode: this.hard ? 'hard' : 'story', sim: this.sim, matchup: this.matchup }, B);
     game.commit('battle');
-    won ? game.audio.victory() : game.audio.defeat();
+    this._endMusic(won);
     this._endBeat(won);
     this._later(1.3, () => this._results(won, result));
   }
@@ -653,7 +714,7 @@ export class BattleScreen {
     recordBattle(state, { won, mode: 'daily', sim: this.sim, matchup: this.matchup }, B);
     if (won && this.round < this.daily.rounds.length) {
       game.commit('daily');
-      game.audio.victory();
+      game.audio.stinger('roundClear');
       const carry = this.sim.playerCarry();
       const next = this.daily.rounds[this.round];
       const box = h('div.pause-veil', h('div.card.center', { style: { maxWidth: '380px' } },
@@ -666,7 +727,7 @@ export class BattleScreen {
     }
     const reward = won ? completeDaily(state, this.daily, C, B) : null;
     game.commit('daily');
-    won ? game.audio.victory() : game.audio.defeat();
+    this._endMusic(won);
     this._endBeat(won);
     this._later(1.3, () => this._dailyResults(won, reward));
   }
@@ -718,6 +779,7 @@ export class BattleScreen {
   restart() {
     this.ended = false; this.paused = false; this.pauseBtn.replaceChildren(icon('pause'));
     this.timeScale = 1; this.slowUntil = 0; this.introPause = false;
+    this._clearTimers(); this._releaseDucks();
     this._buildSim();
     if (this.tutorial) {
       // A retried lesson coaches again from the start.
@@ -732,6 +794,7 @@ export class BattleScreen {
   close(goTo = null, silent = false) {
     cancelAnimationFrame(this.raf);
     this._clearTimers();
+    this._releaseDucks();
     document.removeEventListener('visibilitychange', this._onVis);
     document.removeEventListener('keydown', this._onKey);
     try { this.ro.disconnect(); } catch { /* ignore */ }

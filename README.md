@@ -10,7 +10,7 @@ A fan-made, Naruto-universe **2D lane auto-battler** for the web.
 * **Installable (0.11.1):** a web app manifest, icons and a minimal network-first service worker; Settings → App installs it on the home screen (standalone, no browser bars), checks for updates ("Update ready — tap to reload") and the back button moves between screens. **0.11.2** suggests it to phone players: a start-menu notice, a one-time popup after the tutorial, two spaced reminders, and one-tap install where the browser allows it (illustrated steps elsewhere).
 * **Everyday shortcuts (0.11):** ⏭ Skip for battles already won (the real battle, instantly), 1× / 2× / 5× speed, ⚡ recommended power on every battle, Level to recommended and Smart spend on the Roster, ✨ Auto team, counter hints and three team presets, Roster sorting, red dots on the tabs, and a Story map with Story · Hard · Daily · Boss Rush tabs.
 
-The polish pass is under way (HANDOFF.md, docs/ART_BIBLE.md): the art and effects are in — anime-style ninja figures and busts drawn in code (with generated portraits and sprites dropped in through `tools/ingest.mjs` as they are made), a drawn stage per arc, effects per nature and signature jutsu, cut-ins, clash readouts, boss intros, the summon ceremony and two era skins. Music and story scenes are the next phases; sound is still the small synth.
+The polish pass is under way (HANDOFF.md, docs/ART_BIBLE.md): the art and effects are in — anime-style ninja figures and busts drawn in code (with generated portraits and sprites dropped in through `tools/ingest.mjs` as they are made), a drawn stage per arc, effects per nature and signature jutsu, cut-ins, clash readouts, boss intros, the summon ceremony and two era skins. The audio is in too: thirteen loops and the stingers played live from data, and a sound for every event, all synthesised in Web Audio with no files (docs/AUDIO_PLAN.md). Story scenes are the next phase.
 
 **Play:** https://dygoma.github.io/shinobi-auto-battler/ (add `?debug=1` for the balance debug panel)
 **Repo:** https://github.com/DyGoMa/shinobi-auto-battler
@@ -77,6 +77,7 @@ js/audio/AudioManager.js    Web Audio synth
 wiki/guides/                the Wiki's hand-written guides (markdown)
 assets/                     fonts (Anton, Yuji Syuku subsets), portraits/ and sprites/ (WebP, made by tools/ingest.mjs), index.json (what exists), manifest.json (every picture wanted, with its prompt)
 js/render/                  Figure.js (code-drawn ninja and busts), Stage.js (31 stages), Effects.js (nature and signature effects), Renderer.js, Assets.js (lazy images), icons.js (SVG sprite)
+js/audio/                   Synth.js (voices), Scheduler.js, Music.js (13 loops as data, stingers, the state machine), Sfx.js (cues), AudioManager.js (buses, unlock, settings)
 tools/                      manifest.mjs + prompts-data.mjs (the art manifest and checklist), ingest.mjs (incoming → assets), fonts.mjs (font subsets),
                             sim.mjs, campaign-sim.mjs, validate.mjs, wiki-check.mjs, autotune.mjs, test-core.mjs,
                             check-syntax.mjs, naming.mjs (+ naming-sources.mjs), ui-audit.mjs (browser), serve.mjs

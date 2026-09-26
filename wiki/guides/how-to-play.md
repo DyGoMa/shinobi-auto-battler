@@ -26,7 +26,7 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 3. **Chakra** fills as they fight. When a portrait at the bottom glows, that ninja's **Ultimate** is ready: tap it, or press 1–4 on a keyboard.
 4. When an enemy shows a **wind-up plate** (the jutsu's name with a **CLASH** tag, and dashed zones under the ninja it will hit), fire an Ultimate into it to start a **Jutsu Clash**. The badge on each ready portrait predicts the result; the clash plays in slow motion with the result in big letters. See [Jutsu Clash explained](wiki:guide/jutsu-clash).
 
-Boss battles open with the boss's card (name and title); tap the battlefield to skip it. Settings → **Effect detail** trades particles and camera moves for speed on a slow phone.
+Boss battles open with the boss's card (name and title); tap the battlefield to skip it. Settings → **Effect detail** trades particles and camera moves for speed on a slow phone, and Settings → **Audio** has switches and sliders for the music and the sound effects.
 5. The buttons at the top pause the battle, switch **🤖 Auto-ult** on or off, and change the speed ({{speeds:qol.battleSpeeds}}). The game remembers the speed you picked for your next battle.
 
 ## Skipping a battle

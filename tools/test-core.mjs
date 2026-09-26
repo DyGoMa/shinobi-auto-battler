@@ -30,6 +30,12 @@ import { lookFor } from '../js/render/Figure.js';
 import { ICONS, EMOJI_ICON, NATURE_ICON, ROLE_ICON, hasEmoji } from '../js/render/icons.js';
 import { VFX_LEVELS } from '../js/core/SaveManager.js';
 import { buildManifest, checklistMarkdown, DUAL_ERA } from './manifest-lib.mjs';
+import { AudioManager } from '../js/audio/AudioManager.js';
+import { Synth } from '../js/audio/Synth.js';
+import { Scheduler } from '../js/audio/Scheduler.js';
+import { MusicPlayer, TRACKS, TRACK_IDS, phraseSequence, parsePhrase, trackFor, battleTrack, playStinger } from '../js/audio/Music.js';
+import { soundSignature } from '../js/audio/Sfx.js';
+import { FakeAudioContext, fakeWindow, fakeClock, drive } from './fake-audio.mjs';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -823,6 +829,63 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(M.missingDescriptions.length === 0, `every manifest entry has a written description${M.missingDescriptions.length ? ` (generic: ${M.missingDescriptions.join(', ')})` : ''}`);
   const md = checklistMarkdown(M, new Set(['assets/portraits/naruto_p1.webp']), { now: '2026-01-01T00:00:00.000Z' });
   ok(md.includes('| `naruto_p1.webp` |') && md.includes('| ✓ |') && md.includes(`## Portraits (1 / ${M.portraits.length})`), 'the checklist marks the files that exist');
+}
+
+// ---- Phase 4: audio (docs/AUDIO_PLAN.md §8), against the fake context in tools/fake-audio.mjs ----
+{
+  const win = fakeWindow();
+  const am = new AudioManager({ win, AudioCtx: FakeAudioContext });
+  ok(!am.unlocked && am.playMusic('village') === false && am.playing === 'village', 'before the first gesture a music start waits in the one-slot queue');
+  win.gesture(); win.gesture();
+  ok(am.unlocked && am.contexts === 1 && am.music.playing === 'village' && am.pendingMusic === null, 'the first gesture creates one context and starts the queued loop; later gestures do not make another');
+  am.apply({ muted: false, music: true, sfx: true, musicVol: 0.5, sfxVol: 0.25 }); const L = am.levels();
+  ok(Math.abs(L.master - 0.8) < 1e-9 && L.music === 0.5 && L.sfx === 0.25 && Math.abs(L.ui - 0.2) < 1e-9, 'the buses follow the settings: master 0.8, music and effects at their volumes');
+  am.apply({ muted: true, music: false, sfx: true, musicVol: 0.5, sfxVol: 0.25 }); const L2 = am.levels();
+  ok(L2.master === 0 && L2.music === 0 && L2.sfx === 0.25 && !am.ready, 'mute silences the master; the Music switch silences its bus');
+  am.apply({ musicVol: 7, sfxVol: -1 }); ok(am.levels().music === 1 && am.levels().sfx === 0 && am.ready, 'volumes are clamped to 0–1 and the booleans default to on');
+  am.apply({});
+  am.duckMusic(true); am.duckMusic(true); am.duckMusic(false);
+  ok(am.duckCount === 1 && am.duck.gain.value < 0.4, 'nested ducks (a dialog over a pause) count, and the music sits about 9 dB down');
+  am.duckMusic(false); ok(am.duckCount === 0 && am.duck.gain.value === 1, 'the last release brings the music back');
+  am.duckMusic(false); ok(am.duckCount === 0, 'an extra release never goes negative');
+  const ctx = am.ctx; const n0 = ctx.starts.length;
+  am.hit(); am.hit(); am.hit(); ok(ctx.starts.length > n0 && ctx.starts.length - n0 <= 3, 'three hits in a frame become one (the throttle)');
+  const n1 = ctx.starts.length; am.apply({ sfx: false }); am.crit(); am.ui('tap'); ok(ctx.starts.length === n1, 'with effects off no cue schedules anything'); am.apply({});
+  win.document.hidden = true; win.vis(); ok(ctx.suspended === 1 && am.suspendedByVisibility, 'hiding the app suspends the context');
+  win.document.hidden = false; win.vis(); ok(ctx.resumed >= 1 && !am.suspendedByVisibility, 'and coming back resumes it');
+  ok(am.stinger('victory') === 3 && am.stinger('nope') === 0, 'a stinger reports its length; an unknown one is silent');
+  am.stopMusic(0);
+  // the scheduler: notes are queued ahead of the clock, never behind it
+  const clock = fakeClock(); const beats = [];
+  const sch = new Scheduler({ now: clock.now, setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout });
+  sch.start(120, (b, t) => beats.push([b, t]));
+  drive({}, { currentTime: 0 }, clock, 2.0);
+  ok(beats.length >= 4 && beats.every(([b, t], i) => t >= (i ? beats[i - 1][1] : 0) && Math.abs(t - (0.05 + b * 0.5)) < 1e-9), 'a 120 bpm clock fires beats every 0.5 s at planned times, in order');
+  ok(beats.every(([, t]) => t <= 2.0 + sch.lookahead + 1e-9), 'beats are scheduled at most one lookahead ahead of the clock');
+  sch.stop();
+  // every track plays a full 16-bar pass through the fake context: nothing throws, nothing is late, the phrases resolve
+  const lateTracks = [], quietTracks = [];
+  for (const id of TRACK_IDS) {
+    const c2 = new FakeAudioContext(); const s2 = new Synth(c2); const ck = fakeClock();
+    const p = new MusicPlayer(s2, c2.createGain(), { now: ck.now, setTimeout: ck.setTimeout, clearTimeout: ck.clearTimeout });
+    p.play(id, { layers: [...new Set(Object.values(TRACKS[id].parts).map(x => x.layer))] });
+    const spb = 60 / TRACKS[id].tempo; drive(p, c2, ck, spb * 64 + 0.5);
+    if (c2.late) lateTracks.push(id); if (c2.starts.length < 64 || p.sched.beat < 64) quietTracks.push(id);
+    p.stop(0);
+  }
+  ok(lateTracks.length === 0 && quietTracks.length === 0, `all ${TRACK_IDS.length} loops play a full pass with every note ahead of the clock${lateTracks.length ? ` (late: ${lateTracks})` : ''}${quietTracks.length ? ` (quiet: ${quietTracks})` : ''}`);
+  const seqA = phraseSequence('title:mel', 2, 5), seqB = phraseSequence('title:mel', 2, 5), seqC = phraseSequence('title:mel', 3, 5);
+  ok(seqA.length === 8 && seqA[0] === 0 && seqA[7] === 0 && seqA.join() === seqB.join() && seqA.join() !== seqC.join() && seqA.every(i => i >= 0 && i < 5), 'a pass picks its phrases by seed (repeatable), opens and resolves on phrase 0, and a later pass differs');
+  ok(parsePhrase('0 - 2 . 4 - - -').length === 3 && parsePhrase('0 - 2 . 4 - - -')[0].len === 2 && parsePhrase('0 - 2 . 4 - - -')[2].len === 4, 'held tokens lengthen the note before them');
+  const bad = Object.entries(TRACKS).filter(([, t]) => t.chords.length !== 16 || Object.values(t.parts).some(pt => (pt.pool || []).some(ph => ph.trim().split(/\s+/).length !== 16) || (pt.drums || []).some(d => d.replace(/\s+/g, '').length !== 16)));
+  ok(bad.length === 0 && TRACK_IDS.length === 13, 'thirteen tracks; every progression is 16 bars and every phrase two bars');
+  ok(['intro', 'victory', 'defeat', 'retreat', 'kage', 'arcClear', 'bossIntro', 'roundClear', 'fight'].every(id => { const c3 = new FakeAudioContext(); return playStinger(new Synth(c3), c3.createGain(), id, 0) > 0 && c3.starts.length > 0 && c3.late === 0; }), 'every stinger plays and reports its length');
+  // the state machine
+  ok(trackFor({ screen: 'start' }).id === 'title' && trackFor({ screen: 'home', part: 1 }).id === 'village' && trackFor({ screen: 'home', part: 2 }).id === 'village2' && trackFor({ screen: 'wiki', part: 2 }).id === 'village2', 'the menu plays the title; the hub the village of the part reached');
+  ok(trackFor({ screen: 'story', part: 1 }).id === 'map1' && trackFor({ screen: 'story', part: 2, hard: true }).id === 'map2' && trackFor({ screen: 'story', part: 2, hard: true }).layers.includes('percussion') && !trackFor({ screen: 'story', part: 2 }).layers.length, 'the map plays its part; Hard adds the drums');
+  ok(trackFor({ screen: 'summon' }).id === 'summon' && trackFor({ screen: 'tutorial' }).id === 'academy' && trackFor({ screen: 'rush' }).id === 'rush' && trackFor({ screen: 'daily', bossPart: 2 }).id === 'map2', 'Summon, the tutorial, the Boss Rush lobby and the Daily pick their loops');
+  ok(battleTrack({ kind: 'lesson' }).id === 'academy' && battleTrack({ part: 1 }).id === 'battle1' && battleTrack({ part: 1, boss: true }).id === 'battle1tense' && battleTrack({ part: 2 }).id === 'battle2' && battleTrack({ part: 2, boss: true }).id === 'battle2tense' && battleTrack({ part: 2, boss: true, hard: true }).id === 'boss' && battleTrack({ kind: 'rush' }).id === 'rush', 'a battle starts calm or tense by boss and part; Hard bosses open on the boss theme; lessons on the Academy; the rush on its loop');
+  ok(soundSignature('Rasengan')?.cast === 'whirl' && soundSignature('Chidori')?.impact === 'crack' && soundSignature('Water Style: Water Dragon Jutsu')?.impact === 'rush' && soundSignature('Tailed Beast Bomb')?.impact === 'boom' && soundSignature('Kunai') === null, 'signature sounds match technique names; the rest use the nature');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);
