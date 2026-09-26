@@ -1,6 +1,15 @@
-# HANDOFF.md — 0.11.2 → the art, audio and VFX pass
+# HANDOFF.md — 0.12.0: the polish pass (art, audio, story)
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
+
+## Release 0.12.0 (Phase 6 of the polish pass)
+
+The pass shipped in three builds on top of 0.11.2, each its own section below: **the art and effects** (Phase 3: code-drawn figures and busts, a stage per arc, effects per nature and signature jutsu, the battle's cut-ins, readouts and boss intros, the summon ceremony, two era skins, the picture pipeline), **the audio** (Phase 4: thirteen loops, the stingers and a cue for everything, all synthesised in Web Audio from data), and **the story** (Phase 5: 803 lines of dialogue before and after every battle, the characters teaching each screen, a story log in the Wiki). No gameplay, economy or balance change anywhere in the pass: `npm run sim` and `npm run campaign` print the 0.11.0 numbers, and every check is green (`npm test`: validate, syntax, 331 core tests, 61 sim scenarios, 10 of 10 campaign players).
+
+* **The version** is 0.12.0 in `js/config/version.js` and `package.json` ("What's new" reads it). The service worker needs no cache bump: it is network-first and drops old caches on activate, so phones pick the build up on their next launch (Settings → App → Check for updates looks at once). Save format stays v4; FIREBASE_SETUP.md notes that nothing changed for the cloud save.
+* **Deploying** is a push to `main`: `.github/workflows/pages.yml` writes `version.json` (the build stamp) and publishes the tree to GitHub Pages; the game then shows the commit under Settings → About.
+* **Still open, because the desktop pane was hidden through the whole pass** (frames were exported from the canvas and the DOM was driven by script; nothing was seen at a real size or heard): the layout audit at 412×915, 360×780, 915×412 and 1280×800 with the dialogue box up; the sound mix; a real phone's frame time; and the pictures themselves, to be generated from `assets/manifest.json` and dropped in with `tools/ingest.mjs` at any time. QA.md ends with the checklist, in order.
+* **Inventions to swap for canon if a better line turns up:** the seven boss epithets listed under the art build; the dialogue is written for the game in the dub's voices (see the story build), with the anime's own words kept where a scene has a famous line.
 
 ## The story build (Phase 5 of the polish pass, towards 0.12.0)
 

@@ -116,6 +116,8 @@ Nothing to change in the console for this. Since Session 5 the game opens on a s
 
 **What `firestore.rules` enforces.** One document per player, at `users/{uid}/save/main`, owner-only via `request.auth.uid` (anonymous and Google-linked accounts share a uid, so linking is safe). Writes must have exactly the fields `payload`, `saveVersion`, `updatedAt`, `serverUpdatedAt` — with matching types and a 500,000-character cap on `payload`. Delete is allowed for the owner only.
 
+**0.12.0 (the polish pass) changed nothing here.** The payload is save format 4 (`saveVersion: 4`: the effect, audio and story-scene settings and the `story.seen` map, a few hundred short keys at most), well inside the payload cap; the rules, the key restrictions and the sign-in flows are as they were. A 0.11 save is migrated on load, in the game, before it is written back.
+
 **Checklist: restrict the browser key in Google Cloud Console**
 1. Open **https://console.cloud.google.com/apis/credentials** for project `inbox-zero-480418`.
 2. Open **"Browser key (auto created by Firebase)"**.

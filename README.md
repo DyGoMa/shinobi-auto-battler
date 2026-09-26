@@ -94,7 +94,7 @@ firestore.rules, firebase.json
 * **NAMING.md**: every name in the game, the Narutopedia source checked, and its verification status.
 * **QA.md**: the layout and copy checklist, how to run the audit, and the latest results.
 * **FIREBASE_SETUP.md**: step-by-step cloud-save setup (free Spark plan only).
-* **HANDOFF.md**: notes for the art, audio and VFX pass (every placeholder asset, its size and where it's drawn).
+* **HANDOFF.md**: what the polish pass built (art, audio, story), how it is wired, and what is still open.
 
 ## Roadmap
 * **Session 1:** the engine, every system, Part I, and deployment.
@@ -105,5 +105,6 @@ firestore.rules, firebase.json
 * **0.11:** quality of life: a flush tab bar, the Story map's mode tabs and node states, ⏭ Skip, 5× speed, recommended power, auto-level, team presets and counter hints, Roster sorting, tab dots, and the tutorial reward once per account.
 * **0.11.1:** the installable app: manifest, icons, a network-first service worker that never pins an old build, an update toast, an Install button in Settings, and the back button.
 * **0.11.2:** the app suggested to phone players: a start-menu notice, a one-time popup after the tutorial, reminders after 3 and 7 days, one-tap install on Android Chrome/Edge and illustrated steps for every other browser (Safari's Share sheet, the Android menu, "open in Safari" with a Copy link button for in-app browsers).
-* **Next:** the art, audio and VFX pass (HANDOFF.md).
+* **0.12.0:** the polish pass: anime-style figures and busts drawn in code with a picture pipeline for generated art, a drawn stage per arc, effects per nature and signature jutsu, cut-ins, clash readouts and boss intros, the summon ceremony, two era skins; a synthesised soundtrack and sound effects; dialogue before and after every battle, the characters teaching each screen, and the Wiki's Story log.
+* **Next:** the pictures (generate from `assets/manifest.json`, ingest with `tools/ingest.mjs`), the audio mix by ear, and the layout audit at the four sizes (HANDOFF.md, QA.md).
 
