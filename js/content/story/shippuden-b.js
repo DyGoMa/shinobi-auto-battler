@@ -521,7 +521,7 @@ export const SHIPPUDEN_B_STORY = {
       N('The end of the story. Every battle stays open.'),
       L('kakashi', 'It\'s over. It\'s actually over. Team 7… good work.'),
       L('sakura', 'Good work? They\'re missing arms, Sensei!'),
-      L('kakashi', 'There\'s still Hard mode.'),
+      L('kakashi', 'Missing arms, and still arguing. That\'s the Team 7 I remember.'),
     ],
     nodes: {
       n_kaguya_1: {
