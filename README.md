@@ -50,6 +50,7 @@ Then open http://localhost:8080. Any static server works: there is no bundler, j
 | `npm run test:core` | Saves and migration, gacha guarantees, objectives, the tutorial, achievements, Hard mode, the Daily challenge, the start flow (intro timing, menu gating of the cloud session, the build stamp), and the 0.11 shortcuts (recommended power, auto-level and the reserve, Skip, the 10-pull's pity count, the once-per-account tutorial reward, presets, speed and Roster view persistence, tab dots) |
 | `npm run sim` | Seeded battles with a PASS/FAIL table: Survival Test, every arc boss of both parts in Story and on Hard, Boss Rush, the nature check and counter-gap scenario (Story and Hard), fight length; plus the Daily challenge's clear chance per twist |
 | `npm run campaign` | Free-to-play players play the tutorial and the whole story (pull, level, pick by matchup, replay when stuck, claim achievements). `CAMPAIGN_HARD=1` also plays Part I on Hard before Part II |
+| `npm run audit` | The roster audit: every ninja takes its role's slot in a fixed quartet against six bosses, natures neutralised, and the table shows each kit's win rate against its tier's median (docs/BALANCE_PASS.md) |
 | `npm run autotune -- --write` | Re-tunes per-boss difficulty (`enemyScaling.nodeMult`) toward the sim targets; `--mode=hard` does the same for Hard mode |
 | `npm test` | Runs all of the above except autotune |
 
