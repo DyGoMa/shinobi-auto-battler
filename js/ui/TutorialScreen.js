@@ -63,7 +63,17 @@ export function render(game, ui, params) {
     if (node.lesson === 'team') ui.go('team', { tutorialLesson: index, replay });
     else ui.startBattle({ node, tutorial: { index, replay } });
   };
+  // The Nature Wheel lesson locks its Start button until the question is answered.
+  // The lock has to be visible (a note by the button, a glowing quiz box) and a tap on
+  // the locked button must point at the question: a greyed button with only a hover
+  // tooltip reads as "the tutorial is stuck".
   const needsQuiz = node.lesson === 'nature' && quiz.lesson !== node.id;
+  const nudgeQuiz = () => {
+    const q = document.querySelector('.quiz');
+    if (q) { q.scrollIntoView({ behavior: 'smooth', block: 'center' }); q.classList.remove('nudge'); void q.offsetWidth; q.classList.add('nudge'); }
+    const foe = enemies[0]?.natures?.[0];
+    ui.toast(foe ? `Answer the Nature Wheel question first: which nature beats ${foe}?` : 'Answer the Nature Wheel question first.');
+  };
 
   return h('div.screen',
     header,
@@ -81,8 +91,10 @@ export function render(game, ui, params) {
         h('div', h('div.tiny.muted', 'Enemy'), h('div.row', ...enemies.map(d => h('span.row', { style: { gap: '6px' } }, h('b', d.name), ...(d.natures.length ? d.natures.map(n => natureChip(n)) : [h('span.nat.none', 'No nature')]))))),
         h('div', h('div.tiny.muted', node.team?.forced ? 'Team for this lesson' : 'Your team'),
           h('div.row', ...team.members.map(id => h('div.col', { style: { alignItems: 'center', gap: '2px' } }, avatar(C.char[id], { size: 'sm' }), h('span.tiny', C.char[id].short + (id === team.leader ? ' ★' : ''))))))),
-      h('div.row', { style: { marginTop: '16px', justifyContent: 'flex-end' } },
-        btn(fightLabel, start, 'primary big', { disabled: needsQuiz, title: needsQuiz ? 'Answer the question above first' : '' })),
+      h('div.row', { style: { marginTop: '16px', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' } },
+        needsQuiz ? h('span.small.quiz-lock-note', '☝ Answer the question above to unlock the lesson') : null,
+        btn(fightLabel, needsQuiz ? nudgeQuiz : start, 'primary big' + (needsQuiz ? ' disabled' : ''),
+          needsQuiz ? { 'aria-disabled': 'true', title: 'Answer the question above first' } : {})),
     ),
     // The reward pays once per account: replays, and a restart after Reset save, say so.
     tutorialRewardClaimed(state) ? h('p.small.muted.center.claimed-note', { style: { marginTop: '12px' } }, '✓ Rewards already claimed on this account: the lessons are just practice now.')
@@ -118,7 +130,7 @@ function concept(game, ui, node, team, enemies) {
       h('h3', 'Every nature beats the next one'),
       wheel,
       h('p.small', `An effective hit deals ×${B.natureWheel.advantage}; a resisted one deals ×${B.natureWheel.disadvantage}. Ninja with several natures always attack with their best one.`),
-      h('div.quiz',
+      h('div.quiz' + (picked ? '' : '.unanswered'),
         h('b', `${enemies[0].name} fights with ${enemyNature} Style. Which nature beats ${enemyNature}?`),
         h('div.quiz-options', ...cycle.map(n => h('button.quiz-opt' + (picked === n ? (n === answer ? '.right' : '.wrong') : ''), {
           type: 'button', onclick: () => { quiz = { lesson: node.id, picked: n }; ui.refresh(); },
