@@ -228,12 +228,14 @@ function renderPreviews(e, canvas = null) {
 function portraitContexts(e) {
   const def = e.def || { id: e.id, name: e.name, tier: 'genin' }; const era = e.era; const enemy = !!def.side;
   const av = (opts = {}) => avatar(def, { era, facing: enemy ? -1 : 1, expression: enemy ? 'menace' : 'set', ...opts });
-  const tokens = h('div.ctx', h('div.tiny', 'Tokens: 40 / 56 / the ult bar'), h('div.row', av({ size: 'sm' }), av(), h('div.ult', { style: { width: '46px', height: '46px', borderRadius: '50%', overflow: 'hidden' } }, av({ size: 'sm' }))));
+  const tokens = h('div.ctx', h('div.tiny', 'Tokens (small, normal)'), h('div.row', av({ size: 'sm' }), av()));
+  // the battle's ult bar card, as BattleScreen builds it (.ult .avatar is 46 px)
+  const ultCard = h('div.ctx', h('div.tiny', 'The ult bar in battle'), h('div', { style: { padding: '10px', background: '#0b1016', borderRadius: '14px', width: '200px' } }, h('div.ult.ready', av(), h('div.info', h('div.nm', def.short || def.name), h('div.ultname', def.ult?.name || 'Ultimate'), h('div.hp', h('i', { style: { width: '72%' } })), h('div.ck', h('i', { style: { width: '100%' } }))))));
   const card = h('div.ctx', h('div.tiny', 'Roster card'), h('div.char-card', h('span.lvl', 'Lv 30'), av(), h('div.name', def.name), h('div.meta', h('span.tier.' + (def.tier || 'genin'), (def.tier || 'genin').replace(/^\w/, c => c.toUpperCase())))));
   const slot = h('div.ctx', h('div.tiny', 'Team slot'), h('div.slot.filled', h('span.slot-label', 'Slot 1'), av()));
-  const dlg = h('div.ctx', h('div.tiny', 'Dialogue box'), h('div.art-frame', h('div.dlg' + (enemy ? '.right' : ''), h('div.avatar', av({ size: 'lg', facing: enemy ? -1 : 1 })), h('div.box', h('div.name', def.short || def.name), h('div.text', enemy ? 'You should not have come here.' : 'Believe it! Let\'s go!')))));
+  const dlg = h('div.ctx', h('div.tiny', 'Dialogue box'), h('div.art-frame', h('div.dlg' + (enemy ? '.right' : ''), av({ size: 'lg', facing: enemy ? -1 : 1 }), h('div.box', h('div.name', def.short || def.name), h('div.text', enemy ? 'You should not have come here.' : 'Believe it! Let\'s go!')))));
   const boss = h('div.ctx', h('div.tiny', 'Boss card'), h('div.art-frame', h('div.bosscard', av({ size: 'lg', facing: -1 }), h('div.txt', h('div.tag', 'BOSS'), h('div.name', def.name), h('div.title', def.title || 'Title on the intro card')))));
-  return [tokens, card, slot, dlg, boss];
+  return [tokens, ultCard, card, slot, dlg, boss];
 }
 function spriteContexts(e, img) {
   const def = e.def || { id: e.id, name: e.name, tier: 'genin' }; const look = lookFor(def, C); const enemy = !!def.side;
