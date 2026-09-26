@@ -253,10 +253,17 @@ function spriteContexts(e, img) {
   return [token, note];
 }
 
+// The local endpoints answer JSON; anything else (a 404 page) means an older server started before the studio existed.
+async function post(url, body) {
+  let r; try { r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } catch (err) { return { ok: false, error: 'No answer from the local server. Is it running (npm run serve)?' }; }
+  const text = await r.text();
+  try { return JSON.parse(text); } catch { return { ok: false, error: r.status === 404 ? 'This server does not know the art studio: it was started before art.html was added. Stop it and run npm run serve again (or restart the preview in the app), then reload this page.' : `The server answered with something that is not JSON (HTTP ${r.status}).`, log: text.slice(0, 300) }; }
+}
+
 // ------------------------------------------------------------------ saving
 async function savePrompt(e, prompt, noteEl, ta) {
   noteEl.textContent = 'saving…';
-  const r = await fetch('/api/art/prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: e.id, kind: e.kind, prompt }) }).then(x => x.json()).catch(err => ({ ok: false, error: String(err) }));
+  const r = await post('/api/art/prompt', { id: e.id, kind: e.kind, prompt });
   if (!r.ok) { noteEl.textContent = 'could not save: ' + (r.error || r.log || 'is the local server running?'); return; }
   if (prompt) state.overrides.prompts[e.key] = prompt; else delete state.overrides.prompts[e.key];
   state.manifest = await getJSON('assets/manifest.json', state.manifest);
@@ -269,8 +276,8 @@ async function savePrompt(e, prompt, noteEl, ta) {
 async function save(e, check) {
   const log = $('#saveLog'); if (log) log.replaceChildren(h('p.small.muted', 'Saving and ingesting…'));
   const png = state.work.canvas.toDataURL('image/png');
-  const r = await fetch('/api/art/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: e.id, kind: e.kind, incoming: e.incoming, flip: false, leftover: check.pixels, png }) }).then(x => x.json()).catch(err => ({ ok: false, error: String(err) }));
-  if (!r.ok) { if (log) log.replaceChildren(h('div.art-warn.bad', 'Not saved: ' + (r.error || 'the ingest failed')), h('pre.art-log', r.log || 'Is the local server running (npm run serve)?')); return; }
+  const r = await post('/api/art/save', { id: e.id, kind: e.kind, incoming: e.incoming, flip: false, leftover: check.pixels, png });
+  if (!r.ok) { if (log) log.replaceChildren(h('div.art-warn.bad', 'Not saved: ' + (r.error || 'the ingest failed')), r.log ? h('pre.art-log', r.log) : null); return; }
   state.index.add(e.file); Assets.setIndex([...state.index]); Assets._registry.images.delete(e.file);
   state.overrides.status[e.key] = { savedAt: new Date().toISOString(), leftover: check.pixels };
   state.originals = (await getJSON('/api/art/originals', { files: {} })).files || {};
