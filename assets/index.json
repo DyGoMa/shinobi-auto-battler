@@ -1,8 +1,23 @@
 {
   "files": [
+    "assets/portraits/e_mizuki.webp",
+    "assets/portraits/kakashi_p1.webp",
+    "assets/portraits/kakashi_p2.webp",
     "assets/portraits/naruto_p1.webp",
     "assets/portraits/naruto_p2.webp",
+    "assets/portraits/sakura_p1.webp",
+    "assets/portraits/sakura_p2.webp",
+    "assets/portraits/sasuke_p1.webp",
+    "assets/portraits/sasuke_p2.webp",
     "assets/portraits/zabuza.webp",
-    "assets/sprites/naruto_p1.webp"
+    "assets/sprites/e_mizuki.webp",
+    "assets/sprites/kakashi_p1.webp",
+    "assets/sprites/kakashi_p2.webp",
+    "assets/sprites/naruto_p1.webp",
+    "assets/sprites/naruto_p2.webp",
+    "assets/sprites/sakura_p1.webp",
+    "assets/sprites/sakura_p2.webp",
+    "assets/sprites/sasuke_p1.webp",
+    "assets/sprites/sasuke_p2.webp"
   ]
 }
