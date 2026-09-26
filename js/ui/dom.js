@@ -1,6 +1,10 @@
-// dom.js — tiny DOM helpers and shared UI components (no framework).
+// dom.js — tiny DOM helpers and shared UI components (no framework). Strings that contain
+// an emoji the interface used to show ('📜 +40') are turned into icon + text as they are
+// appended (js/render/icons.js), so screen code keeps reading naturally.
 import { TIER_LABEL, RARITY_LABEL } from '../core/formulas.js';
-import { inkFor } from '../render/Renderer.js';
+import { icon, iconify, hasEmoji, NATURE_ICON, ROLE_ICON } from '../render/icons.js';
+import { lookFor, bustCanvas } from '../render/Figure.js';
+import * as Assets from '../render/Assets.js';
 
 /** h('div.card#id', { onclick, style, ... }, ...children) */
 export function h(sel, props = {}, ...kids) {
@@ -26,9 +30,13 @@ export function h(sel, props = {}, ...kids) {
 function append(el, kids) {
   for (const k of kids.flat(Infinity)) {
     if (k == null || k === false) continue;
-    el.appendChild(k instanceof Node ? k : document.createTextNode(String(k)));
+    if (k instanceof Node) { el.appendChild(k); continue; }
+    const s = String(k);
+    if (hasEmoji(s)) for (const part of iconify(s)) el.appendChild(part instanceof Node ? part : document.createTextNode(part));
+    else el.appendChild(document.createTextNode(s));
   }
 }
+export { icon };
 
 export const fmt = (n) => Math.round(n).toLocaleString('en-US');
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
@@ -38,28 +46,46 @@ export function countWord(n, cap = false) { const w = WORDS[n] ?? fmt(n); return
 export const episodesLabel = (eps) => `${/[–,-]/.test(String(eps)) ? 'Episodes' : 'Episode'} ${eps}`;
 export const pctStr = (x, d = 0) => `${(x * 100).toFixed(d)}%`;
 
-export function avatar(def, { size = '', unknown = false } = {}) {
+/** The pixel size a portrait slot is drawn at (CSS px × a retina factor), by size class. */
+const SLOT_PX = { '': 128, sm: 96, lg: 256, xl: 512 };
+/** The story era whose outfit a portrait shows; the screens set it (UIManager.setEra). */
+export function currentEra() { return document.documentElement.dataset.era === 'p2' ? 'p2' : 'p1'; }
+
+/**
+ * A character or enemy portrait in a circle: the image from assets/ when it exists, else the
+ * code-drawn bust. `facing` left for enemies. When the image arrives later the slot swaps in place.
+ *   size: '' (56 px) | 'sm' (40) | 'lg' (84) | 'xl'   unknown: a "?" silhouette (not yet met)
+ */
+export function avatar(def, { size = '', unknown = false, facing = 1, era = null, ring = null, expression = null } = {}) {
   const el = document.createElement('div');
-  el.className = ['avatar', size, `ring-${def?.tier || 'genin'}`, unknown ? 'unknown' : ''].filter(Boolean).join(' ');
-  if (!unknown && def) { el.style.background = def.color; el.style.color = inkFor(def.color); el.textContent = def.initials; }
-  else el.textContent = '?';
-  if (!unknown && def?.emoji) el.appendChild(h('span.emo', def.emoji));
+  el.className = ['avatar', size, `ring-${ring || def?.tier || 'genin'}`, unknown ? 'unknown' : ''].filter(Boolean).join(' ');
   el.title = unknown ? 'Not yet recruited' : def?.name || '';
+  if (unknown || !def) { el.appendChild(h('span.q', '?')); return el; }
+  const e = era || currentEra();
+  const path = Assets.portraitPath(def.id, e);
+  const draw = (img) => {
+    el.replaceChildren();
+    if (img) { const im = new Image(); im.src = img.src; im.alt = ''; im.draggable = false; if (facing < 0) im.classList.add('flip'); el.appendChild(im); return; }
+    const px = SLOT_PX[size] || 128;
+    const c = bustCanvas(lookFor(def), px, { facing, expression: expression || (def.side === 'enemy' ? 'menace' : 'set') });
+    const view = document.createElement('canvas'); view.width = px; view.height = px; view.getContext('2d').drawImage(c, 0, 0);
+    el.appendChild(view);
+  };
+  const img = path ? Assets.image(path) : null;
+  draw(img);
+  if (path && !img) Assets.onLoad(path, (loaded) => { if (loaded && el.isConnected) draw(loaded); });
   return el;
 }
 
-export function natureChip(n, extra = '') { return h(`span.nat.${n || 'none'}`, (n ? `${n} Style` : 'Neutral') + extra); }
+export function natureChip(n, extra = '') { return h(`span.nat.${n || 'none'}`, n ? icon(NATURE_ICON[n]) : icon('neutral'), (n ? `${n} Style` : 'Neutral') + extra); }
 export function natureChips(def) {
-  if (def.taijutsu) return [h('span.nat.taijutsu', 'Taijutsu')];
-  if (!def.natures?.length) return [h('span.nat.none', 'No nature')];
+  if (def.taijutsu) return [h('span.nat.taijutsu', icon('hand'), 'Taijutsu')];
+  if (!def.natures?.length) return [h('span.nat.none', icon('neutral'), 'No nature')];
   return def.natures.map(n => natureChip(n));
 }
 export function stars(n, cap = 5) { return h('span.stars', '★'.repeat(n), h('span.off', '★'.repeat(Math.max(0, cap - n)))); }
 export function tierTag(tier) { return h(`span.tier.${tier}`, `${TIER_LABEL[tier]} · ${RARITY_LABEL[tier]}`); }
-export function roleTag(role) {
-  const icon = { Tank: '🛡️', Striker: '⚔️', Ranged: '🎯', Support: '✚' }[role] || '';
-  return h('span.role', `${icon} ${role}`);
-}
+export function roleTag(role) { return h('span.role', icon(ROLE_ICON[role] || 'neutral'), ` ${role}`); }
 export function btn(label, onClick, cls = '', props = {}) { return h('button.btn' + (cls ? '.' + cls.split(' ').join('.') : ''), { onclick: onClick, type: 'button', ...props }, label); }
 export function toggle(on, onChange, label = '', { disabled = false } = {}) {
   const t = h('button.toggle' + (on ? '.on' : ''), { type: 'button', role: 'switch', 'aria-checked': String(!!on), 'aria-label': label, disabled });

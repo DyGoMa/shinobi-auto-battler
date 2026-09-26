@@ -4,6 +4,7 @@ import { pull, pullCost, canAfford, bannerRates, ticketPull } from '../core/Gach
 import { isBannerUnlocked, isCharacterAvailable } from '../core/Progression.js';
 import { TIER_LABEL, RARITY_LABEL } from '../core/formulas.js';
 import { TIER_COLORS } from '../render/Renderer.js';
+import { eraOfPart } from '../render/Assets.js';
 import { tipCard } from './tips.js';
 import { screenHead } from './chrome.js';
 
@@ -23,6 +24,8 @@ export function render(game, ui, params) {
     selected = arcs.length ? arcs[arcs.length - 1].id : 'standard';
   }
   const banner = C.banner[selected];
+  // The screen wears the era of the banner's arc (the Standard banner follows the story).
+  ui.setEra(banner.type === 'arc' && C.arc[banner.arc] ? eraOfPart(C.arc[banner.arc].part) : ui.storyEra());
   const rates = bannerRates(banner, state, C, B);
   const pityLeft = Math.max(0, B.gacha.pity - state.gacha.pity);
 

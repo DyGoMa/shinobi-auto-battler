@@ -4,7 +4,9 @@
 import { BALANCE } from '../config/balance.js';
 import { defaultPresets, sanitizePresets, sanitizeRosterView, ROSTER_VIEW_DEFAULT } from './Teams.js';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
+export const VFX_LEVELS = ['low', 'medium', 'high'];
+export const STORY_SCENE_MODES = ['first', 'always', 'never'];
 
 /** Ids of the in-battle tips the first story battle shows (the tutorial teaches them too). */
 export const BATTLE_TIP_IDS = ['battle.start', 'battle.ult', 'battle.clash'];
@@ -29,12 +31,17 @@ export function defaultState(C, B = BALANCE) {
     bossRush: { highestRound: 0, runs: 0 },
     // autoUltMode: 'smart' = clash-aware (fires counter-nature ninja into wind-ups, holds
     // any that would be Overwhelmed); 'asap' = fire when ready. tips: one-time screen tips.
-    // music / sfx / vfx: placeholders the audio and effects update will wire up (Settings shows them disabled).
+    // music / sfx: the two audio buses on or off; musicVol / sfxVol: their levels (0–1).
+    // vfx: effect detail, 'low' | 'medium' | 'high' (save v4; Low also under prefers-reduced-motion).
+    // storyScenes: 'first' (each scene once) | 'always' | 'never'; dialogueAuto: lines advance by themselves.
     // speed: one of balance.qol.battleSpeeds (the last pick, in battle or Settings).
     // skipPullAnim: summons show their cards at once. ryoReserve: Smart spend never goes
     // below it. rosterView: the Roster's last sort and filters.
-    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true, music: true, sfx: true, vfx: true,
+    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true, music: true, sfx: true, vfx: 'medium',
+      musicVol: 0.6, sfxVol: 0.8, storyScenes: 'first', dialogueAuto: false,
       skipPullAnim: false, ryoReserve: B.qol.ryoReserve, rosterView: { ...ROSTER_VIEW_DEFAULT } },
+    // Story scenes already played on this save (Phase 5 writes them): scene id -> timestamp.
+    story: { seen: {} },
     // Combat and day records behind the achievements (js/core/Achievements.js).
     stats: { battles: 0, wins: 0, losses: 0, clashWins: 0, flawlessWins: 0, counteredWins: 0, underdogBossWins: 0, daysPlayed: 0, lastDay: '' },
     // status: 'new' (never started) | 'active' (lesson = next lesson index) | 'done'.
@@ -85,6 +92,18 @@ export const MIGRATIONS = {
     if (T.rewarded || T.completed || T.status === 'done') s.account.tutorialRewarded = true;
     return s;
   },
+  // v3 -> v4 (the art and audio pass): the on/off `vfx` becomes a detail level, the audio
+  // buses get volumes, and the story scenes get their settings and seen map.
+  3: (s) => {
+    if (isObj(s.settings)) {
+      const S = s.settings;
+      if (typeof S.vfx === 'boolean') S.vfx = S.vfx ? 'medium' : 'low';
+      if (S.musicVol === undefined) S.musicVol = 0.6;
+      if (S.sfxVol === undefined) S.sfxVol = 0.8;
+    }
+    if (!isObj(s.story)) s.story = { seen: {} };
+    return s;
+  },
 };
 
 /** Has this account already been paid the tutorial reward? */
@@ -114,7 +133,7 @@ function fillDefaults(target, defaults) {
   for (const [k, v] of Object.entries(defaults)) {
     if (target[k] === undefined || target[k] === null || (isObj(v) && !isObj(target[k])) || (Array.isArray(v) && !Array.isArray(target[k]))) {
       target[k] = structuredClone(v);
-    } else if (isObj(v) && isObj(target[k]) && !['roster', 'cleared', 'hard', 'seen', 'unlocked', 'claimed', 'rosterView'].includes(k)) {
+    } else if (isObj(v) && isObj(target[k]) && !['roster', 'cleared', 'hard', 'seen', 'unlocked', 'claimed', 'rosterView', 'story'].includes(k)) {
       fillDefaults(target[k], v);
     }
   }
@@ -163,6 +182,13 @@ export function migrate(raw, C, B = BALANCE) {
     const res = Number(S.ryoReserve); S.ryoReserve = Number.isFinite(res) && res >= 0 ? Math.floor(res) : B.qol.ryoReserve;
     S.skipPullAnim = !!S.skipPullAnim;
     S.rosterView = sanitizeRosterView(S.rosterView, B);
+    // v4: effect detail, audio volumes, story scene settings
+    if (!VFX_LEVELS.includes(S.vfx)) S.vfx = 'medium';
+    for (const k of ['musicVol', 'sfxVol']) { const v = Number(S[k]); S[k] = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : fresh.settings[k]; }
+    if (!STORY_SCENE_MODES.includes(S.storyScenes)) S.storyScenes = 'first';
+    S.dialogueAuto = !!S.dialogueAuto;
+    if (!isObj(s.story)) s.story = { seen: {} };
+    if (!isObj(s.story.seen)) s.story.seen = {};
     s.teamPresets = sanitizePresets(s.teamPresets, s, C);
     s.account.tutorialRewarded = tutorialRewardClaimed(s);
     s.updatedAt = Number(s.updatedAt) || 0;

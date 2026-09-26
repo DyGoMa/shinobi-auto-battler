@@ -2,7 +2,7 @@
 // save, the save itself (export, import, reset) and version info.
 import { h, btn, toggle, fmt } from './dom.js';
 import { ryoReserve } from '../core/AutoLevel.js';
-import { SAVE_VERSION } from '../core/SaveManager.js';
+import { SAVE_VERSION, VFX_LEVELS } from '../core/SaveManager.js';
 import { FIREBASE_SDK_VERSION } from '../save/FirebaseBackend.js';
 import { GAME_VERSION } from '../config/version.js';
 import { tipCard, tipsEnabled, resetTips } from './tips.js';
@@ -56,7 +56,8 @@ export function render(game, ui) {
       row('Sound', 'Turns every game sound on or off.', toggle(!s.muted, (on) => { s.muted = !on; game.audio.setMuted(s.muted); game.commit('settings'); ui.refreshTop(); }, 'Sound')),
       row('Music', 'Arrives with the soundtrack update.', toggle(s.music !== false, () => {}, 'Music (coming soon)', { disabled: true }), 'set-music'),
       row('Sound effects', 'A separate switch for effects arrives with the audio update.', toggle(s.sfx !== false, () => {}, 'Sound effects (coming soon)', { disabled: true }), 'set-sfx'),
-      row('Visual effects', 'Effect detail options arrive with the visual effects update.', toggle(s.vfx !== false, () => {}, 'Visual effects (coming soon)', { disabled: true }), 'set-vfx'),
+      row('Effect detail', { low: 'Low: hits, jutsu and readouts only, no weather or particles. The choice under "reduce motion" too.', medium: 'Medium (recommended): the full effects at phone-friendly counts.', high: 'High: every particle, weather and camera move. Best on a fast phone or a computer.' }[VFX_LEVELS.includes(s.vfx) ? s.vfx : 'medium'],
+        seg('Effect detail', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High']], VFX_LEVELS.includes(s.vfx) ? s.vfx : 'medium', (v) => set('vfx', v)), 'set-vfx'),
     ),
 
     accountCard(game, ui),

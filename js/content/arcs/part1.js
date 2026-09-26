@@ -218,7 +218,7 @@ export const PART1_ARCS = [
 
   // ---------------------------------------------------------------------------
   {
-    id: 'arc_tea', part: 1, order: 6, name: 'Land of Tea Escort Mission', episodes: '102–106',
+    id: 'arc_tea', part: 1, order: 6, filler: true, name: 'Land of Tea Escort Mission', episodes: '102–106',
     blurb: "Team 7 — without Kakashi — escorts the runner Idate Morino to the Todoroki Shrine race.",
     banner: 'banner_tea',
     theme: { sky: ['#86b6a0', '#dff1e7'], ground: '#4f8a6e', far: '#356b53', accent: '#34d399' },
@@ -294,7 +294,7 @@ export const PART1_ARCS = [
 
   // ---------------------------------------------------------------------------
   {
-    id: 'arc_kurosuki', part: 1, order: 8, name: 'Kurosuki Family Removal Mission', episodes: '152–157',
+    id: 'arc_kurosuki', part: 1, order: 8, filler: true, name: 'Kurosuki Family Removal Mission', episodes: '152–157',
     blurb: 'Naruto and Team Guy take on Raiga Kurosuki, the Thunder of the Hidden Mist, and his funeral-obsessed family.',
     banner: 'banner_kurosuki',
     theme: { sky: ['#475569', '#94a3b8'], ground: '#334155', far: '#1e293b', accent: '#facc15' },

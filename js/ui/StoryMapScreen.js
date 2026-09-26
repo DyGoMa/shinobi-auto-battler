@@ -10,7 +10,6 @@ import { recommendedPower, teamPower, shortPower } from '../core/Power.js';
 import { canSkip } from '../core/Skip.js';
 import { autoBuildTeam } from '../core/Teams.js';
 import { isDailyUnlocked } from '../core/Daily.js';
-import { inkFor } from '../render/Renderer.js';
 import { tutorialPending, tutorialLessons, nextLessonIndex } from '../core/Tutorial.js';
 import { tipCard } from './tips.js';
 import { screenHead } from './chrome.js';
@@ -172,9 +171,10 @@ function arcDetail(game, ui, arc, nodeId, hard, V) {
   );
 }
 
+/** An enemy's portrait, facing left towards the player's side, ringed red (a boss in the accent). */
 export function enemyToken(def) {
-  const el = h('div.avatar.sm', { 'aria-hidden': 'true' }, def.initials);
-  el.style.background = def.color; el.style.color = inkFor(def.color); el.style.setProperty('--ring', '#ff6b6b');
+  const el = avatar(def, { size: 'sm', facing: -1, ring: def.boss ? 'boss' : 'enemy', expression: 'menace' });
+  el.setAttribute('aria-hidden', 'true');
   return el;
 }
 

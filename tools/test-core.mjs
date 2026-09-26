@@ -24,6 +24,11 @@ import { levelCostFor } from '../js/core/Progression.js';
 import { autoPickTeam } from '../js/core/TeamPicker.js';
 import { DEFAULT_BOT } from './common.mjs';
 import { localDateKey, nodeRewards } from '../js/core/formulas.js';
+import * as Assets from '../js/render/Assets.js';
+import { STAGES, stageIdFor, stageDefFor, stageFromTheme } from '../js/render/Stage.js';
+import { lookFor } from '../js/render/Figure.js';
+import { ICONS, EMOJI_ICON, NATURE_ICON, ROLE_ICON, hasEmoji } from '../js/render/icons.js';
+import { VFX_LEVELS } from '../js/core/SaveManager.js';
 
 let fails = 0, passes = 0;
 const ok = (cond, name) => { if (cond) passes++; else { fails++; console.log('  ✗ ' + name); } };
@@ -628,7 +633,7 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(mem.data.account.tutorialRewarded === true, 'the flag is written with the save (the same data the cloud save uploads)');
   const v2done = migrate({ saveVersion: 2, currencies: { scrolls: 1, ryo: 1 }, tutorial: { status: 'done', lesson: 0, completed: false, rewarded: true } }, C, B);
   const v2new = migrate({ saveVersion: 2, currencies: { scrolls: 1, ryo: 1 }, tutorial: { status: 'new', lesson: 0, completed: false, rewarded: false } }, C, B);
-  ok(v2done.saveVersion === 3 && v2done.account.tutorialRewarded && !v2new.account.tutorialRewarded, 'migration: saves with the tutorial done get the flag; new ones do not');
+  ok(v2done.saveVersion === SAVE_VERSION && v2done.account.tutorialRewarded && !v2new.account.tutorialRewarded, 'migration: saves with the tutorial done get the flag; new ones do not');
   ok(migrate({ saveVersion: 1, currencies: { scrolls: 1, ryo: 1 }, progress: { cleared: Object.fromEntries(C.arcs[0].nodes.map(n => [n.id, { clears: 1 }])) } }, C, B).account.tutorialRewarded, 'migration: a v1 save past the Prologue gets the reward once and the flag');
 
   // Speed, presets and the Roster view persist through a save round trip.
@@ -757,6 +762,51 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(!P({ nudge: two, now: t1 + 400 * DAY_MS }).banner && P({ nudge: two, now: t1 + 400 * DAY_MS }).notice, 'after the second banner: never auto-shown again; the start notice stays');
   ok(!P({ nudge: { ...emptyNudge(), dismissals: [t0] }, now: t0 + 10 * DAY_MS }).banner, 'no banner without the popup having been shown');
   ok(!P({ nudge: notNow, now: t0 + 10 * DAY_MS, standalone: true }).banner, 'a due banner is dropped once the app is installed');
+}
+
+// ---- Phase 3: save v4 (effects, volumes, story), the art index, stages, figures, icons ----
+{
+  const base = defaultState(C, B);
+  const v3 = { ...base, saveVersion: 3, settings: { ...base.settings, vfx: true } }; delete v3.story; delete v3.settings.musicVol; delete v3.settings.sfxVol; delete v3.settings.storyScenes; delete v3.settings.dialogueAuto;
+  const m = migrate(JSON.parse(JSON.stringify(v3)), C, B);
+  ok(m.saveVersion === SAVE_VERSION && m.settings.vfx === 'medium' && m.settings.musicVol === 0.6 && m.settings.sfxVol === 0.8 && m.settings.storyScenes === 'first' && m.settings.dialogueAuto === false && m.story && typeof m.story.seen === 'object', 'v3 → v4: effects on becomes Medium; volumes, story settings and the seen map get their defaults');
+  ok(migrate(JSON.parse(JSON.stringify({ ...v3, settings: { ...v3.settings, vfx: false } })), C, B).settings.vfx === 'low', 'v3 → v4: effects off becomes Low');
+  const bad = migrate(JSON.parse(JSON.stringify({ ...base, settings: { ...base.settings, vfx: 'ultra', musicVol: 7, sfxVol: -2, storyScenes: 'sometimes', dialogueAuto: 'yes' }, story: 'junk' })), C, B);
+  ok(bad.settings.vfx === 'medium' && bad.settings.musicVol === 1 && bad.settings.sfxVol === 0 && bad.settings.storyScenes === 'first' && bad.settings.dialogueAuto === true && typeof bad.story.seen === 'object', 'bad v4 values are sanitised (level, volumes clamped, scene mode, story map)');
+  const kept = migrate(JSON.parse(JSON.stringify({ ...base, settings: { ...base.settings, vfx: 'high', musicVol: 0.25 }, story: { seen: { waves_1_intro: 1700000000000 } } })), C, B);
+  ok(kept.settings.vfx === 'high' && kept.settings.musicVol === 0.25 && kept.story.seen.waves_1_intro === 1700000000000, 'a v4 save keeps its effect level, volume and seen scenes');
+  ok(VFX_LEVELS.join() === 'low,medium,high' && decodeSave(encodeSave(kept)).settings.vfx === 'high', 'the effect levels are low/medium/high and survive the export round trip');
+
+  Assets.setIndex(['assets/portraits/naruto_p1.webp', 'assets/portraits/zabuza.webp', 'assets/sprites/naruto_p2.webp']);
+  ok(Assets.portraitPath('naruto', 'p1') === 'assets/portraits/naruto_p1.webp' && Assets.portraitPath('naruto', 'p2') === 'assets/portraits/naruto_p1.webp', 'a portrait resolves to its era file, or the other era when only that exists');
+  ok(Assets.portraitPath('zabuza', 'p2') === 'assets/portraits/zabuza.webp' && Assets.portraitPath('sasuke', 'p1') === null, 'an era-less portrait serves both eras; a missing one is null (the code-drawn bust is used)');
+  ok(Assets.spritePath('naruto', 'p1') === 'assets/sprites/naruto_p2.webp' && Assets.spritePath('zabuza', 'p1') === null, 'sprites resolve the same way');
+  const paths = Assets.pathsFor(['naruto', 'zabuza', 'sasuke'], 'p1');
+  ok(paths.length === 3 && paths.every(p => Assets.known(p)) && new Set(paths).size === 3, 'pathsFor lists only files that exist, once each');
+  ok(Assets.eraOfPart(1) === 'p1' && Assets.eraOfPart(2) === 'p2', 'story part → era');
+  Assets.setIndex([]);
+
+  const arcs = Object.values(C.arc);
+  const missing = arcs.filter(a => { const id = stageIdFor({ arcId: a.id }); return !id || !STAGES[id]; }).map(a => a.id);
+  ok(missing.length === 0, `every arc has a drawn battle stage${missing.length ? ` (missing: ${missing.join(', ')})` : ''}`);
+  ok(Object.keys(STAGES).length >= 27, `at least 27 stages are drawn (${Object.keys(STAGES).length})`);
+  const badStage = Object.entries(STAGES).filter(([, s]) => !(s.name && ['p1', 'p2'].includes(s.era) && s.sky?.length === 3 && s.palette?.ground && s.layers?.length >= 2 && s.layers.every(L => typeof L.draw === 'function' && L.depth > 0 && L.depth < 1) && typeof s.ground === 'function')).map(([k]) => k);
+  ok(badStage.length === 0, `every stage has a name, era, three sky stops, a ground colour, parallax layers and a ground${badStage.length ? ` (bad: ${badStage.join(', ')})` : ''}`);
+  ok(C.nodes.every(n => { const d = stageDefFor({ node: n }); return d && d.sky && d.layers.length; }), 'every node resolves to a stage definition');
+  ok(stageIdFor({ rush: true }) === 'akatsuki_cave' && stageFromTheme(null).layers.length >= 1 && stageFromTheme({ sky: ['#000', '#fff'], ground: '#123456', far: '#234567', accent: '#345678' }).palette.ground === '#123456', 'the Boss Rush has its cave; a theme without a drawn stage still gets a generic one');
+
+  const defs = [...Object.values(C.char), ...Object.values(C.enemy)];
+  const badLook = defs.filter(d => { try { const L = lookFor(d, C); return !(L && L.color && (typeof L.village === 'string' || (L.village === null && !L.headband))); } catch { return true; } }).map(d => d.id);
+  ok(badLook.length === 0, `every ninja and enemy has a code-drawn look (a village on every headband)${badLook.length ? ` (bad: ${badLook.slice(0, 5).join(', ')})` : ''}`);
+  ok(lookFor(C.char.naruto, C).village === 'leaf' && lookFor(C.enemy.e_zabuza_boss, C).village === 'mist', 'headbands carry the village symbol (Naruto: Leaf, Zabuza: Mist)');
+  const bosses = new Set(C.nodes.flatMap(n => (n.enemies || []).filter(e => e.boss).map(e => e.id)));
+  const untitled = [...bosses].filter(id => typeof C.enemy[id]?.title !== 'string' || !C.enemy[id].title.trim());
+  ok(untitled.length === 0, `every story boss has an epithet for its intro card${untitled.length ? ` (missing: ${untitled.join(', ')})` : ''}`);
+  ok(['arc_tea', 'arc_kurosuki', 'arc_twelve', 'arc_threetails', 'arc_sixtails'].every(id => C.arc[id]?.filler === true) && arcs.filter(a => a.filler).length === 5, 'the five side-mission arcs are flagged as filler');
+
+  const badIcon = Object.entries({ ...EMOJI_ICON, ...NATURE_ICON, ...ROLE_ICON }).filter(([, v]) => !ICONS[v]).map(([k]) => k);
+  ok(badIcon.length === 0 && Object.keys(ICONS).length >= 60, `every emoji, nature and role maps to a drawn icon${badIcon.length ? ` (bad: ${badIcon.join(', ')})` : ''}`);
+  ok(hasEmoji('📜 +40 scrolls') && hasEmoji('Tap 🗺️') && hasEmoji('✓ cleared') && !hasEmoji('plain text · 5 × 2 — done…'), 'emoji detection catches the icons the UI used and ignores punctuation');
 }
 
 console.log(`${fails ? 'FAIL' : 'PASS'} — core tests: ${passes} passed, ${fails} failed.`);

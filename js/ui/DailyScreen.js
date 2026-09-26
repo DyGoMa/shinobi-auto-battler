@@ -7,6 +7,7 @@ import { enemyToken } from './StoryMapScreen.js';
 import { dailyFor, dailyRecord, attemptsLeft, dailyReward, dailyEnemyNature, isDailyUnlocked, TWIST_TEXT } from '../core/Daily.js';
 import { resolveTeam } from '../core/Progression.js';
 import { beatenBy } from '../core/formulas.js';
+import { eraOfPart } from '../render/Assets.js';
 
 /** "5 h 12 min" until local midnight. */
 export function timeToTomorrow(now = new Date()) {
@@ -38,6 +39,7 @@ export function render(game, ui) {
   const canFight = !rec.cleared && left > 0;
   const power = daily.twist.power ?? 1;
   const bosses = daily.rounds.map(n => { const e = n.enemies.find(x => x.boss) || n.enemies[0]; return { node: n, def: C.enemy[e.id] }; });
+  if (daily.rounds[0]?.part) ui.setEra(eraOfPart(daily.rounds[0].part));   // the Daily wears its boss's era
 
   return h('div.screen', head,
     tipCard(game, 'daily'),

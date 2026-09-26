@@ -9,8 +9,20 @@ import { missingNames } from './naming.mjs';
 import { checkWiki } from './wiki-check.mjs';
 import { GAME_VERSION } from '../js/config/version.js';
 import { readFileSync } from 'node:fs';
+import { STAGES, stageIdFor } from '../js/render/Stage.js';
 
 const errors = validateContent(CONTENT);
+
+// ---- the art build (Phase 3): every arc has a stage, every story boss an epithet ----------
+let stagedArcs = 0;
+for (const arc of Object.values(CONTENT.arc)) {
+  const sid = stageIdFor({ arcId: arc.id });
+  if (!sid || !STAGES[sid]) errors.push(`arc ${arc.id} has no battle stage (js/render/Stage.js ARC_STAGE)`); else stagedArcs++;
+  if (arc.filler !== undefined && typeof arc.filler !== 'boolean') errors.push(`arc ${arc.id}: filler must be true or false`);
+}
+const bossIds = new Set(CONTENT.nodes.flatMap(n => (n.enemies || []).filter(e => e.boss).map(e => e.id)));
+for (const id of bossIds) { const d = CONTENT.enemy[id]; if (d && (typeof d.title !== 'string' || !d.title.trim())) errors.push(`boss ${id} has no title (the epithet on its intro card)`); }
+for (const d of Object.values(CONTENT.enemy)) if (d.title !== undefined && (typeof d.title !== 'string' || d.title.length > 40)) errors.push(`enemy ${d.id}: title must be a short string`);
 
 // ---- balance.js sanity ----------------------------------------------------
 const B = BALANCE;
@@ -120,6 +132,7 @@ if (unsourced.length) console.log(`  ⚠ ${unsourced.length} name(s) have no sou
 else console.log('  names: every in-game name has a recorded source (NAMING.md)');
 console.log('  app: manifest.webmanifest, icons (192, 512, 512 maskable, 180 Apple) and sw.js check out');
 console.log(`  wiki: ${wiki.pages} pages, ${wiki.guides} guides, ${wiki.links} guide links${wiki.errors.length ? ` — ${wiki.errors.length} problem(s)` : ': every page, link and config value checks out'}`);
+console.log(`  art: ${Object.keys(STAGES).length} stages drawn, ${stagedArcs}/${Object.keys(CONTENT.arc).length} arcs staged, ${bossIds.size} story bosses titled`);
 if (errors.length) {
   console.log(`\nFAIL — ${errors.length} problem(s):`);
   for (const e of errors) console.log('  ✗ ' + e);

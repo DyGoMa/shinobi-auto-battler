@@ -57,7 +57,7 @@ export const ENEMIES = [
     color: '#cbd5e1', initials: 'KH', emoji: '🔔',
   },
   {
-    id: 'e_kakashi_bell_boss', name: 'Kakashi Hatake', basedOn: 'kakashi', role: 'Striker', natures: ['Earth', 'Lightning', 'Water'],
+    id: 'e_kakashi_bell_boss', name: 'Kakashi Hatake', title: 'The Copy Ninja', basedOn: 'kakashi', role: 'Striker', natures: ['Earth', 'Lightning', 'Water'],
     stats: { hp: 0.8, atk: 0.62, def: 1.0 },
     jutsu: { name: 'Earth Style: Headhunter Jutsu', nature: 'Earth', type: 'single' },
     mechanics: [
@@ -110,7 +110,7 @@ export const ENEMIES = [
     color: '#7dd3fc', initials: 'HA', emoji: '❄️',
   },
   {
-    id: 'e_zabuza_boss', name: 'Zabuza Momochi', basedOn: 'zabuza', role: 'Striker', natures: ['Water'],
+    id: 'e_zabuza_boss', name: 'Zabuza Momochi', title: 'Demon of the Hidden Mist', basedOn: 'zabuza', role: 'Striker', natures: ['Water'],
     stats: { hp: 1.0, atk: 0.85, def: 1.0, interval: 1.1 },
     jutsu: { name: 'Water Prison Jutsu', nature: 'Water', type: 'single' },
     mechanics: [
@@ -187,7 +187,7 @@ export const ENEMIES = [
     color: '#1f2937', initials: 'MT', emoji: '🪢',
   },
   {
-    id: 'e_neji_boss', name: 'Neji Hyuga', basedOn: 'neji', role: 'Striker', natures: ['Fire'],
+    id: 'e_neji_boss', name: 'Neji Hyuga', title: 'The Hyuga Prodigy', basedOn: 'neji', role: 'Striker', natures: ['Fire'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Gentle Fist', type: 'single' },
     mechanics: [
@@ -233,14 +233,14 @@ export const ENEMIES = [
     color: '#0891b2', initials: 'T2', emoji: '🌊',
   },
   {
-    id: 'e_orochimaru_crush', name: 'Orochimaru', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
+    id: 'e_orochimaru_crush', name: 'Orochimaru', title: 'Of the Legendary Sannin', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
     stats: { hp: 0.8, atk: 0.8, def: 1.0 },
     jutsu: { name: 'Wind Style: Great Breakthrough', nature: 'Wind', type: 'aoe' },
     mechanics: [{ type: 'telegraphAoE', name: 'Striking Shadow Snakes', nature: null, target: 'front', stun: true }],
     color: '#6b7280', initials: 'OR', emoji: '🐍',
   },
   {
-    id: 'e_gaara_boss', name: 'Gaara', basedOn: 'gaara', role: 'Ranged', natures: ['Wind'],
+    id: 'e_gaara_boss', name: 'Gaara', title: 'Of the Hidden Sand', basedOn: 'gaara', role: 'Ranged', natures: ['Wind'],
     stats: { hp: 1.05, atk: 0.9, def: 1.1 },
     jutsu: { name: 'Sand Coffin', type: 'single' },
     mechanics: [
@@ -279,7 +279,7 @@ export const ENEMIES = [
     color: '#6d28d9', initials: 'KB', emoji: '👓',
   },
   {
-    id: 'e_orochimaru_boss', name: 'Orochimaru', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
+    id: 'e_orochimaru_boss', name: 'Orochimaru', title: 'Of the Legendary Sannin', basedOn: 'orochimaru', role: 'Ranged', natures: ['Wind', 'Earth'],
     stats: { hp: 1.0, atk: 0.85, def: 1.0 },
     jutsu: { name: 'Wind Style: Great Breakthrough', nature: 'Wind', type: 'aoe' },
     mechanics: [
@@ -309,7 +309,7 @@ export const ENEMIES = [
     color: '#0f172a', initials: 'AR', emoji: '☂️',
   },
   {
-    id: 'e_aoi_boss', name: 'Aoi Rokusho', role: 'Striker', natures: ['Water'],
+    id: 'e_aoi_boss', name: 'Aoi Rokusho', title: "The Thunder Spirit's Thief", role: 'Striker', natures: ['Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Ninja Art: Senbon Rainstorm', type: 'aoe' },
     mechanics: [
@@ -361,7 +361,7 @@ export const ENEMIES = [
     color: '#9f1239', initials: 'DO', emoji: '👹',
   },
   {
-    id: 'e_kimimaro', name: 'Kimimaro', basedOn: 'kimimaro', role: 'Striker', natures: [],
+    id: 'e_kimimaro', name: 'Kimimaro', title: 'Last of the Kaguya Clan', basedOn: 'kimimaro', role: 'Striker', natures: [],
     stats: { hp: 0.95, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Clematis Dance: Flower', type: 'single' },
     mechanics: [
@@ -372,7 +372,7 @@ export const ENEMIES = [
     color: '#e7e5e4', initials: 'KM', emoji: '🦴',
   },
   {
-    id: 'e_sasuke_boss', name: "Sasuke Uchiha (Heavens' Curse Mark)", basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
+    id: 'e_sasuke_boss', name: "Sasuke Uchiha (Heavens' Curse Mark)", title: 'The Avenger', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
     stats: { hp: 0.95, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Fire Style: Phoenix Flower Jutsu', nature: 'Fire', type: 'aoe' },
     mechanics: [
@@ -408,7 +408,7 @@ export const ENEMIES = [
     color: '#a3e635', initials: 'RA', emoji: '👀',
   },
   {
-    id: 'e_raiga_boss', name: 'Raiga Kurosuki', role: 'Striker', natures: ['Lightning', 'Water'],
+    id: 'e_raiga_boss', name: 'Raiga Kurosuki', title: 'Thunder of the Hidden Mist', role: 'Striker', natures: ['Lightning', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Ninja Art: Lightning Ball', nature: 'Lightning', type: 'single' },
     mechanics: [
@@ -463,7 +463,7 @@ export const ENEMIES = [
     color: '#e11d48', initials: 'TT', emoji: '👤',
   },
   {
-    id: 'e_sasori_boss', name: 'Sasori', basedOn: 'sasori', role: 'Ranged', natures: [],
+    id: 'e_sasori_boss', name: 'Sasori', title: 'Sasori of the Red Sand', basedOn: 'sasori', role: 'Ranged', natures: [],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Iron Sand: Scattered Showers', type: 'aoe' },
     mechanics: [
@@ -479,7 +479,7 @@ export const ENEMIES = [
     color: '#fef9c3', initials: 'CB', emoji: '🕊️',
   },
   {
-    id: 'e_deidara_boss', name: 'Deidara', basedOn: 'deidara', role: 'Ranged', natures: ['Earth', 'Lightning'],
+    id: 'e_deidara_boss', name: 'Deidara', title: 'Artist of the Akatsuki', basedOn: 'deidara', role: 'Ranged', natures: ['Earth', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 0.95 },
     jutsu: { name: 'C1', nature: 'Earth', type: 'single' },
     mechanics: [
@@ -514,7 +514,7 @@ export const ENEMIES = [
     color: '#6b7280', initials: 'OR', emoji: '🐍',
   },
   {
-    id: 'e_sasuke_tenchi', name: 'Sasuke Uchiha', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
+    id: 'e_sasuke_tenchi', name: 'Sasuke Uchiha', title: 'The Avenger', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Chidori', nature: 'Lightning', type: 'single' },
     mechanics: [
@@ -552,7 +552,7 @@ export const ENEMIES = [
     color: '#78716c', initials: 'RS', emoji: '🧟',
   },
   {
-    id: 'e_kazuma_boss', name: 'Kazuma', role: 'Ranged', natures: ['Wind', 'Earth'],
+    id: 'e_kazuma_boss', name: 'Kazuma', title: 'Of the Twelve Guardian Ninja', role: 'Ranged', natures: ['Wind', 'Earth'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Flying Swallow', nature: 'Wind', type: 'single' },
     mechanics: [
@@ -590,7 +590,7 @@ export const ENEMIES = [
     color: '#3f6212', initials: 'MB', emoji: '👺',
   },
   {
-    id: 'e_hidan_boss', name: 'Hidan', basedOn: 'hidan', role: 'Striker', natures: [],
+    id: 'e_hidan_boss', name: 'Hidan', title: 'The Immortal', basedOn: 'hidan', role: 'Striker', natures: [],
     stats: { hp: 1.0, atk: 0.9, def: 0.95 },
     jutsu: { name: 'Triple-Bladed Scythe', type: 'single' },
     mechanics: [
@@ -600,7 +600,7 @@ export const ENEMIES = [
     color: '#e5e7eb', initials: 'HI', emoji: '⛧',
   },
   {
-    id: 'e_kakuzu_boss', name: 'Kakuzu', basedOn: 'kakuzu', role: 'Striker', natures: ['Earth', 'Water', 'Fire', 'Wind', 'Lightning'],
+    id: 'e_kakuzu_boss', name: 'Kakuzu', title: 'Of the Five Hearts', basedOn: 'kakuzu', role: 'Striker', natures: ['Earth', 'Water', 'Fire', 'Wind', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Wind Style: Pressure Damage', nature: 'Wind', type: 'aoe' },
     mechanics: [
@@ -631,7 +631,7 @@ export const ENEMIES = [
     color: '#0369a1', initials: 'NU', emoji: '🐍',
   },
   {
-    id: 'e_guren_boss', name: 'Guren', role: 'Ranged', natures: ['Earth'],
+    id: 'e_guren_boss', name: 'Guren', title: 'The Crystal Style', role: 'Ranged', natures: ['Earth'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Crystal Style: Jade Crystal Mirror', nature: 'Earth', type: 'single' },
     mechanics: [
@@ -641,7 +641,7 @@ export const ENEMIES = [
     color: '#a78bfa', initials: 'GU', emoji: '💎',
   },
   {
-    id: 'e_three_tails', name: 'Three-Tails', role: 'Tank', natures: ['Water'],
+    id: 'e_three_tails', name: 'Three-Tails', title: 'The Three-Tailed Beast', role: 'Tank', natures: ['Water'],
     stats: { hp: 0.9, atk: 0.95, def: 0.95 },
     mechanics: [
       { type: 'telegraphAoE', name: 'Tailed Beast Bomb', nature: null, target: 'all', power: 1.2, windup: 1.2 },
@@ -676,7 +676,7 @@ export const ENEMIES = [
     color: '#f97316', initials: 'TO', emoji: '🍭',
   },
   {
-    id: 'e_deidara_art', name: 'Deidara', basedOn: 'deidara', role: 'Ranged', natures: ['Earth', 'Lightning'],
+    id: 'e_deidara_art', name: 'Deidara', title: 'Art Is an Explosion', basedOn: 'deidara', role: 'Ranged', natures: ['Earth', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 0.95 },
     jutsu: { name: 'C1', nature: 'Earth', type: 'single' },
     mechanics: [
@@ -712,7 +712,7 @@ export const ENEMIES = [
     color: '#fb923c', initials: 'PA', emoji: '🐕',
   },
   {
-    id: 'e_pain_sixpaths', name: 'Pain', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
+    id: 'e_pain_sixpaths', name: 'Pain', title: 'God of the Hidden Rain', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Universal Pull', type: 'single' },
     mechanics: [
@@ -737,7 +737,7 @@ export const ENEMIES = [
     color: '#450a0a', initials: 'IC', emoji: '🐦‍⬛',
   },
   {
-    id: 'e_itachi_boss', name: 'Itachi Uchiha', basedOn: 'itachi', role: 'Ranged', natures: ['Fire', 'Water', 'Wind'],
+    id: 'e_itachi_boss', name: 'Itachi Uchiha', title: 'Of the Uchiha Clan', basedOn: 'itachi', role: 'Ranged', natures: ['Fire', 'Water', 'Wind'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Fire Style: Fireball Jutsu', nature: 'Fire', type: 'aoe' },
     mechanics: [
@@ -755,7 +755,7 @@ export const ENEMIES = [
     color: '#eab308', initials: 'KB', emoji: '🎤',
   },
   {
-    id: 'e_eight_tails', name: 'Eight-Tails', basedOn: 'killer_bee', role: 'Tank', natures: [],
+    id: 'e_eight_tails', name: 'Eight-Tails', title: 'The Eight-Tailed Beast', basedOn: 'killer_bee', role: 'Tank', natures: [],
     stats: { hp: 1.1, atk: 0.9, def: 1.1 },
     jutsu: { name: 'Ink Creation', type: 'aoe' },
     mechanics: [
@@ -782,7 +782,7 @@ export const ENEMIES = [
     color: '#57534e', initials: 'BN', emoji: '🗡️',
   },
   {
-    id: 'e_shiranami_boss', name: 'Shiranami', role: 'Ranged', natures: [],
+    id: 'e_shiranami_boss', name: 'Shiranami', title: 'Of the Tsuchigumo Clan', role: 'Ranged', natures: [],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Word Bind Jutsu', type: 'single' },
     mechanics: [
@@ -820,7 +820,7 @@ export const ENEMIES = [
     color: '#9a3412', initials: 'PA', emoji: '🫗',
   },
   {
-    id: 'e_pain_boss', name: 'Pain (Tendo)', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
+    id: 'e_pain_boss', name: 'Pain (Tendo)', title: 'Leader of the Akatsuki', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.05, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Universal Pull', type: 'single' },
     mechanics: [
@@ -846,7 +846,7 @@ export const ENEMIES = [
     color: '#155e75', initials: 'KS', emoji: '🦈',
   },
   {
-    id: 'e_danzo_boss', name: 'Danzo Shimura', role: 'Striker', natures: ['Wind', 'Earth', 'Water'],
+    id: 'e_danzo_boss', name: 'Danzo Shimura', title: 'Leader of the Foundation', role: 'Striker', natures: ['Wind', 'Earth', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     mechanics: [
       { type: 'telegraphAoE', name: 'Wind Style: Vacuum Bullets', nature: 'Wind', target: 'all' },
@@ -855,7 +855,7 @@ export const ENEMIES = [
     color: '#374151', initials: 'DS', emoji: '🩻',
   },
   {
-    id: 'e_sasuke_summit_boss', name: 'Sasuke Uchiha', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
+    id: 'e_sasuke_summit_boss', name: 'Sasuke Uchiha', title: 'Of Taka', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Chidori Sharp Spear', nature: 'Lightning', type: 'single' },
     mechanics: [
@@ -873,7 +873,7 @@ export const ENEMIES = [
     color: '#7c2d12', initials: 'GS', emoji: '🦑',
   },
   {
-    id: 'e_nine_tails', name: 'Nine-Tails', role: 'Striker', natures: ['Fire', 'Wind'],
+    id: 'e_nine_tails', name: 'Nine-Tails', title: 'The Nine-Tailed Fox', role: 'Striker', natures: ['Fire', 'Wind'],
     stats: { hp: 1.05, atk: 0.9, def: 1.05 },
     mechanics: [
       { type: 'telegraphAoE', name: 'Tailed Beast Bomb', nature: null, target: 'all', power: 1.2, windup: 1.2 },
@@ -892,7 +892,7 @@ export const ENEMIES = [
     color: '#155e75', initials: 'KS', emoji: '🦈',
   },
   {
-    id: 'e_tobi_boss', name: 'Tobi', basedOn: 'obito', role: 'Striker', natures: ['Fire'],
+    id: 'e_tobi_boss', name: 'Tobi', title: 'The Masked Man', basedOn: 'obito', role: 'Striker', natures: ['Fire'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Kamui', type: 'single' },
     mechanics: [
@@ -945,7 +945,7 @@ export const ENEMIES = [
     color: '#0f766e', initials: 'AS', emoji: '🚬',
   },
   {
-    id: 'e_nagato_boss', name: 'Nagato (Reanimated)', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
+    id: 'e_nagato_boss', name: 'Nagato (Reanimated)', title: 'The Reanimated Pain', basedOn: 'pain', role: 'Ranged', natures: ['Water', 'Wind'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Universal Pull', type: 'single' },
     mechanics: [
@@ -961,7 +961,7 @@ export const ENEMIES = [
     color: '#a8a29e', initials: 'MU', emoji: '👤',
   },
   {
-    id: 'e_mu_boss', name: 'Mu (Reanimated)', role: 'Ranged', natures: ['Earth', 'Wind', 'Fire'],
+    id: 'e_mu_boss', name: 'Mu (Reanimated)', title: 'The Second Tsuchikage', role: 'Ranged', natures: ['Earth', 'Wind', 'Fire'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     mechanics: [
       { type: 'telegraphAoE', name: 'Particle Style: Atomic Dismantling Jutsu', nature: 'Earth', target: 'front', power: 1.3 },
@@ -989,7 +989,7 @@ export const ENEMIES = [
     color: '#b45309', initials: '4T', emoji: '🐒',
   },
   {
-    id: 'e_kabuto_sage_boss', name: 'Kabuto Yakushi (Sage Mode)', basedOn: 'kabuto', role: 'Ranged', natures: ['Earth', 'Water'],
+    id: 'e_kabuto_sage_boss', name: 'Kabuto Yakushi (Sage Mode)', title: 'Sage of the Snakes', basedOn: 'kabuto', role: 'Ranged', natures: ['Earth', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Sage Art: White Extreme Attack', type: 'aoe' },
     mechanics: [
@@ -1005,7 +1005,7 @@ export const ENEMIES = [
     color: '#6b7280', initials: 'TC', emoji: '👾',
   },
   {
-    id: 'e_obito_boss', name: 'Obito Uchiha', basedOn: 'obito', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
+    id: 'e_obito_boss', name: 'Obito Uchiha', title: 'Of the Uchiha Clan', basedOn: 'obito', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.0 },
     jutsu: { name: 'Fire Style: Fireball Jutsu', nature: 'Fire', type: 'aoe' },
     mechanics: [
@@ -1033,7 +1033,7 @@ export const ENEMIES = [
     color: '#d4d4d4', initials: 'GO', emoji: '💨',
   },
   {
-    id: 'e_kinoe_boss', name: 'Kinoe', basedOn: 'yamato', role: 'Tank', natures: ['Earth', 'Water'],
+    id: 'e_kinoe_boss', name: 'Kinoe', title: 'Of the Foundation', basedOn: 'yamato', role: 'Tank', natures: ['Earth', 'Water'],
     stats: { hp: 0.85, atk: 0.95, def: 0.95 },
     jutsu: { name: 'Wood Style: Four Pillar Prison Jutsu', nature: 'Earth', type: 'single' },
     mechanics: [
@@ -1053,7 +1053,7 @@ export const ENEMIES = [
     color: '#f5f5f4', initials: 'OU', emoji: '⚫',
   },
   {
-    id: 'e_obito_jin_boss', name: 'Obito Uchiha (Ten-Tails Jinchuriki)', basedOn: 'obito', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
+    id: 'e_obito_jin_boss', name: 'Obito Uchiha (Ten-Tails Jinchuriki)', title: "The Ten-Tails' Jinchuriki", basedOn: 'obito', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Truth-Seeking Ball', type: 'single' },
     mechanics: [
@@ -1071,7 +1071,7 @@ export const ENEMIES = [
     color: '#450a0a', initials: 'MU', emoji: '☄️',
   },
   {
-    id: 'e_madara_boss', name: 'Madara Uchiha', basedOn: 'madara', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
+    id: 'e_madara_boss', name: 'Madara Uchiha', title: 'Ghost of the Uchiha', basedOn: 'madara', role: 'Striker', natures: ['Fire', 'Earth', 'Water'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Truth-Seeking Ball', type: 'single' },
     mechanics: [
@@ -1094,7 +1094,7 @@ export const ENEMIES = [
     color: '#e9d5ff', initials: 'KO', emoji: '🐇',
   },
   {
-    id: 'e_kaguya_boss', name: 'Kaguya Otsutsuki', role: 'Ranged', natures: ['Fire'],
+    id: 'e_kaguya_boss', name: 'Kaguya Otsutsuki', title: 'Mother of Chakra', role: 'Ranged', natures: ['Fire'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Eighty Gods Vacuum Attack', type: 'single' },
     mechanics: [
@@ -1112,7 +1112,7 @@ export const ENEMIES = [
     color: '#1e1b4b', initials: 'SU', emoji: '🟣',
   },
   {
-    id: 'e_sasuke_final_boss', name: 'Sasuke Uchiha (Rinnegan)', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
+    id: 'e_sasuke_final_boss', name: 'Sasuke Uchiha (Rinnegan)', title: 'Of the Uchiha Clan', basedOn: 'sasuke', role: 'Striker', natures: ['Fire', 'Lightning'],
     stats: { hp: 1.0, atk: 0.9, def: 1.05 },
     jutsu: { name: 'Amaterasu', nature: 'Fire', type: 'single' },
     mechanics: [

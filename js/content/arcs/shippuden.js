@@ -93,7 +93,7 @@ export const SHIPPUDEN_ARCS = [
 
   // ---------------------------------------------------------------------------
   {
-    id: 'arc_twelve', part: 2, order: 3, name: 'Twelve Guardian Ninja', episodes: '54–71',
+    id: 'arc_twelve', part: 2, order: 3, filler: true, name: 'Twelve Guardian Ninja', episodes: '54–71',
     blurb: 'Asuma, the Fire Temple monk Sora, and a plot by former Twelve Guardian Ninja to raise the dead against the Leaf.',
     banner: 'banner_twelve',
     theme: { sky: ['#3b3561', '#8a82b8'], ground: '#4a4f5c', far: '#2c2f3d', accent: '#f472b6' },
@@ -162,7 +162,7 @@ export const SHIPPUDEN_ARCS = [
 
   // ---------------------------------------------------------------------------
   {
-    id: 'arc_threetails', part: 2, order: 5, name: "Three-Tails' Appearance", episodes: '89–112',
+    id: 'arc_threetails', part: 2, order: 5, filler: true, name: "Three-Tails' Appearance", episodes: '89–112',
     blurb: "The Three-Tails surfaces in a lake near the Leaf. Orochimaru's crystal user Guren wants it — and so does Akatsuki.",
     banner: 'banner_threetails',
     theme: { sky: ['#6d8b9a', '#d0e3ea'], ground: '#4a6b6b', far: '#2f4d4f', accent: '#a78bfa' },
@@ -300,7 +300,7 @@ export const SHIPPUDEN_ARCS = [
 
   // ---------------------------------------------------------------------------
   {
-    id: 'arc_sixtails', part: 2, order: 9, name: 'Six-Tails Unleashed', episodes: '144–151',
+    id: 'arc_sixtails', part: 2, order: 9, filler: true, name: 'Six-Tails Unleashed', episodes: '144–151',
     blurb: "Team 7 guards Hotaru, heir to the Tsuchigumo clan's forbidden jutsu, while the wandering Six-Tails jinchuriki Utakata watches over her.",
     banner: 'banner_sixtails',
     theme: { sky: ['#6b8f71', '#d6e8d4'], ground: '#4b6b4f', far: '#2f4a34', accent: '#34d399' },

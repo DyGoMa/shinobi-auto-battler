@@ -23,16 +23,24 @@ import { claimableAchievements } from '../core/Achievements.js';
 import { startDailyAttempt } from '../core/Daily.js';
 import { playIntro, prefersReducedMotion } from './Intro.js';
 import { introPlan } from '../core/StartFlow.js';
+import { ensureSprite, icon } from '../render/icons.js';
+import { currentNode } from '../core/Progression.js';
+import { eraOfPart } from '../render/Assets.js';
 
 const TABS = [
-  { id: 'home', label: 'Home', icon: '🏯', mod: Home },
-  { id: 'story', label: 'Story', icon: '🗺️', mod: Story },
-  { id: 'team', label: 'Team', icon: '👥', mod: Team },
-  { id: 'roster', label: 'Roster', icon: '📖', mod: Roster },
-  { id: 'summon', label: 'Summon', icon: '📜', mod: Summon },
-  { id: 'wiki', label: 'Wiki', icon: '📚', mod: Wiki },
-  { id: 'settings', label: 'Settings', icon: '⚙️', mod: Settings },
+  { id: 'home', label: 'Home', icon: 'home', mod: Home },
+  { id: 'story', label: 'Story', icon: 'map', mod: Story },
+  { id: 'team', label: 'Team', icon: 'team', mod: Team },
+  { id: 'roster', label: 'Roster', icon: 'roster', mod: Roster },
+  { id: 'summon', label: 'Summon', icon: 'scroll', mod: Summon },
+  { id: 'wiki', label: 'Wiki', icon: 'wiki', mod: Wiki },
+  { id: 'settings', label: 'Settings', icon: 'settings', mod: Settings },
 ];
+// The skin each screen wears (docs/ART_BIBLE.md §6): 'story' follows the player's place in the
+// story (Part I until the first Shippuden battle is the next one), 'p1' is the neutral look for
+// reference screens, 'p2' the Akatsuki look. Summon and Daily set their own (banner arc, boss part).
+const SCREEN_ERA = { home: 'story', story: 'story', team: 'story', roster: 'story', summon: 'story', wiki: 'p1', settings: 'p1', tutorial: 'p1', rush: 'p2', achievements: 'p1', daily: 'story', start: 'story' };
+const THEME_COLOR = { p1: '#17120e', p2: '#0a0b0f' };
 // Screens that are not tabs. `tab` = the tab highlighted while they are open.
 const SCREENS = {
   ...Object.fromEntries(TABS.map(t => [t.id, { mod: t.mod, tab: t.id }])),
@@ -64,9 +72,11 @@ export class UIManager {
   }
 
   init() {
+    ensureSprite(document);
+    for (const el of document.querySelectorAll('.ico-slot[data-icon]')) el.replaceChildren(icon(el.dataset.icon));
     for (const t of TABS) {
       const b = h('button.tab', { type: 'button', dataset: { tab: t.id }, onclick: () => { this.game.audio.click(); this.go(t.id); } },
-        h('span.ti', { 'aria-hidden': 'true' }, t.icon), h('span.tl', t.label));
+        h('span.ti', { 'aria-hidden': 'true' }, icon(t.icon)), h('span.tl', t.label));
       this.tabbar.appendChild(b);
     }
     document.getElementById('brand').addEventListener('click', () => this.go('home'));
@@ -144,9 +154,26 @@ export class UIManager {
     if (id === 'home' && this.installReady) setTimeout(() => this.game.install?.offerPopup(), 400);
   }
 
+  /** The era of the player's place in the story: Part I until a Shippuden battle is the next one. */
+  storyEra() {
+    const s = this.game.state; if (!s) return 'p1';
+    const next = currentNode(s, this.game.C);
+    return eraOfPart(next ? next.part : 2);
+  }
+  /** Switch the skin (html[data-era]); screens call it when they know better than SCREEN_ERA. */
+  setEra(era) {
+    const e = era === 'p2' ? 'p2' : 'p1';
+    if (this.era === e) return;
+    this.era = e;
+    document.documentElement.dataset.era = e;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[e]);
+  }
+
   /** Draw the current screen. `enter` plays the fade-in (navigation only, not refreshes). */
   render(enter = false) {
     const scr = SCREENS[this.current] || SCREENS.home;
+    const era = SCREEN_ERA[this.current] || 'story';
+    if (!this.battle) this.setEra(era === 'story' ? this.storyEra() : era);
     let el;
     try { el = scr.mod.render(this.game, this, this.params || {}); }
     catch (e) {
@@ -191,7 +218,7 @@ export class UIManager {
     document.getElementById('cur-scrolls').textContent = fmt(s.currencies.scrolls);
     document.getElementById('cur-ryo').textContent = fmt(s.currencies.ryo);
     const mute = document.getElementById('mute-btn');
-    mute.textContent = s.settings.muted ? '🔇' : '🔊';
+    mute.replaceChildren(icon(s.settings.muted ? 'mute' : 'sound'));
     mute.setAttribute('aria-label', s.settings.muted ? 'Sound is off — turn it on' : 'Sound is on — mute');
     const ach = document.getElementById('ach-btn');
     const ready = claimableAchievements(s, this.game.C).length;
@@ -317,8 +344,8 @@ export class UIManager {
 
   /** A toast for 3.2 s; { sticky: true } keeps it until it is tapped (one per text). */
   toast(text, kind = '', onclick = null, { sticky = false } = {}) {
-    if (sticky) for (const old of this.toastRoot.querySelectorAll('.toast.sticky')) if (old.textContent === text) return;
-    const t = h(onclick ? 'button.toast' : 'div.toast', { role: 'status', type: onclick ? 'button' : null, onclick: onclick ? () => { t.remove(); onclick(); } : null }, text);
+    if (sticky) for (const old of this.toastRoot.querySelectorAll('.toast.sticky')) if (old.dataset.text === text) return;
+    const t = h(onclick ? 'button.toast' : 'div.toast', { role: 'status', type: onclick ? 'button' : null, dataset: { text }, onclick: onclick ? () => { t.remove(); onclick(); } : null }, text);
     if (kind) t.classList.add(kind);
     if (sticky) t.classList.add('sticky');
     this.toastRoot.appendChild(t);
@@ -347,6 +374,10 @@ export class UIManager {
       if (!r.ok) { this.toast(r.error, 'bad'); return; }
       this.game.commit('daily');
     }
+    // The battle wears the era of its arc (a Daily wears its boss's, the Boss Rush is Shippuden).
+    if (opts.node) this.setEra(eraOfPart(opts.node.part));
+    else if (opts.bossRush) this.setEra('p2');
+    else if (opts.daily?.rounds?.[0]?.part) this.setEra(eraOfPart(opts.daily.rounds[0].part));
     this.battle = new BattleScreen(this.game, this, opts);
     this.battle.open();
   }

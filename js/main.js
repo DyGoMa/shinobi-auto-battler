@@ -17,8 +17,12 @@ import { loadBuildInfo, formatBuild } from './core/Version.js';
 import { setupPwa } from './ui/pwa.js';
 import { setupInstall } from './ui/install.js';
 import { isStandalone } from './core/Pwa.js';
+import { loadIndex as loadAssetIndex } from './render/Assets.js';
 
 async function boot() {
+  // The art index (assets/index.json): which portraits and sprites exist. Nothing waits on
+  // it; a slot draws its code-drawn fallback and swaps the image in when it arrives.
+  loadAssetIndex().catch(() => {});
   // The intro starts first, so the splash is up while the game loads behind it.
   const intro = playIntro(introPlan({ seen: introSeen(), reducedMotion: prefersReducedMotion() }));
   setIntroSeen();
