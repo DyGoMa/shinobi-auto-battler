@@ -6,7 +6,12 @@ import { h, btn, fmt, avatar, objectiveText } from './dom.js';
 import { BattleSim } from '../core/BattleSim.js';
 import { Renderer } from '../render/Renderer.js';
 import { Effects } from '../render/Effects.js';
-import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits } from '../core/Progression.js';
+import { nodeBattleConfig, completeNode, completeBossRushRound, bossRushRound, resolveTeam, buildTeamUnits, isNodeCleared } from '../core/Progression.js';
+import { NATURE } from '../render/Effects.js';
+import { icon } from '../render/icons.js';
+import { stageDefFor } from '../render/Stage.js';
+import * as Assets from '../render/Assets.js';
+import { prefersReducedMotion } from './Intro.js';
 import { dailyBattleConfig, completeDaily, attemptsLeft, startDailyAttempt, TWIST_TEXT } from '../core/Daily.js';
 import { hashString, bestNature, beatenBy, natureRelation } from '../core/formulas.js';
 import { leaderBuffText } from '../core/Ninja.js';
@@ -36,6 +41,9 @@ export class BattleScreen {
     this.tutorial = opts.tutorial || null;
     this.lessonType = this.tutorial ? opts.node?.lesson : null;
     this.autoRevealed = !this.tutorial;
+    // Slow motion (a clash, a hit-stop) scales the sim's time for a few wall-clock ms; the
+    // boss intro pauses the sim while its cards play; timers here are cleared on close.
+    this.timeScale = 1; this.slowUntil = 0; this.introPause = false; this.introSeen = false; this._timers = [];
     this._onVis = this._onVis.bind(this);
     this._loop = this._loop.bind(this);
     this._onKey = this._onKey.bind(this);
@@ -49,6 +57,12 @@ export class BattleScreen {
     this.hard = !!this.opts.hard;                  // a story battle on Hard mode
     this.node = this.opts.node || this.daily?.node || null;
     const theme = this.isRush ? { sky: ['#3b2a3f', '#b98a8a'], ground: '#5b3a3a', far: '#3a2430', accent: '#ff4d4d' } : arcOf(this.node, C).theme;
+    // The arc's drawn stage (js/render/Stage.js), the era's outfits, and the effect settings.
+    const stage = stageDefFor({ node: this.node, arcId: this.node?.arcId, rush: this.isRush }, theme);
+    this.era = this.isRush ? 'p2' : Assets.eraOfPart(this.node?.part || 1);
+    this.reduced = prefersReducedMotion();
+    const vfx = this.game.state.settings.vfx;
+    this.level = this.reduced ? 'low' : (['low', 'medium', 'high'].includes(vfx) ? vfx : 'medium');
 
     this.objEl = h('div.obj');
     this.timerEl = h('div.timer', { 'aria-label': 'Battle time' }, '0:00');
@@ -56,10 +70,19 @@ export class BattleScreen {
     this.speedBtn = h('button.icon-btn.speed-btn', { type: 'button', onclick: () => this._cycleSpeed() }, `${this.speed}×`);
     this._labelSpeed();
     this.autoBtn = h('button.icon-btn', { type: 'button', onclick: () => { const s = this.game.state.settings; s.autoUlt = !s.autoUlt; this._syncAuto(); this.game.commit('settings'); } });
-    this.pauseBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Pause', title: 'Pause', onclick: () => this.togglePause() }, '⏸');
+    this.pauseBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Pause', title: 'Pause', onclick: () => this.togglePause() }, icon('pause'));
     const hud = h('div.bhud', this.objEl, this.timerEl, this.autoBtn, this.speedBtn, this.pauseBtn);
     this.canvas = h('canvas', { 'aria-label': 'Battlefield' });
-    this.stage = h('div.stage', this.canvas);
+    // The DOM overlays over the canvas (css/style.css "Battle chrome"): the Ultimate cut-in,
+    // the clash readout, the boss intro pieces and the victory/defeat card. None takes taps.
+    this.overlay = h('div.overlay', { 'aria-hidden': 'true' },
+      this.nameCardEl = h('div.namecard', this.ncSlot = h('div.avatar'), h('div.txt', this.ncWho = h('div.who'), this.ncWhat = h('div.what'))),
+      this.readoutEl = h('div.readout', this.roL1 = h('div.l1'), this.roL2 = h('div.l2')),
+      this.barsEl = h('div.bars'), this.speedEl = h('div.speedlines'),
+      this.bossCardEl = h('div.bosscard', this.bcSlot = h('div.avatar'), h('div.txt', this.bcTag = h('div.tag'), this.bcName = h('div.name'), this.bcTitle = h('div.title'))),
+      this.endEl = h('div.endcard', this.endBig = h('div.big')));
+    this.stage = h('div.stage', this.canvas, this.overlay);
+    this.stage.addEventListener('pointerdown', (e) => { if (this.introPause && !e.target.closest('button')) this._skipIntro(); });
     this.ultbar = h('div.ultbar');
     this.info = h('div.binfo');
     this.root.replaceChildren(hud, this.stage, this.info, this.ultbar);
@@ -67,8 +90,8 @@ export class BattleScreen {
     this._syncAuto();
 
     this.renderer = new Renderer(this.canvas);
-    this.renderer.setTheme(theme);
-    this.effects = new Effects(this.renderer);
+    this.renderer.setup({ stage, theme, C, era: this.era, level: this.level, reduced: this.reduced });
+    this.effects = new Effects(this.renderer, { level: this.level, reduced: this.reduced });
     this.ro = new ResizeObserver(() => this._resize());
     this.ro.observe(this.stage);
     this._resize();
@@ -100,7 +123,7 @@ export class BattleScreen {
   _syncAuto() {
     const on = this._autoOn();
     this.autoBtn.classList.toggle('hidden', !this.autoRevealed);
-    this.autoBtn.textContent = on ? '🤖' : '👆';
+    this.autoBtn.replaceChildren(icon(on ? 'auto' : 'tap'));
     const label = on ? 'Auto-ult is on: the game fires Ultimates for you. Tap to fire them yourself.' : 'Auto-ult is off: you tap portraits to fire Ultimates. Tap to let the game fire them.';
     this.autoBtn.title = label; this.autoBtn.setAttribute('aria-label', label);
     this.autoBtn.setAttribute('aria-pressed', String(on));
@@ -136,11 +159,97 @@ export class BattleScreen {
       this.matchup = teamMatchupRating(cfg.team.members.map(id => C.char[id]), nodeEnemyNatures(this.node, C), B);
     }
     this.sim = new BattleSim(cfg);
-    this.renderer.vis.clear();
-    this.effects = new Effects(this.renderer);
+    this.renderer.reset();
+    this.effects = new Effects(this.renderer, { level: this.level, reduced: this.reduced });
+    this.endEl.classList.remove('show');
+    // The battle's portraits and sprites, if any exist (a missing file leaves the code-drawn art).
+    Assets.preload(Assets.pathsFor(this.sim.units.map(u => u.key), this.era));
     this._buildPortraits();
     this._updateObjective();
     this._buildInfo();
+    this._intro();
+  }
+
+  // ---------------------------------------------------------------- overlays and the boss intro
+  _later(seconds, fn) { const id = setTimeout(fn, seconds * 1000); this._timers.push(id); return id; }
+  _clearTimers() { for (const id of this._timers) clearTimeout(id); this._timers = []; }
+  /** Replay a CSS overlay animation; under reduced motion the element simply shows for `hold` seconds. */
+  _show(el, hold = 1.2) { el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); if (this.reduced) this._later(hold, () => el.classList.remove('show')); }
+  /** Slow motion for a few wall-clock ms (a clash, a hit-stop); off under reduced motion and Low. */
+  _slow(scale, wallSeconds) { if (this.reduced || this.level === 'low') return; this.timeScale = scale; this.slowUntil = performance.now() + wallSeconds * 1000; }
+  _nameCard(def, who, what) {
+    const a = def ? avatar(def, { size: 'lg', era: this.era }) : h('div.avatar', h('span.q', '?'));
+    this.nameCardEl.replaceChild(a, this.ncSlot); this.ncSlot = a;
+    this.ncWho.textContent = who; this.ncWhat.textContent = what;
+    this._show(this.nameCardEl, 1.1);
+  }
+  _readout(l1, l2, cls = '') { this.readoutEl.className = 'readout ' + cls; this.roL1.textContent = l1; this.roL2.textContent = l2; this._show(this.readoutEl, 1.6); }
+  /** The DOM readouts and the camera, from the sim's events (the canvas effects are js/render/Effects.js). */
+  _overlays(events) {
+    const { C } = this.game;
+    for (const e of events) {
+      const u = e.uid != null ? this.sim.unit(e.uid) : null;
+      switch (e.type) {
+        case 'ult': if (u) this._nameCard(C.char[u.key] || null, u.name, e.name); break;
+        case 'clash': {
+          const label = { overpower: 'OVERPOWER!', standoff: 'STANDOFF', overwhelmed: 'OVERWHELMED' }[e.outcome];
+          this._readout('JUTSU CLASH', label, e.outcome);
+          this._slow(0.35, 0.5);
+          if (!this.reduced) { this.renderer.camPush(1.08, 0); this._later(0.8, () => { if (!this.introPause) this.renderer.camPush(1, 0); }); }
+          break;
+        }
+        case 'damage': if ((e.kind === 'ult' || e.kind === 'special') && !this.slowUntil) this._slow(0, 0.07); break;   // hit-stop
+        default: break;
+      }
+    }
+  }
+  /** The boss intro (docs/ART_BIBLE.md §9.3): bars, a push-in with speed lines, the boss card with its
+   *  epithet, its bar filling, then FIGHT!. About 2 s; 1.2 s when the battle has been played before; a tap skips it. */
+  _intro() {
+    this._clearTimers();
+    const boss = this.sim.units.find(u => u.side === 'enemy' && u.isBoss);
+    if (!boss) return;
+    const { C, state } = this.game;
+    const def = C.enemy[boss.key] || null;
+    const quick = this.introSeen || !!(this.node && !this.isRush && !this.daily && isNodeCleared(state, this.node.id));
+    this.introSeen = true;
+    this.introPause = true;
+    const v = this.renderer._vis(boss); v.hidden = true; v.hpReveal = 0;
+    this.barsEl.classList.add('in');
+    if (!this.reduced) { this._show(this.speedEl, 0.9); this.renderer.camPush(1.07, 120); }
+    const T = quick ? 0.6 : 1;
+    this._later(0.3 * T, () => {
+      if (!this.introPause) return;
+      v.hidden = false;
+      this.effects.smoke(boss.x, this.renderer.unitY(boss) - 30, 12, '#dfe7ec', 0.6);
+      this.effects.ring(boss.x, this.renderer.chestOf(boss).y, (NATURE[boss.activeNature] || NATURE.None).color, { r1: 160, width: 8, dur: 0.6 });
+      this.effects.shake(6, 0.3);
+      const a = def ? avatar(def, { size: 'xl', facing: -1, era: this.era, ring: 'boss', expression: 'menace' }) : h('div.avatar');
+      this.bossCardEl.replaceChild(a, this.bcSlot); this.bcSlot = a;
+      this.bcTag.textContent = this.isRush ? `BOSS RUSH · ROUND ${this.round}` : this.daily ? 'DAILY BOSS' : this.hard ? 'HARD MODE BOSS' : 'BOSS';
+      this.bcName.textContent = boss.name; this.bcTitle.textContent = def?.title || '';
+      this.bossCardEl.classList.toggle('quick', quick);
+      this._show(this.bossCardEl, quick ? 0.9 : 1.6);
+      const fill = (k) => { if (!this.introPause) return; v.hpReveal = k; if (k < 1) this._later(0.03, () => fill(Math.min(1, k + 0.05))); else v.hpReveal = null; };
+      fill(0);
+    });
+    this._later(quick ? 1.2 : 2.1, () => this._introEnd(boss));
+  }
+  _introEnd(boss) {
+    if (!this.introPause) return;
+    this.introPause = false; this.last = performance.now();
+    this.barsEl.classList.remove('in');
+    this.renderer.camPush(1, 0);
+    const v = this.renderer._vis(boss); v.hidden = false; v.hpReveal = null;
+    this._readout((this.node?.name || 'Boss Rush').toUpperCase(), 'FIGHT!', 'fight');
+    this.effects.flash('#ffffff', 0.35, 0.15);
+  }
+  _skipIntro() { const boss = this.sim.units.find(u => u.side === 'enemy' && u.isBoss); this._clearTimers(); if (boss) this._introEnd(boss); else this.introPause = false; }
+  /** The victory or defeat card over the stage, before the results dialog. */
+  _endBeat(won) {
+    this.endEl.className = 'endcard ' + (won ? 'win' : 'lose'); this.endBig.textContent = won ? 'VICTORY' : 'DEFEAT';
+    this._show(this.endEl, 1.3);
+    if (won) { this.effects.flash('#fff6d8', 0.4, 0.3); if (!this.reduced) this.renderer.camPush(1.06, 0); }
   }
 
   /** Portrait-only panel between the canvas and the ult bar: wheel + foes. */
@@ -206,7 +315,7 @@ export class BattleScreen {
   togglePause(force = null) {
     if (this.ended) return;
     this.paused = force == null ? !this.paused : force;
-    this.pauseBtn.textContent = this.paused ? '▶' : '⏸';
+    this.pauseBtn.replaceChildren(icon(this.paused ? 'play' : 'pause'));
     const pl = this.paused ? 'Resume' : 'Pause'; this.pauseBtn.title = pl; this.pauseBtn.setAttribute('aria-label', pl);
     this.stage.querySelector('.pause-veil')?.remove();
     if (this.paused) {
@@ -247,7 +356,12 @@ export class BattleScreen {
     this.raf = requestAnimationFrame(this._loop);
     const rawDt = Math.min(50, Math.max(0, ts - this.last)) / 1000; // clamp to 50 ms
     this.last = ts;
-    const running = !this.paused && !this.hiddenPause && !this.tipPause && !this.ended;
+    if (this.slowUntil && performance.now() > this.slowUntil) { this.timeScale = 1; this.slowUntil = 0; }
+    // The stage, the effects and the cards keep moving through the intro and after the end;
+    // the sim itself steps only while the battle is on (not paused, not behind a tip or the intro).
+    const animating = !this.paused && !this.hiddenPause;
+    const running = animating && !this.tipPause && !this.introPause && !this.ended;
+    const dt = running ? rawDt * this.speed * this.timeScale : animating ? rawDt : 0;
     if (running) {
       if (this._autoOn()) {
         const before = this.sim.stats.ults;
@@ -256,16 +370,15 @@ export class BattleScreen {
         this.sim.botUlts(this.game.state.settings.autoUltMode === 'asap' ? 'asap' : 'smart');
         if (this.sim.stats.ults > before) this.game.audio.ultFire();
       }
-      this.sim.step(rawDt * this.speed);
+      this.sim.step(dt);
       const events = this.sim.drainEvents();
       this.effects.onEvents(events, this.sim);
+      this._overlays(events);
       this._sounds(events);
       this._tipsFromEvents(events);
-      this.effects.update(rawDt * this.speed);
-    } else {
-      this.effects.update(0);
     }
-    try { this.renderer.draw(this.sim, this.effects, running ? rawDt * this.speed : 0); } catch (e) { console.error('[render]', e); }
+    this.effects.update(dt);
+    try { this.renderer.draw(this.sim, this.effects, dt, { dim: this.dim || 0 }); } catch (e) { console.error('[render]', e); }
     this.portraitT -= rawDt;
     if (this.portraitT <= 0) { this.portraitT = 0.08; this._updatePortraits(); this._updateTimer(); }
     if (!this.ended && this.sim.state !== 'running') this._onEnd();
@@ -446,7 +559,8 @@ export class BattleScreen {
       recordBattle(state, { won: false, mode: 'rush', sim: this.sim }, B);
       game.commit('bossrush');
       game.audio.defeat();
-      setTimeout(() => this._rushResults(), 700);
+      this._endBeat(false);
+      this._later(1.3, () => this._rushResults());
       return;
     }
     this.ended = true;
@@ -456,7 +570,8 @@ export class BattleScreen {
       const res = won ? completeLesson(state, this.tutorial.index, C, B, { replay: this.tutorial.replay }) : null;
       game.commit('tutorial');
       won ? game.audio.victory() : game.audio.defeat();
-      setTimeout(() => this._tutorialResults(won, res), 650);
+      this._endBeat(won);
+      this._later(1.3, () => this._tutorialResults(won, res));
       return;
     }
     if (this.daily) { this._dailyEnd(won); return; }
@@ -464,7 +579,8 @@ export class BattleScreen {
     recordBattle(state, { won, mode: this.hard ? 'hard' : 'story', sim: this.sim, matchup: this.matchup }, B);
     game.commit('battle');
     won ? game.audio.victory() : game.audio.defeat();
-    setTimeout(() => this._results(won, result), 650);
+    this._endBeat(won);
+    this._later(1.3, () => this._results(won, result));
   }
 
   _tutorialResults(won, res) {
@@ -551,7 +667,8 @@ export class BattleScreen {
     const reward = won ? completeDaily(state, this.daily, C, B) : null;
     game.commit('daily');
     won ? game.audio.victory() : game.audio.defeat();
-    setTimeout(() => this._dailyResults(won, reward), 650);
+    this._endBeat(won);
+    this._later(1.3, () => this._dailyResults(won, reward));
   }
 
   _dailyResults(won, reward) {
@@ -599,8 +716,9 @@ export class BattleScreen {
   }
 
   restart() {
-    this.ended = false; this.paused = false; this.pauseBtn.textContent = '⏸';
-    this.effects = new Effects(this.renderer); this._buildSim();
+    this.ended = false; this.paused = false; this.pauseBtn.replaceChildren(icon('pause'));
+    this.timeScale = 1; this.slowUntil = 0; this.introPause = false;
+    this._buildSim();
     if (this.tutorial) {
       // A retried lesson coaches again from the start.
       this.tips = { shown: new Set() }; this.autoRevealed = false; this._syncAuto();
@@ -613,6 +731,7 @@ export class BattleScreen {
 
   close(goTo = null, silent = false) {
     cancelAnimationFrame(this.raf);
+    this._clearTimers();
     document.removeEventListener('visibilitychange', this._onVis);
     document.removeEventListener('keydown', this._onKey);
     try { this.ro.disconnect(); } catch { /* ignore */ }

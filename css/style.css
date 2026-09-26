@@ -928,6 +928,8 @@ html[data-era="p2"] .namecard .who, html[data-era="p2"] .namecard .what { color:
 .readout.standoff .l2 { color: var(--warn); -webkit-text-stroke-color: #2a2000; text-shadow: 0 4px 0 rgba(0,0,0,.6), 0 0 22px rgba(255,204,77,.6); }
 .readout.overwhelmed .l2 { color: var(--bad); -webkit-text-stroke-color: #2a0606; text-shadow: 0 4px 0 rgba(0,0,0,.6), 0 0 22px rgba(255,93,93,.6); }
 .readout.counter .l2 { color: #9be3ff; -webkit-text-stroke-color: #062033; text-shadow: 0 4px 0 rgba(0,0,0,.6), 0 0 22px rgba(155,227,255,.6); }
+.readout.fight .l2 { color: var(--accent2); -webkit-text-stroke-color: #3a1a00; text-shadow: 0 4px 0 rgba(0,0,0,.6), 0 0 22px rgba(255,184,107,.6); }
+.readout.fight .l1 { font-size: clamp(.8rem, 3.6vw, 1.2rem); letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .readout.show { animation: readout 1.6s ease-out both; }
 @keyframes readout { 0% { opacity: 0; transform: scale(1.6); } 10% { opacity: 1; transform: scale(.96); } 18% { transform: scale(1.02); } 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-14px); } }
 /* Boss intro: letterbox bars, speed lines, the name card with the epithet. */
@@ -1028,6 +1030,8 @@ html[data-era="p2"] .pull-overlay { background: radial-gradient(circle at 50% 45
 .levelup { animation: levelUp .6s cubic-bezier(.2,.9,.3,1.4); }
 @keyframes levelUp { 0% { box-shadow: 0 0 0 0 rgba(255,214,107,.8); } 60% { box-shadow: 0 0 0 10px rgba(255,214,107,0); } 100% { box-shadow: 0 0 0 0 rgba(255,214,107,0); } }
 @media (prefers-reduced-motion: reduce) {
-  .namecard.show, .readout.show, .bosscard.show, .endcard.show, .kage-card.show, .speedlines.show { animation-duration: .01ms !important; opacity: 1; }
+  /* The overlays simply appear and go (the screen removes .show after the hold). */
+  .namecard.show, .readout.show, .bosscard.show, .endcard.show, .kage-card.show { animation: none !important; opacity: 1; }
+  .speedlines.show { animation: none !important; opacity: 0; }
   .reveal-card.kage::before, .map-stage .pin.current { animation: none; }
 }
