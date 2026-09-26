@@ -75,7 +75,7 @@ export const ROSTER = [
   },
   {
     id: 'hinata', name: 'Hinata Hyuga', short: 'Hinata', tier: 'genin', role: 'Tank', natures: ['Fire'],
-    stats: { hp: 0.95, atk: 1.1, def: 1.05, interval: 0.95 },
+    stats: { hp: 1.05, atk: 1.1, def: 1.05, interval: 0.95 },
     ult: { name: 'Protective Eight Trigrams Sixty-Four Palms', type: 'taunt' },
     leader: { stat: 'crit', scope: { tag: 'team8' } },
     tags: ['team8', 'leaf'], unlock: null,

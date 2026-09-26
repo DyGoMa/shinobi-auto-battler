@@ -18,7 +18,7 @@ there. Names follow the English dub (see NAMING.md).
 4. **Upgrade**: Ryo buys levels. Duplicate pulls add stars (+10% stats each, up to 5★), and duplicates past 5★ refund Ryo.
 5. **Team**: 3 members + 1 Leader, chosen per node by nature matchup and lane reach.
 6. **Boss Rush**: after clearing the Sasuke Retrieval Squad arc, fight the Akatsuki back to back with no healing between rounds.
-7. **Endgame**: Hard mode for each cleared part and a Daily challenge (§12), with achievements across everything (§11).
+7. **Endgame**: Hard mode for each cleared part and three Daily challenges a day (§12), with achievements across everything (§11).
 
 Target session: a 30–60 s battle, a reward screen, then a decision (next node, summon, level up or re-team). Since 0.11 the everyday loop has shortcuts for the chores (§14): ⏭ Skip for battles already won, 5× speed, levelling to a fight's recommended power, team presets and red dots on the tabs.
 
@@ -268,7 +268,7 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
 * **Sign-in** reuses the Session 3 paths (`FirebaseBackend.signInWithGoogle` / `linkGoogle`, the "cloud save is newer" prompt after entering). **Popup first on every device** (0.10.1); the redirect is only a fallback when a popup can't open (`auth/popup-blocked`, `auth/operation-not-supported-in-this-environment`). A closed popup is a quiet cancel. After a redirect the page checks a `sessionStorage` flag: a user back enters the game; no user back (third-party storage blocked, the GitHub Pages limit) shows a warning and **↻ Try again** on the menu.
 * **Build stamp** (`js/core/Version.js`): "v<short sha> · <UTC build date>" bottom-right of the menu and of Settings › About, from `version.json`, which the Pages deploy workflow writes (never committed); "dev" locally.
 
-## 12. Endgame: Hard mode and the Daily challenge
+## 12. Endgame: Hard mode and the Daily challenges
 
 **Hard mode** (`balance.hardMode`):
 * Opens for each part once every battle of it is cleared. The Story map gets a Story / 💀 Hard switch, and Hard battles unlock one after another.
@@ -276,12 +276,12 @@ Example: the Survival Test forces Naruto, Sakura and Sasuke with no Leader and b
 * Rewards are the story's for the same battle × `hardMode.rewards`: a first clear pays the story's first-clear scrolls again and a little Ryo; replays pay 1.5× the scrolls and 1.25× the Ryo of a story replay; clearing an arc on Hard pays a bonus. Tuned so finishing Part I on Hard before Part II doesn't break Part II's curve (BALANCE.md §4).
 * Tuned for the **Hard on-curve team** (everyone unlocked by the end of the part, starred up): every Hard arc boss lands at 50–70% in `npm run sim`, and the counter-gap bands hold on Hard.
 
-**Daily challenge** (`balance.daily`, `js/core/Daily.js`):
-* Opens after the Land of Waves. Each day picks a boss from an arc you have cleared, fought at your story level, with a **twist**: Locked nature (every enemy takes the day's nature), No Ultimates, Boss gauntlet (3 bosses back to back, no healing), or Countered (enemies take the nature that beats your team's main one). Twists that take something away from you come with weaker enemies (`twists[].power`).
-* Picked from the date alone (no server): the same date and the same story progress give the same challenge.
-* 3 attempts a day. The first clear pays 150 scrolls plus Ryo that grows with your story progress. A new challenge arrives at local midnight.
-* The Team screen can build for the Daily, so matchups and ✨ Auto use the day's natures.
-* `npm run sim` checks (info only) that every twist is clearable within the day's attempts.
+**Daily challenges** (`balance.daily`, `js/core/Daily.js`):
+* Opens after the Land of Waves. Each day has `challengesPerDay` (3, since 0.12.1) challenges. Each picks a boss from an arc you have cleared, fought at your story level, with a **twist**: Locked nature (every enemy takes the day's nature), No Ultimates, Boss gauntlet (3 bosses back to back, no healing), or Countered (enemies take the nature that beats your team's main one). A day's challenges all have different twists. Twists that take something away from you come with weaker enemies (`twists[].power`).
+* Picked from the date alone (no server): the same date, the same story progress and the same slot give the same challenge.
+* 3 attempts per challenge. Each challenge's first clear pays 150 scrolls plus Ryo that grows with your story progress. New challenges arrive at local midnight. The save keeps one record per challenge (`daily.slots`, save v5).
+* The Team screen can build for one challenge, so matchups and ✨ Auto use its natures.
+* `npm run sim` checks (info only) that every twist is clearable within a challenge's attempts.
 
 ## 13. Settings and saves
 
@@ -318,7 +318,7 @@ Shortcuts for the everyday loop. None changes a cost, a reward, an XP curve or a
 
 **Results** (`js/ui/Results.js`, battles and Skip): 🗺️ Map · 👥 Change team · ↻ Retry · Next fight ▶ (when the next battle is open).
 
-**Red dots** (`js/core/Badges.js`): Home = an achievement reward to claim, today's Daily challenge open with attempts left, or a Boss Rush never tried; Summon = a free summon (a summon ticket or a Rare+ ticket). Achievements' **🎁 Claim all** (since 0.9) claims everything at once.
+**Red dots** (`js/core/Badges.js`): Home = an achievement reward to claim, a Daily challenge still open today with attempts left, or a Boss Rush never tried; Summon = a free summon (a summon ticket or a Rare+ ticket). Achievements' **🎁 Claim all** (since 0.9) claims everything at once.
 
 **Layout:** the bottom tab bar is the tabs (`--tabbar-h`, 54 px) plus `env(safe-area-inset-bottom)` once, as its bottom padding, in an `auto` grid row, so it sits on the bottom edge; the screen scrolls in the row above it with 28 px of bottom padding. Home drops its intro blurb once the tutorial is done.
 

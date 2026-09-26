@@ -165,6 +165,10 @@ Verified in the desktop pane (hidden, so at the DOM level with `window.__game`):
 
 **Not yet seen:** the dialogue box itself (position over a phone-portrait stage, the portrait size, the name plate on both skins) and the typewriter's pace. Check on the first visible run and in the layout audit at 412×915 and 360×780: the box must not cover the boss card's name, and the Skip / Auto buttons must stay tappable above the ult bar.
 
+## 0.12.1: the balancing pass
+
+Nothing visual changed except the Daily screen, which now shows one card per challenge (three a day). The pane stayed hidden, so it was checked at the DOM level through `window.__game` on a guest save with the Land of Waves cleared: the screen renders `daily.challengesPerDay` `.daily-hero` cards (`data-slot` 0–2) with different twists, each with its own "3 of 3 attempts left" pill, its own Edit team (opens the Team Builder for that slot: "Building for 📅 Daily challenge 2: …") and Fight; a cleared slot shows "✓ Cleared today" with Fight disabled and a slot out of attempts "No attempts left"; the header counts "1 of 3 cleared"; the Home card reads "Today: Countered · Locked nature · No Ultimates. 1 of 3 cleared, 1 still open." No console errors beyond the dev server's missing `version.json`. Still to check with eyes: three cards on a phone held upright (they stack; each is the old hero card), and the results dialog's "2 more challenges still open today" after a Daily win.
+
 ## 0.12.0: the release checklist
 
 The polish pass (art, audio, story) ships as 0.12.0. The desktop pane stayed hidden through the whole pass, so the checks that need eyes and ears are still open. In order:

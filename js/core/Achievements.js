@@ -53,6 +53,11 @@ const PROGRESS = {
   summons: (s, a, C, B) => [s.gacha?.totalPulls || 0, achievementConfig(a, B).target ?? 1],
   googleLinked: (s) => [s.account?.googleLinked ? 1 : 0, 1],
   dailies: (s, a, C, B) => [s.daily?.totalCleared || 0, achievementConfig(a, B).target],
+  // 0.12.1
+  arcsClear: (s, a, C) => { const arcs = (a.arcs || []).map(id => C.arc[id]).filter(Boolean); return [arcs.filter(arc => arc.nodes.every(n => s.progress.cleared[n.id])).length, arcs.length]; },
+  stars: (s, a, C, B) => [Math.max(1, ...Object.values(s.roster || {}).map(o => o.stars || 1)), achievementConfig(a, B).target],
+  ownTier: (s, a, C, B) => [owned(s, C).filter(id => C.char[id].tier === a.tier).length, achievementConfig(a, B).target],
+  levelReach: (s, a, C, B) => [Math.max(1, ...Object.values(s.roster || {}).map(o => o.level || 1)), achievementConfig(a, B).target],
 };
 
 /** { value, target, done } for one achievement. */
@@ -116,8 +121,9 @@ export function claimAll(state, C, B = BALANCE) {
 
 /**
  * Combat records behind the Combat achievements, after a battle.
- * info = { won, mode: 'story'|'hard'|'daily'|'rush'|'tutorial', sim, matchup? } — matchup is the
+ * info = { won, mode: 'story'|'hard'|'daily'|'rush'|'tutorial', sim, matchup?, replay? } — matchup is the
  * Team screen's rating at the start ({ label }); "Poor" or "Bad" counts for Against the Odds.
+ * replay: a story or Hard battle already won before (a win counts for Back for More).
  */
 export function recordBattle(state, info, B = BALANCE) {
   const st = state.stats;
@@ -127,6 +133,7 @@ export function recordBattle(state, info, B = BALANCE) {
   if (!info.won) return;
   const fighters = sim.units.filter(u => u.side === 'player' && !u.protected);
   if (['story', 'hard'].includes(info.mode) && fighters.length && fighters.every(u => u.alive)) st.flawlessWins = (st.flawlessWins || 0) + 1;
+  if (['story', 'hard'].includes(info.mode) && info.replay) st.replayWins = (st.replayWins || 0) + 1;
   if (['story', 'hard', 'daily'].includes(info.mode) && ['Poor', 'Bad'].includes(info.matchup?.label)) st.counteredWins = (st.counteredWins || 0) + 1;
   const boss = sim.units.find(u => u.side === 'enemy' && u.isBoss);
   if (boss && fighters.length) {

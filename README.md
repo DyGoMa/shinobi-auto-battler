@@ -5,7 +5,7 @@ A fan-made, Naruto-universe **2D lane auto-battler** for the web.
 * Build a team of 3 plus a Leader, read the **Nature Wheel**, and time your Ultimates.
 * Fire an Ultimate into an enemy's wind-up to trigger a **Jutsu Clash**.
 * Part I and Part II (Shippuden) are complete: 25 arcs in anime order (99 battles, from the Survival Test to the final battle at the Valley of the End), 69 summonable ninja and alternate forms, and an achievement-exclusive Naruto.
-* A skippable **Academy tutorial**, an in-game **Wiki**, 21 **achievements**, **Hard mode**, a **Daily challenge** and an Akatsuki **Boss Rush**.
+* A skippable **Academy tutorial**, an in-game **Wiki**, 36 **achievements**, **Hard mode**, three **Daily challenges** a day and an Akatsuki **Boss Rush**.
 * A **start menu** (continue as a guest, or sign in with Google before any save exists) after a short **intro**, and a **build stamp** (commit and UTC build time) on the menu and in Settings.
 * **Installable (0.11.1):** a web app manifest, icons and a minimal network-first service worker; Settings → App installs it on the home screen (standalone, no browser bars), checks for updates ("Update ready — tap to reload") and the back button moves between screens. **0.11.2** suggests it to phone players: a start-menu notice, a one-time popup after the tutorial, two spaced reminders, and one-tap install where the browser allows it (illustrated steps elsewhere).
 * **Everyday shortcuts (0.11):** ⏭ Skip for battles already won (the real battle, instantly), 1× / 2× / 5× speed, ⚡ recommended power on every battle, Level to recommended and Smart spend on the Roster, ✨ Auto team, counter hints and three team presets, Roster sorting, red dots on the tabs, and a Story map with Story · Hard · Daily · Boss Rush tabs.
@@ -27,7 +27,7 @@ The polish pass is under way (HANDOFF.md, docs/ART_BIBLE.md): the art and effect
 * **Jutsu Clash** (the original system; see DESIGN.md §3): meet an enemy's telegraphed jutsu with an Ultimate, and the Nature Wheel decides the result (Overpower / Standoff / Overwhelmed).
 * **New players:** three short Academy lessons before the Survival Test (team building, the Nature Wheel, Jutsu Clash and Ultimates), skippable at any point with the same reward, plus a character who explains each screen on the first visit (Jiraiya on summoning, Tsunade on levelling, Shikamaru on the map…).
 * **Wiki:** a page for every ninja, jutsu, enemy, arc, banner and achievement, generated from the game data, plus hand-written guides (`wiki/guides/`). Every screen has a **?** button that opens its page.
-* **Endgame:** Hard mode for each cleared part (enemies 12 levels higher, tougher bosses, scrolls again on first clears), a Daily challenge picked from the date (a beaten boss with a twist, 3 attempts), the Boss Rush, and achievements that pay Ryo, summon tickets and Rare+ summons.
+* **Endgame:** Hard mode for each cleared part (enemies 12 levels higher, tougher bosses, scrolls again on first clears), three Daily challenges a day picked from the date (beaten bosses with a twist, 3 attempts each), the Boss Rush, and achievements that pay Ryo, summon tickets and Rare+ summons.
 * **Data-defined content:**
   * 10 boss mechanic types, 4 objective types, forced/banned/fixed-leader team rules and loaner ninja.
   * Adding content never needs engine changes (CONTENT_GUIDE.md).

@@ -104,8 +104,9 @@ function playCampaign(playerSeed, verbose) {
   const ownedMap = (team, node, hard = false) => Object.fromEntries(team.members.map(id => [id, ownedOrLoaner(state, id, node, B, { hard })]));
   const battle = (node, team, hard = false) => {
     log.battles++;
+    const replay = !!(hard ? state.progress.hard?.[node.id] : state.progress.cleared[node.id]);
     const r = runNode(node, team, ownedMap(team, node, hard), battleSeed++, { hard });
-    if (ACHIEVEMENTS) recordBattle(state, { won: r.state === 'won', mode: hard ? 'hard' : 'story', sim: r.sim, matchup: teamMatchupRating(team.members.map(id => C.char[id]), nodeEnemyNatures(node, C), B) }, B);
+    if (ACHIEVEMENTS) recordBattle(state, { won: r.state === 'won', mode: hard ? 'hard' : 'story', sim: r.sim, matchup: teamMatchupRating(team.members.map(id => C.char[id]), nodeEnemyNatures(node, C), B), replay }, B);
     return r;
   };
   // CAMPAIGN_HARD: the part on Hard, in order, until one Hard battle beats the bot 3 times.

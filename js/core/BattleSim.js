@@ -429,7 +429,8 @@ export class BattleSim {
       case 'aoe': {
         if (!tgt) break;
         const foes = this._opponents(u).filter(o => Math.abs(o.x - tgt.x) <= U.aoeRadius);
-        for (const f of foes) { this._damage(u, f, U.aoe * mult, opts); if (u.ult.stun && f.alive) this._stun(f, U.stunDuration * 0.6); }
+        // The jutsu is centred on the target: it takes the main hit, the rest the splash.
+        for (const f of foes) { this._damage(u, f, (f === tgt ? U.aoeMain : U.aoe) * mult, opts); if (u.ult.stun && f.alive) this._stun(f, U.stunDuration * 0.6); }
         this._emit({ type: 'aoe', uid: u.uid, x: tgt.x, radius: U.aoeRadius });
         break;
       }
@@ -438,9 +439,18 @@ export class BattleSim {
         this._addStatus(u, 'dr', U.tauntDR, U.tauntDuration);
         if (tgt) this._damage(u, tgt, U.tauntHit * mult, opts);
         break;
-      case 'heal':
-        for (const a of this.alive(u.side)) this._heal(a, (U.healPower * this.atkOf(u) + U.healPctMaxHp * a.maxHp) * mult, u);
+      case 'heal': {
+        // A rescue: the most injured ally (lowest share of HP left) gets the focus
+        // heal, everyone else the spread heal. The caster counts as an ally.
+        const allies = this.alive(u.side);
+        const worst = allies.reduce((w, a) => (!w || a.hp / a.maxHp < w.hp / w.maxHp ? a : w), null);
+        const atk = this.atkOf(u);
+        for (const a of allies) {
+          const focus = a === worst;
+          this._heal(a, ((focus ? U.healFocusPct : U.healSpreadPct) * a.maxHp + (focus ? U.healFocusPower : U.healSpreadPower) * atk) * mult, u);
+        }
         break;
+      }
       case 'buff':
         for (const a of this.alive(u.side)) if (!a.protected) this._addStatus(a, 'atkBuff', U.buffAtk * mult, U.buffDuration);
         this._emit({ type: 'buff', uid: u.uid });

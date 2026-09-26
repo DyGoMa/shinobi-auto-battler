@@ -16,7 +16,7 @@
 import { C, B, DEFAULT_BOT, runNode, onCurveTeam, runBossRush, availableBeforeArc, playerSpecs, pct, median, seedFor, SIM_PARTS } from './common.mjs';
 import { autoPickTeam } from '../js/core/TeamPicker.js';
 import { nodeEnemyLevel } from '../js/core/Progression.js';
-import { dailyFor, dailyBattleConfig, dailyContent, dailyTeamNode, TWIST_TEXT } from '../js/core/Daily.js';
+import { dailiesFor, dailyBattleConfig, dailyContent, dailyTeamNode, TWIST_TEXT } from '../js/core/Daily.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 
 const N = Number(process.env.SIM_N) || B.targets.battlesPerScenario;
@@ -177,8 +177,7 @@ hardInfo.push(`  Hard boss fight length (median of wins): ${median(hardTimes).to
     const state = { roster: owned, team: { members: [], leader: null }, progress: { cleared, hard: {} } };
     const days = [];
     for (let k = 0; k < 366 && days.length < 2 * B.daily.twists.length; k++) {
-      const d = dailyFor(state, C, B, dateKey(k));
-      if (days.filter(x => x.twist.id === d.twist.id).length < 2) days.push(d);
+      for (const d of dailiesFor(state, C, B, dateKey(k))) if (days.filter(x => x.twist.id === d.twist.id).length < 2) days.push(d);
     }
     for (const daily of days) {
       const tw = daily.twist;
@@ -199,7 +198,7 @@ hardInfo.push(`  Hard boss fight length (median of wins): ${median(hardTimes).to
       byTwist[tw.id].push({ at, daily, p, clear: 1 - Math.pow(1 - p, tries) });
     }
   }
-  dailyInfo.push(`  Daily challenge: clear chance within ${tries} attempts (${DN} battles per fight; one player per arc from ${unlock.name} on, 2 days per twist)`);
+  dailyInfo.push(`  Daily challenges (${B.daily.challengesPerDay || 1} a day): clear chance within ${tries} attempts (${DN} battles per fight; one player per arc from ${unlock.name} on, 2 challenges per twist)`);
   for (const [id, list] of Object.entries(byTwist)) {
     if (!list.length) continue;
     const worst = list.reduce((a, b) => (b.clear < a.clear ? b : a));

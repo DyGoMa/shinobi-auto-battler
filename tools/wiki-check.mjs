@@ -46,6 +46,7 @@ export const GUARDED = [
   { path: 'hardMode.levelOffset', ctx: /level|higher/i }, { path: 'hardMode.bossMult', fmt: 'x' },
   { path: 'hardMode.rewards.firstClear.scrolls', fmt: 'pct' }, { path: 'hardMode.rewards.replay.scrolls', fmt: 'x' }, { path: 'hardMode.rewards.replay.ryo', fmt: 'x' },
   { path: 'daily.attemptsPerDay', ctx: /attempt|tr(y|ies)/i }, { path: 'daily.rewards.scrolls', ctx: /scroll/i },
+  { path: 'daily.challengesPerDay', ctx: /challenge|a day/i },
 ];
 
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

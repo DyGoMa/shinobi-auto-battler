@@ -9,9 +9,9 @@ export function ultEffectText(ult, B) {
   const stun = ult.stun ? (ult.type === 'aoe' ? `, and stuns them for ${n(U.stunDuration * 0.6)} s` : `, and stuns it for ${n(U.stunDuration)} s`) : '';
   switch (ult.type) {
     case 'single': return `Hits one enemy for ×${n(U.single)} ATK${stun}.`;
-    case 'aoe': return `Hits every enemy near the target for ×${n(U.aoe)} ATK${stun}.`;
+    case 'aoe': return `Hits the target for ×${n(U.aoeMain)} ATK and every other enemy near it for ×${n(U.aoe)} ATK${stun}.`;
     case 'taunt': return `Taunts: enemies must attack this ninja for ${n(U.tauntDuration)} s, who takes ${pct(U.tauntDR)} less damage, plus a ×${n(U.tauntHit)} ATK hit.`;
-    case 'heal': return `Heals every ally for ×${n(U.healPower)} of this ninja's ATK plus ${pct(U.healPctMaxHp)} of their max HP.`;
+    case 'heal': return `Heals the most injured ally for ${pct(U.healFocusPct)} of their max HP plus ×${n(U.healFocusPower)} of this ninja's ATK, and every other ally for ${pct(U.healSpreadPct)} plus ×${n(U.healSpreadPower)} ATK.`;
     case 'buff': return `Raises the whole team's ATK by ${pct(U.buffAtk)} for ${n(U.buffDuration)} s.`;
     default: return '';
   }

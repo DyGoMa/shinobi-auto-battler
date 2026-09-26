@@ -80,7 +80,7 @@ export function teachValues(C, B = BALANCE, state = null) {
   return {
     single: num(B.economy.pullCost.single), ten: num(B.economy.pullCost.ten), tenTier: TIER_LABEL[B.gacha.tenPullGuaranteeTier] || 'Rare',
     pity: String(B.gacha.pity), reserve: num(state ? ryoReserve(state, B) : B.qol.ryoReserve), gap: String(B.economy.catchUp.gap),
-    rushCount: word(C.bossRush?.order?.length || 0), hardOffset: String(B.hardMode.levelOffset), dailyAttempts: word(B.daily.attemptsPerDay),
+    rushCount: word(C.bossRush?.order?.length || 0), hardOffset: String(B.hardMode.levelOffset), dailyAttempts: word(B.daily.attemptsPerDay), dailyCount: word(B.daily.challengesPerDay || 1),
     starBonus: `${Math.round(B.stats.starBonus * 100)}%`, starCap: String(B.stats.starCap),
   };
 }

@@ -14,7 +14,7 @@ import { icon } from '../render/icons.js';
 import { stageDefFor } from '../render/Stage.js';
 import * as Assets from '../render/Assets.js';
 import { prefersReducedMotion } from './Intro.js';
-import { dailyBattleConfig, completeDaily, attemptsLeft, startDailyAttempt, TWIST_TEXT } from '../core/Daily.js';
+import { dailyBattleConfig, completeDaily, attemptsLeft, startDailyAttempt, openSlots, TWIST_TEXT } from '../core/Daily.js';
 import { hashString, bestNature, beatenBy, natureRelation } from '../core/formulas.js';
 import { leaderBuffText } from '../core/Ninja.js';
 import { arcOf } from '../content/index.js';
@@ -704,7 +704,7 @@ export class BattleScreen {
     }
     if (this.daily) { this._dailyEnd(won); return; }
     const result = completeNode(state, this.node, won, C, B, { time: this.sim.time }, { hard: this.hard });
-    recordBattle(state, { won, mode: this.hard ? 'hard' : 'story', sim: this.sim, matchup: this.matchup }, B);
+    recordBattle(state, { won, mode: this.hard ? 'hard' : 'story', sim: this.sim, matchup: this.matchup, replay: won && !result.firstClear }, B);
     game.commit('battle');
     this._endMusic(won);
     this._endBeat(won);
@@ -801,18 +801,20 @@ export class BattleScreen {
 
   _dailyResults(won, reward) {
     const { game, ui } = this; const { B, state } = game;
-    const left = attemptsLeft(state, B, this.daily.dateKey);
+    const left = attemptsLeft(state, B, this.daily.dateKey, this.daily.slot);
+    const others = openSlots(state, B, this.daily.dateKey).filter(k => k !== this.daily.slot).length;
+    const more = others ? `${others} more challenge${others === 1 ? '' : 's'} still open today.` : 'Come back tomorrow for new challenges.';
     const tw = TWIST_TEXT[this.daily.twist.id];
     const content = h('div',
-      h('div.result-hero', h('div.big.' + (won ? 'win' : 'lose'), won ? 'CHALLENGE CLEARED' : 'DEFEAT'), h('div.muted', `📅 Daily challenge · ${tw.name}`)),
+      h('div.result-hero', h('div.big.' + (won ? 'win' : 'lose'), won ? 'CHALLENGE CLEARED' : 'DEFEAT'), h('div.muted', `📅 Daily challenge ${(this.daily.slot || 0) + 1} · ${tw.name}`)),
       won && reward ? h('div.reward-row', h('div.reward', `📜 +${fmt(reward.scrolls)}`), h('div.reward', `🪙 +${fmt(reward.ryo)}`)) : null,
-      won ? h('p.center', 'Come back tomorrow for a new challenge.') : h('p.center', left ? `${left} attempt${left === 1 ? '' : 's'} left today. Try a team whose natures beat the enemy.` : 'No attempts left today. A new challenge arrives tomorrow.'),
+      won ? h('p.center', more) : h('p.center', left ? `${left} attempt${left === 1 ? '' : 's'} left on this challenge today. Try a team whose natures beat the enemy.` : `No attempts left on this challenge today. ${more}`),
       h('h3', 'Damage dealt'), this._statsTable());
     const actions = h('div.actions');
     const close = ui.modal(h('div', content, actions), { dismissable: false, wide: true, label: 'Daily challenge results' });
     const leave = (goTo) => { close(); this.close(goTo); };
-    actions.append(btn('Back to the challenge', () => leave({ id: 'daily' }), won || !left ? 'primary' : 'ghost'));
-    if (!won && left) actions.append(btn('👥 Team', () => leave({ id: 'team', params: { daily: true } })), btn('↻ Try again', () => {
+    actions.append(btn('Back to the challenges', () => leave({ id: 'daily' }), won || !left ? 'primary' : 'ghost'));
+    if (!won && left) actions.append(btn('👥 Team', () => leave({ id: 'team', params: { daily: true, slot: this.daily.slot } })), btn('↻ Try again', () => {
       const r = startDailyAttempt(state, this.daily, B);
       if (!r.ok) { ui.toast(r.error, 'bad'); return; }
       game.commit('daily'); close(); this.round = 1; this.restart();

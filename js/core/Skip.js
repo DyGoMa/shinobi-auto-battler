@@ -34,6 +34,6 @@ export function skipBattle(state, node, C, B = BALANCE, { hard = false, seed = 1
   const sim = new BattleSim({ ...cfg, recordEvents: false });
   const won = sim.runToEnd({ ultMode: SKIP_BOT }) === 'won';
   const result = completeNode(state, node, won, C, B, { time: sim.time }, { hard });
-  recordBattle(state, { won, mode: hard ? 'hard' : 'story', sim, matchup }, B);
+  recordBattle(state, { won, mode: hard ? 'hard' : 'story', sim, matchup, replay: won && !result.firstClear }, B);
   return { ok: true, won, result, sim, matchup };
 }

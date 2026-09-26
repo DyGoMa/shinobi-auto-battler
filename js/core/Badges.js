@@ -5,15 +5,15 @@
 import { BALANCE } from '../config/balance.js';
 import { localDateKey } from './formulas.js';
 import { claimableAchievements } from './Achievements.js';
-import { isDailyUnlocked } from './Daily.js';
+import { isDailyUnlocked, openSlots } from './Daily.js';
 import { isBossRushUnlocked } from './Progression.js';
 
-/** Today's Daily challenge is open, not cleared, and has attempts left. */
+/** A Daily challenge is open today: not cleared, with attempts left. Never changes the save. */
 export function dailyWaiting(state, C, B = BALANCE, dateKey = localDateKey()) {
   if (!isDailyUnlocked(state, C, B)) return false;
   const d = state.daily || {};
-  const today = d.date === dateKey;
-  return !(today && d.cleared) && (today ? d.attempts || 0 : 0) < B.daily.attemptsPerDay;
+  if (d.date !== dateKey) return true;
+  return openSlots({ daily: { date: d.date, slots: (d.slots || []).map(r => ({ ...r })), totalCleared: 0 } }, B, dateKey).length > 0;
 }
 
 export function freePullAvailable(state) { return (state.currencies?.tickets || 0) + (state.currencies?.rareTickets || 0) > 0; }

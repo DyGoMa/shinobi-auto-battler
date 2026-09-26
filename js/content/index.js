@@ -14,8 +14,8 @@ const ARC_FILES = [PART1_ARCS, SHIPPUDEN_ARCS];
 
 export const OBJECTIVE_TYPES = ['defeatAll', 'survive', 'protect', 'defeatBoss'];
 export const LESSON_TYPES = ['team', 'nature', 'clash'];
-export const ACHIEVEMENT_TYPES = ['tutorial', 'partClear', 'hardClears', 'hardPartClear', 'ownCount', 'natures', 'forms', 'levelMax', 'stat', 'rushRound', 'summons', 'googleLinked', 'dailies'];
-export const ACHIEVEMENT_STATS = ['flawlessWins', 'counteredWins', 'clashWins', 'underdogBossWins', 'daysPlayed'];
+export const ACHIEVEMENT_TYPES = ['tutorial', 'partClear', 'hardClears', 'hardPartClear', 'ownCount', 'natures', 'forms', 'levelMax', 'stat', 'rushRound', 'summons', 'googleLinked', 'dailies', 'arcsClear', 'stars', 'ownTier', 'levelReach'];
+export const ACHIEVEMENT_STATS = ['flawlessWins', 'counteredWins', 'clashWins', 'underdogBossWins', 'daysPlayed', 'replayWins'];
 export const MECHANIC_TYPES = ['telegraphAoE', 'summonAdds', 'shieldPhase', 'enrage', 'elementSwap', 'reflect', 'lifesteal', 'reviveOnce', 'regen', 'rally'];
 export const ULT_TYPES = ['single', 'aoe', 'taunt', 'heal', 'buff'];
 export const LEADER_STATS = ['atk', 'hp', 'def', 'speed', 'crit', 'chakra', 'startChakra', 'nature'];
@@ -225,6 +225,8 @@ export function validateContent(C) {
     if (a.type && !ACHIEVEMENT_TYPES.includes(a.type)) err(w, `invalid type "${a.type}"`);
     if (a.type === 'stat' && !ACHIEVEMENT_STATS.includes(a.stat)) err(w, `stat must be one of ${ACHIEVEMENT_STATS.join(', ')}`);
     if (['partClear', 'hardPartClear'].includes(a.type) && !(Array.isArray(a.parts) && a.parts.length && a.parts.every(p => C.arcs.some(x => x.part === p)))) err(w, 'parts must list story parts that have arcs');
+    if (a.type === 'arcsClear' && !(Array.isArray(a.arcs) && a.arcs.length && a.arcs.every(id => C.arc[id]))) err(w, 'arcs must list arc ids');
+    if (a.type === 'ownTier' && !TIERS.includes(a.tier)) err(w, `tier must be one of ${TIERS.join(', ')}`);
     if (a.rewardCharacter) {
       const d = C.char[a.rewardCharacter];
       if (!d) err(w, `rewardCharacter "${a.rewardCharacter}" not found`);

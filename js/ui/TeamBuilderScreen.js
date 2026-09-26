@@ -8,7 +8,7 @@ import { PRESETS, savePreset, loadPreset, presetEmpty, sanitizePresets, counterL
 import { recommendedPower, teamPower } from '../core/Power.js';
 import { leaderBuffText } from '../core/Ninja.js';
 import { tutorialLessons } from '../core/Tutorial.js';
-import { dailyFor, dailyRecord, attemptsLeft, dailyContent, dailyTeamNode, TWIST_TEXT } from '../core/Daily.js';
+import { dailyFor, slotRecord, attemptsLeft, dailyContent, dailyTeamNode, TWIST_TEXT } from '../core/Daily.js';
 import { tipUnlessScene } from './tips.js';
 import { screenHead } from './chrome.js';
 
@@ -24,8 +24,8 @@ export function render(game, ui, params) {
   const { C, B, state } = game;
   // Tutorial lesson 1 builds the team here: params.tutorialLesson = lesson index.
   const lessonNode = params.tutorialLesson != null ? tutorialLessons(C)[params.tutorialLesson] : null;
-  // params.daily: build for today's Daily challenge (its twist can change the enemies' natures).
-  const daily = params.daily && !lessonNode ? dailyFor(state, C, B) : null;
+  // params.daily (+ params.slot): build for one of today's Daily challenges (its twist can change the enemies' natures).
+  const daily = params.daily && !lessonNode ? dailyFor(state, C, B, undefined, Number(params.slot) || 0) : null;
   const node = lessonNode || (daily && dailyTeamNode(daily)) || (params.nodeId && C.node[params.nodeId]) || currentNode(state, C) || C.nodes[C.nodes.length - 1];
   const t = node.team || {};
   const resolved = resolveTeam(state, node, C);
@@ -106,7 +106,7 @@ export function render(game, ui, params) {
     .map(x => ({ ...x, power: unitPower(x.def, x.own, B), match: characterMatchup(x.def, enemyN, B) }))
     .sort((a, b) => b.power * (1 + 0.3 * b.match) - a.power * (1 + 0.3 * a.match));
 
-  const dailyDone = daily && (dailyRecord(state, daily.dateKey).cleared || !attemptsLeft(state, B, daily.dateKey));
+  const dailyDone = daily && (slotRecord(state, daily.slot, daily.dateKey, B).cleared || !attemptsLeft(state, B, daily.dateKey, daily.slot));
   const unlocked = lessonNode ? true : daily ? !dailyDone : hard ? isHardNodeUnlocked(state, node, C) : isNodeUnlocked(state, node, C);
   const fight = () => {
     if (!resolved.members.length) { ui.toast('Add at least one ninja to your team first.', 'bad'); return; }
@@ -129,14 +129,14 @@ export function render(game, ui, params) {
           autoBuildTeam(state, node, C, B, { content: EC, byPower: daily?.twist.id === 'counteredOnly' });
           game.commit('team'); ui.toast('Team picked by power and nature counters for this fight.', 'good'); ui.refresh();
         }, '', { title: 'Build the best team you own for this fight (power and nature counters)' }),
-        btn(unlocked ? '⚔️ Fight!' : daily ? (dailyRecord(state, daily.dateKey).cleared ? '✓ Cleared' : 'No attempts left') : '🔒 Locked', fight, 'primary', { disabled: !unlocked })] }),
+        btn(unlocked ? '⚔️ Fight!' : daily ? (slotRecord(state, daily.slot, daily.dateKey, B).cleared ? '✓ Cleared' : 'No attempts left') : '🔒 Locked', fight, 'primary', { disabled: !unlocked })] }),
     coach,
     lessonNode ? null : tipUnlessScene(game, 'team'),
     daily ? h('div.warnbox', `${TWIST_TEXT[daily.twist.id].icon} ${TWIST_TEXT[daily.twist.id].text(daily)}`) : null,
     h('div.card',
       h('div.row.between',
         daily
-          ? h('div', h('div.tiny.muted', 'Building for'), h('b', `📅 Daily challenge: ${TWIST_TEXT[daily.twist.id].name}`), h('span.muted.small', ` · ${daily.rounds.map(n => n.name).join(', ')} · enemy Lv ${daily.level}`))
+          ? h('div', h('div.tiny.muted', 'Building for'), h('b', `📅 Daily challenge ${daily.slot + 1}: ${TWIST_TEXT[daily.twist.id].name}`), h('span.muted.small', ` · ${daily.rounds.map(n => n.name).join(', ')} · enemy Lv ${daily.level}`))
           : h('div', h('div.tiny.muted', 'Building for'), h('b', (hard ? '💀 ' : '') + node.name), h('span.muted.small', ` · ${lessonNode ? C.tutorial.name : C.arc[node.arcId].name}${hard ? ` · Hard, enemy Lv ${syncLv}` : ''}`)),
         h('div.row', h('span.small.muted', 'Enemy natures'), ...[...new Set(enemyN)].map(n => natureChip(n)), enemyN.length ? null : h('span.nat.none', 'None'))),
       h('div.divider'),

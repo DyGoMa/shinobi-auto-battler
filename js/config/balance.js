@@ -29,7 +29,7 @@ export const BALANCE = {
     roles: {
       Tank:    { hp: 3000, atk: 74,  def: 62, attackInterval: 1.35, range: 'melee', moveSpeed: 72, critChance: 0.05 },
       Striker: { hp: 2050, atk: 112, def: 36, attackInterval: 1.0,  range: 'reach', moveSpeed: 90, critChance: 0.15 },
-      Ranged:  { hp: 1650, atk: 104, def: 26, attackInterval: 1.4,  range: 'long',  moveSpeed: 76, critChance: 0.10 },
+      Ranged:  { hp: 1650, atk: 104, def: 30, attackInterval: 1.3,  range: 'long',  moveSpeed: 76, critChance: 0.10 },
       Support: { hp: 1850, atk: 76,  def: 32, attackInterval: 1.25, range: 'mid',   moveSpeed: 76, critChance: 0.05 },
       // Non-combat escort targets for "protect" objectives (Tazuna, Idate...).
       Civilian:{ hp: 2600, atk: 0,   def: 30, attackInterval: 99,   range: 'melee', moveSpeed: 0,  critChance: 0 },
@@ -79,19 +79,21 @@ export const BALANCE = {
       scrolls: { type: 'linear', base: 160, growth: 3, round: true },
       // cap: late Part II stops growing (from node 73, the Five Kage Summit boss), so
       // free-to-play teams end Part II near the enemy level, not at the level cap.
-      ryo:     { type: 'linear', base: 520, growth: 110, cap: 8500, round: true },
+      ryo:     { type: 'linear', base: 442, growth: 94, cap: 7225, round: true },   // × 0.85 in 0.12.1
     },
     // Rewards for replaying an already-cleared node (farming). x = global node index.
+    // 0.12.1: replays pay scrolls worth doing (a 10× summon every 6 replays late in the
+    // story; ⏭ Skip makes a replay instant) and a little less Ryo.
     nodeReplay: {
-      scrolls: { type: 'linear', base: 15, growth: 0.5, round: true },
-      ryo:     { type: 'linear', base: 600, growth: 130, cap: 10000, round: true }, // cap from node 73
+      scrolls: { type: 'linear', base: 40, growth: 1.2, round: true },
+      ryo:     { type: 'linear', base: 510, growth: 111, cap: 8500, round: true }, // cap from node 73; × 0.85 in 0.12.1
     },
     // Multiplier on first-clear rewards for boss nodes. Range 1–3.
     bossNodeBonusMult: 1.5,
     // One-time bonus for clearing every node of an arc. x = arc index (0-based).
     arcClearBonus: {
       scrolls: { type: 'linear', base: 300, growth: 25, round: true },
-      ryo:     { type: 'linear', base: 1500, growth: 450, cap: 9000, round: true }, // cap from arc 17 (Pain's Assault)
+      ryo:     { type: 'linear', base: 1275, growth: 383, cap: 7650, round: true }, // cap from arc 17 (Pain's Assault); × 0.85 in 0.12.1
     },
     // Boss Rush rewards for clearing round x (1-based). Paid every time.
     bossRush: {
@@ -161,16 +163,22 @@ export const BALANCE = {
     // Ultimate power, by ult type (from the character's data).
     ult: {
       single: 4.2,          // × ATK to one target. 2.5–6
-      aoe: 2.3,             // × ATK to every enemy within aoeRadius of the target. 1.2–3.5
+      aoeMain: 3.7,         // × ATK to the target of an area ult (the jutsu is centred on it). 2–5
+      aoe: 2.7,             // × ATK to every other enemy within aoeRadius of the target. 1.2–3.5
       aoeRadius: 300,       // px. 150–500 (the lane is 1280 wide — no screen wipes)
       tauntDuration: 5,     // s enemies are forced to hit the tank. 2–8
       tauntDR: 0.5,         // damage reduction on the tank while taunting. 0.2–0.8
       tauntHit: 1.4,        // × ATK hit on the tank's target when taunting. 0–3
-      healPower: 2.4,       // × caster ATK healed on every ally... 1–5
-      healPctMaxHp: 0.10,   // ...plus this share of each ally's max HP. 0–0.3
+      // A heal ult is a rescue (0.12.1): the most injured ally (lowest share of HP left)
+      // gets the focus heal, every other ally the spread heal. Each is a share of the
+      // ally's max HP plus a multiple of the caster's ATK.
+      healFocusPct: 0.12,   // share of max HP healed on the most injured ally. 0.05–0.3
+      healFocusPower: 0.8,  // ...plus × caster ATK. 0–3
+      healSpreadPct: 0.01,  // share of max HP healed on every other ally. 0–0.1
+      healSpreadPower: 0.2, // ...plus × caster ATK. 0–2
       buffAtk: 0.30,        // team ATK bonus from a buff ult. 0.1–0.6
       buffDuration: 8,      // s. 4–15
-      stunDuration: 2.2,    // s, for ults with the 'stun' rider. 0.5–4
+      stunDuration: 1.8,    // s, for ults with the 'stun' rider. 0.5–4
       shakeSeconds: 0.35,   // screen shake length on ult (visual only). 0–1
     },
   },
@@ -234,43 +242,43 @@ export const BALANCE = {
     // touching the global curves. 0.3–1.6. Tuned with `npm run autotune -- --write`.
     nodeMult: {
       n_bell_1:    { hp: 0.85, atk: 0.85 },
-      n_bell_3:    { hp: 1.55, atk: 1.55 },
-      n_waves_5:   { hp: 1.00, atk: 1.00 },
-      n_chunin_5:  { hp: 1.02, atk: 1.02 },
-      n_crush_3:   { hp: 0.69, atk: 0.69 },
-      n_crush_4:   { hp: 0.86, atk: 0.86 },
-      n_tsunade_4: { hp: 1.04, atk: 1.04 },
-      n_tea_3:     { hp: 1.41, atk: 1.41 },
-      n_sr_4:      { hp: 1.00, atk: 1.00 },
-      n_sr_5:      { hp: 1.08, atk: 1.08 },
-      n_kuro_3:    { hp: 1.03, atk: 1.03 },
-      n_kaz_4:     { hp: 1.04, atk: 1.04 },
-      n_kaz_5:     { hp: 1.24, atk: 1.24 },
-      n_tenchi_4:  { hp: 1.22, atk: 1.22 },
+      n_bell_3:    { hp: 1.53, atk: 1.53 },
+      n_waves_5:   { hp: 0.88, atk: 0.88 },
+      n_chunin_5:  { hp: 1.04, atk: 1.04 },
+      n_crush_3:   { hp: 0.70, atk: 0.70 },
+      n_crush_4:   { hp: 0.89, atk: 0.89 },
+      n_tsunade_4: { hp: 0.98, atk: 0.98 },
+      n_tea_3:     { hp: 1.34, atk: 1.34 },
+      n_sr_4:      { hp: 0.86, atk: 0.86 },
+      n_sr_5:      { hp: 1.00, atk: 1.00 },
+      n_kuro_3:    { hp: 0.94, atk: 0.94 },
+      n_kaz_4:     { hp: 0.89, atk: 0.89 },
+      n_kaz_5:     { hp: 1.14, atk: 1.14 },
+      n_tenchi_4:  { hp: 1.11, atk: 1.11 },
       n_twelve_3:  { hp: 1.27, atk: 1.27 },
-      n_hidan_3:   { hp: 0.98, atk: 0.98 },
-      n_hidan_4:   { hp: 1.06, atk: 1.06 },
+      n_hidan_3:   { hp: 0.94, atk: 0.94 },
+      n_hidan_4:   { hp: 0.83, atk: 0.83 },
       n_three_2:   { hp: 1.11, atk: 1.11 },
-      n_three_3:   { hp: 1.04, atk: 1.04 },
+      n_three_3:   { hp: 1.05, atk: 1.05 },
       n_itachi_3:  { hp: 0.97, atk: 0.97 },
-      n_jiraiya_4: { hp: 1.14, atk: 1.14 },
-      n_brothers_2:{ hp: 0.97, atk: 0.97 },
-      n_brothers_4:{ hp: 0.81, atk: 0.81 },
-      n_sixtails_3:{ hp: 1.20, atk: 1.20 },
-      n_pain_5:    { hp: 0.97, atk: 0.97 },
-      n_summit_3:  { hp: 1.01, atk: 1.01 },
-      n_summit_4:  { hp: 0.83, atk: 0.83 },
-      n_countdown_2:{ hp: 0.78, atk: 0.78 },
-      n_countdown_4:{ hp: 0.67, atk: 0.67 },
-      n_confront_4:{ hp: 0.87, atk: 0.87 },
-      n_confront_5:{ hp: 1.01, atk: 1.01 },
-      n_climax_3:  { hp: 1.06, atk: 1.06 },
-      n_climax_5:  { hp: 0.77, atk: 0.77 },
-      n_anbu_3:    { hp: 0.93, atk: 0.93 },
-      n_birth_2:   { hp: 0.80, atk: 0.80 },
-      n_birth_4:   { hp: 0.89, atk: 0.89 },
-      n_kaguya_2:  { hp: 1.36, atk: 1.36 },
-      n_kaguya_4:  { hp: 1.07, atk: 1.07 },
+      n_jiraiya_4: { hp: 1.13, atk: 1.13 },
+      n_brothers_2:{ hp: 0.95, atk: 0.95 },
+      n_brothers_4:{ hp: 0.84, atk: 0.84 },
+      n_sixtails_3:{ hp: 1.01, atk: 1.01 },
+      n_pain_5:    { hp: 0.99, atk: 0.99 },
+      n_summit_3:  { hp: 0.89, atk: 0.89 },
+      n_summit_4:  { hp: 0.85, atk: 0.85 },
+      n_countdown_2:{ hp: 0.79, atk: 0.79 },
+      n_countdown_4:{ hp: 0.71, atk: 0.71 },
+      n_confront_4:{ hp: 0.80, atk: 0.80 },
+      n_confront_5:{ hp: 0.97, atk: 0.97 },
+      n_climax_3:  { hp: 1.05, atk: 1.05 },
+      n_climax_5:  { hp: 0.79, atk: 0.79 },
+      n_anbu_3:    { hp: 0.92, atk: 0.92 },
+      n_birth_2:   { hp: 0.73, atk: 0.73 },
+      n_birth_4:   { hp: 0.78, atk: 0.78 },
+      n_kaguya_2:  { hp: 1.07, atk: 1.07 },
+      n_kaguya_4:  { hp: 0.91, atk: 0.91 },
     },
     // Adds summoned by boss mechanics are this fraction of a normal enemy. 0.3–1
     addMult: 0.6,
@@ -396,57 +404,61 @@ export const BALANCE = {
     // Per-boss fine-tuning on Hard, written by `npm run autotune -- --write` (same
     // rules as enemyScaling.nodeMult; Hard falls back to the story value for other nodes).
     nodeMult: {
-      n_bell_3:    { hp: 1.57, atk: 1.57 },
-      n_waves_5:   { hp: 0.95, atk: 0.95 },
-      n_chunin_5:  { hp: 0.88, atk: 0.88 },
-      n_crush_3:   { hp: 0.71, atk: 0.71 },
-      n_crush_4:   { hp: 1.16, atk: 1.16 },
-      n_tsunade_4: { hp: 0.92, atk: 0.92 },
-      n_tea_3:     { hp: 1.21, atk: 1.21 },
-      n_sr_4:      { hp: 0.93, atk: 0.93 },
-      n_sr_5:      { hp: 0.91, atk: 0.91 },
-      n_kuro_3:    { hp: 0.94, atk: 0.94 },
-      n_kaz_4:     { hp: 0.97, atk: 0.97 },
-      n_kaz_5:     { hp: 1.02, atk: 1.02 },
-      n_tenchi_4:  { hp: 0.94, atk: 0.94 },
-      n_twelve_3:  { hp: 1.25, atk: 1.25 },
-      n_hidan_3:   { hp: 0.99, atk: 0.99 },
-      n_hidan_4:   { hp: 1.02, atk: 1.02 },
-      n_three_2:   { hp: 1.10, atk: 1.10 },
-      n_three_3:   { hp: 1.18, atk: 1.18 },
-      n_itachi_3:  { hp: 0.93, atk: 0.93 },
-      n_jiraiya_4: { hp: 0.83, atk: 0.83 },
-      n_brothers_2:{ hp: 1.06, atk: 1.06 },
-      n_brothers_4:{ hp: 0.97, atk: 0.97 },
-      n_sixtails_3:{ hp: 1.08, atk: 1.08 },
-      n_pain_5:    { hp: 1.03, atk: 1.03 },
-      n_summit_3:  { hp: 0.325, atk: 0.325 },
-      n_summit_4:  { hp: 0.83, atk: 0.83 },
-      n_countdown_2:{ hp: 0.76, atk: 0.76 },
-      n_countdown_4:{ hp: 0.72, atk: 0.72 },
-      n_confront_4:{ hp: 0.89, atk: 0.89 },
-      n_confront_5:{ hp: 0.95, atk: 0.95 },
-      n_climax_3:  { hp: 1.05, atk: 1.05 },
-      n_climax_5:  { hp: 0.92, atk: 0.92 },
-      n_anbu_3:    { hp: 0.99, atk: 0.99 },
-      n_birth_2:   { hp: 0.67, atk: 0.67 },
-      n_birth_4:   { hp: 0.69, atk: 0.69 },
-      n_kaguya_2:  { hp: 0.99, atk: 0.99 },
-      n_kaguya_4:  { hp: 0.82, atk: 0.82 },
+      n_bell_3:    { hp: 1.42, atk: 1.42 },
+      n_waves_5:   { hp: 0.82, atk: 0.82 },
+      n_chunin_5:  { hp: 0.83, atk: 0.83 },
+      n_crush_3:   { hp: 0.72, atk: 0.72 },
+      n_crush_4:   { hp: 0.88, atk: 0.88 },
+      n_tsunade_4: { hp: 0.86, atk: 0.86 },
+      n_tea_3:     { hp: 1.07, atk: 1.07 },
+      n_sr_4:      { hp: 0.79, atk: 0.79 },
+      n_sr_5:      { hp: 0.85, atk: 0.85 },
+      n_kuro_3:    { hp: 0.82, atk: 0.82 },
+      n_kaz_4:     { hp: 0.79, atk: 0.79 },
+      n_kaz_5:     { hp: 0.95, atk: 0.95 },
+      n_tenchi_4:  { hp: 0.91, atk: 0.91 },
+      n_twelve_3:  { hp: 1.09, atk: 1.09 },
+      n_hidan_3:   { hp: 0.87, atk: 0.87 },
+      n_hidan_4:   { hp: 0.91, atk: 0.91 },
+      n_three_2:   { hp: 0.93, atk: 0.93 },
+      n_three_3:   { hp: 1.06, atk: 1.06 },
+      n_itachi_3:  { hp: 0.81, atk: 0.81 },
+      n_jiraiya_4: { hp: 0.82, atk: 0.82 },
+      n_brothers_2:{ hp: 0.92, atk: 0.92 },
+      n_brothers_4:{ hp: 0.76, atk: 0.76 },
+      n_sixtails_3:{ hp: 0.92, atk: 0.92 },
+      n_pain_5:    { hp: 0.83, atk: 0.83 },
+      n_summit_3:  { hp: 0.315, atk: 0.315 },
+      n_summit_4:  { hp: 0.77, atk: 0.77 },
+      n_countdown_2:{ hp: 0.70, atk: 0.70 },
+      n_countdown_4:{ hp: 0.64, atk: 0.64 },
+      n_confront_4:{ hp: 0.69, atk: 0.69 },
+      n_confront_5:{ hp: 0.86, atk: 0.86 },
+      n_climax_3:  { hp: 0.85, atk: 0.85 },
+      n_climax_5:  { hp: 0.76, atk: 0.76 },
+      n_anbu_3:    { hp: 0.93, atk: 0.93 },
+      n_birth_2:   { hp: 0.60, atk: 0.60 },
+      n_birth_4:   { hp: 0.60, atk: 0.60 },
+      n_kaguya_2:  { hp: 0.80, atk: 0.80 },
+      n_kaguya_4:  { hp: 0.73, atk: 0.73 },
     },
   },
 
   // ---------------------------------------------------------------------------
-  // DAILY CHALLENGE — one rotating fight per day, picked from the date (no server):
-  // an arc boss you have already beaten, at your story level, with a twist.
-  // Everyone at the same point of the story gets the same challenge on the same day.
+  // DAILY CHALLENGES — challengesPerDay rotating fights a day, picked from the date (no
+  // server): each an arc boss you have already beaten, at your story level, with a twist.
+  // Everyone at the same point of the story gets the same challenges on the same day.
   // ---------------------------------------------------------------------------
   daily: {
     // Opens once this arc is cleared (the pool = bosses of every arc you've cleared).
     unlockArc: 'arc_waves',
     // Only the bosses of your most recent N cleared arcs (0 = every cleared arc).
     recentArcs: 0,
-    // Battles you may start per day. The reward is paid on the first clear. 1–5
+    // Challenges a day (0.12.1), each its own boss and twist from the date, its own
+    // attempts and its own first-clear reward. 1–4 (a day never repeats a twist while
+    // this is at most the number of twists)
+    challengesPerDay: 3,
+    // Battles you may start per challenge per day. Each pays on its first clear. 1–5
     attemptsPerDay: 3,
     // First clear of the day: these scrolls, plus the story replay Ryo of your
     // current battle × ryoMult. scrolls 50–400, ryoMult 0.5–3.
@@ -462,9 +474,9 @@ export const BALANCE = {
     //   counteredOnly  every enemy takes the nature that beats your team's main one
     twists: [
       { id: 'lockedNature', power: 0.9 },
-      { id: 'noUlts', power: 0.5 },
-      { id: 'bossRush', rounds: 3, power: 0.45 },
-      { id: 'counteredOnly', power: 0.65 },
+      { id: 'noUlts', power: 0.52 },
+      { id: 'bossRush', rounds: 3, power: 0.5 },
+      { id: 'counteredOnly', power: 0.7 },
     ],
   },
 
@@ -505,6 +517,22 @@ export const BALANCE = {
       ach_google:       { reward: { tickets: 2 } },
       ach_days:         { target: 7, reward: { tickets: 3 } },
       ach_dailies:      { target: 5, reward: { rareTickets: 1 } },
+      // 0.12.1: fifteen more, most paying summons (the brief: achievements that help with scrolls)
+      ach_side_missions: { reward: { tickets: 2 } },
+      ach_replays_25:   { target: 25, reward: { tickets: 2 } },
+      ach_replays_100:  { target: 100, reward: { rareTickets: 1 } },
+      ach_hard_25:      { target: 25, reward: { tickets: 3 } },
+      ach_own_60:       { target: 60, reward: { rareTickets: 2 } },
+      ach_five_star:    { target: 5, reward: { tickets: 3 } },
+      ach_kage_3:       { target: 3, reward: { rareTickets: 1 } },
+      ach_level_50:     { target: 50, reward: { tickets: 2 } },
+      ach_clash_50:     { target: 50, reward: { rareTickets: 1 } },
+      ach_flawless_10:  { target: 10, reward: { tickets: 2 } },
+      ach_rush_14:      { target: 14, reward: { rareTickets: 1 } },
+      ach_days_30:      { target: 30, reward: { rareTickets: 1 } },
+      ach_dailies_25:   { target: 25, reward: { rareTickets: 1 } },
+      ach_dailies_100:  { target: 100, reward: { rareTickets: 2 } },
+      ach_summons_100:  { target: 100, reward: { tickets: 2 } },
     },
   },
 
@@ -538,7 +566,7 @@ export const BALANCE = {
     // is where a neutral, on-curve team wins ~60% — a real, contested fight, not a
     // near-guaranteed win or a near-guaranteed loss.
     counterGapNode: 'n_waves_5',
-    counterGapLevelOffset: 1.6,
+    counterGapLevelOffset: -0.57,  // 0.12.1: re-centred after the combat pass (was 1.6)
     counterGap3of4Range: [0.25, 0.30],   // 3-of-4 units countered, clash-aware bot
     counterGapFullyRange: [0.10, 0.15],  // all 4 units countered, clash-aware bot
     counterGapNeutralRange: [0.55, 0.65], // the same team re-typed neutral: the scenario's baseline
@@ -556,7 +584,7 @@ export const BALANCE = {
       // and Leader) with the stars above, so the rows measure Hard mode itself; the
       // offset is levels above the Hard enemy level where that team, neutral, wins ~60%.
       counterGapNode: 'n_waves_5',
-      counterGapLevelOffset: 9,
+      counterGapLevelOffset: 4.6,   // 0.12.1: re-centred after the combat pass (was 9)
     },
     // Daily challenge (info only): each twist's win rate for an on-curve team, and the
     // chance to clear it within daily.attemptsPerDay. Flagged below this.

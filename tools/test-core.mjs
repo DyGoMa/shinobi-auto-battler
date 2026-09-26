@@ -4,10 +4,10 @@ import { C, B } from './common.mjs';
 import { migrate, defaultState, encodeSave, decodeSave, SAVE_VERSION, BATTLE_TIP_IDS } from '../js/core/SaveManager.js';
 import { startTutorial, completeLesson, skipTutorial } from '../js/core/Tutorial.js';
 import { pull, ticketPull, bannerPool } from '../js/core/GachaSystem.js';
-import { checkAchievements, claimAchievement, recordBattle, recordDayPlayed } from '../js/core/Achievements.js';
+import { checkAchievements, claimAchievement, recordBattle, recordDayPlayed, achievementProgress } from '../js/core/Achievements.js';
 import { makeRng, curve, enemyLevelForNode, beatenBy } from '../js/core/formulas.js';
 import { completeNode, resolveTeam, levelUp, canLevelUp, nodeBattleConfig, ownedOrLoaner, isHardUnlocked, isHardNodeUnlocked, isArcHardCleared, isArcCleared, nodeEnemyLevel, buildNodeEnemies, hardNodeRewards, currentNode } from '../js/core/Progression.js';
-import { dailyFor, dailyRecord, attemptsLeft, startDailyAttempt, completeDaily, dailyReward, dailyBattleConfig, dailyEnemyNature, dailyContent } from '../js/core/Daily.js';
+import { dailyFor, dailiesFor, dailyRecord, slotRecord, attemptsLeft, openSlots, clearedToday, startDailyAttempt, completeDaily, dailyReward, dailyBattleConfig, dailyEnemyNature, dailyContent } from '../js/core/Daily.js';
 import { BattleSim } from '../js/core/BattleSim.js';
 import { INTRO, introPlan, introSeen, setIntroSeen, menuModel } from '../js/core/StartFlow.js';
 import { FirebaseBackend, REDIRECT_FLAG, POPUP_UNAVAILABLE, POPUP_CANCELLED, EMPTY_REDIRECT_ERROR, EARLY_CANCEL_MS } from '../js/save/FirebaseBackend.js';
@@ -248,6 +248,37 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     for (const n of C.nodes.filter(n => n.part === 2)) h2.progress.hard[n.id] = { clears: 1, best: null };
     const h2retro = checkAchievements(migrate(JSON.parse(JSON.stringify(h2)), C, B), C, B).map(a => a.id);
     ok(h2retro.includes('ach_hard_part2') && !h2retro.includes('ach_hard_part1'), 'a save with Part II cleared on Hard unlocks "Part II on Hard" on load (and not Part I on Hard)');
+    // 0.12.1: the four new types and the replay record
+    {
+      const t = defaultState(C, B);
+      const prog = (id) => achievementProgress(C.achievement[id], t, C, B);
+      const side = C.achievement.ach_side_missions;
+      ok(side.arcs.every(id => C.arc[id]?.filler) && prog('ach_side_missions').target === side.arcs.length && prog('ach_side_missions').value === 0, 'Off the Beaten Path counts the five side-mission arcs');
+      for (const n of C.arc[side.arcs[0]].nodes) t.progress.cleared[n.id] = { clears: 1, best: null };
+      ok(prog('ach_side_missions').value === 1 && !prog('ach_side_missions').done, 'one side mission cleared: one of five');
+      for (const id of side.arcs) for (const n of C.arc[id].nodes) t.progress.cleared[n.id] = { clears: 1, best: null };
+      ok(prog('ach_side_missions').done, 'all five cleared: done');
+      t.roster.naruto.stars = B.achievements.list.ach_five_star.target;
+      ok(prog('ach_five_star').done && prog('ach_five_star').target === B.stats.starCap, 'Five Stars: any ninja at the star cap');
+      const kage = C.roster.filter(c => c.tier === 'kage' && !c.notPullable).slice(0, B.achievements.list.ach_kage_3.target);
+      ok(!prog('ach_kage_3').done, 'Kage Council: not yet');
+      for (const c of kage) t.roster[c.id] = { level: 1, stars: 1 };
+      ok(prog('ach_kage_3').done && prog('ach_kage_3').value === kage.length, 'Kage Council: three Kage-tier ninja recruited');
+      t.roster.naruto.level = B.achievements.list.ach_level_50.target;
+      ok(prog('ach_level_50').done && !prog('ach_level_max').done, 'Halfway There: level 50 on any ninja (not the cap)');
+      const simR = { stats: { clashes: { overpower: 0 } }, units: [{ side: 'player', protected: false, alive: true, level: 10 }] };
+      recordBattle(t, { won: true, mode: 'story', sim: simR, replay: false }, B);
+      recordBattle(t, { won: true, mode: 'story', sim: simR, replay: true }, B);
+      recordBattle(t, { won: true, mode: 'hard', sim: simR, replay: true }, B);
+      recordBattle(t, { won: false, mode: 'story', sim: simR, replay: true }, B);
+      recordBattle(t, { won: true, mode: 'daily', sim: simR, replay: true }, B);
+      ok(t.stats.replayWins === 2 && prog('ach_replays_25').value === 2, 'replay wins count story and Hard wins of cleared battles only (no losses, no Dailies)');
+      const rp = defaultState(C, B); const node0 = C.nodes[0];
+      completeNode(rp, node0, true, C, B);
+      const sk1 = skipBattle(rp, node0, C, B, { seed: 3 });
+      ok(sk1.ok && rp.stats.replayWins === (sk1.won ? 1 : 0), '⏭ Skip of a cleared battle records a replay win when it wins');
+      ok(C.achievements.length === 36 && C.achievements.filter(a => ['arcsClear', 'stars', 'ownTier', 'levelReach'].includes(a.type)).length === 4, 'thirty-six achievements, four of the new types');
+    }
     // the achievement-exclusive form
     const ex = C.roster.filter(c => c.notPullable);
     ok(ex.length >= 1 && ex.every(c => C.achievements.some(a => a.rewardCharacter === c.id)), 'every non-summonable ninja is an achievement reward');
@@ -320,18 +351,34 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
     ok(B.daily.twists.every(t => month.some(d => d.twist.id === t.id)), 'every twist in balance.daily.twists comes up within 60 days');
     ok(month.every(d => d.rounds.every(n => isArcCleared(s, C.arc[n.arcId]) && n === C.arc[n.arcId].nodes[C.arc[n.arcId].nodes.length - 1])), 'Daily bosses are final battles of arcs the player has cleared');
     ok(month.every(d => d.level === enemyLevelForNode(currentNode(s, C).globalIndex, B)), 'the Daily is fought at the player\'s story level');
-    // attempts and the reward
-    const rec = dailyRecord(s, d1.dateKey);
-    ok(rec.attempts === 0 && attemptsLeft(s, B, d1.dateKey) === B.daily.attemptsPerDay, 'a new day starts with daily.attemptsPerDay attempts');
+    // 0.12.1: several challenges a day, each its own slot
+    const n = B.daily.challengesPerDay;
+    const today = dailiesFor(s, C, B, '2026-03-01');
+    ok(n >= 2 && today.length === n && today.every((d, k) => d.slot === k && key(d) === key(dailyFor(s, C, B, '2026-03-01', k))), 'dailiesFor gives daily.challengesPerDay challenges, one per slot, the same as dailyFor(slot)');
+    const days = Array.from({ length: 30 }, (_, k) => dailiesFor(s, C, B, new Date(Date.UTC(2026, 0, 1 + k)).toISOString().slice(0, 10)));
+    ok(days.every(ds => new Set(ds.map(d => d.twist.id)).size === ds.length), 'a day\'s challenges all have different twists');
+    const late = defaultState(C, B); for (const nn of C.nodes) late.progress.cleared[nn.id] = { clears: 1, best: null };
+    ok(Array.from({ length: 30 }, (_, k) => dailiesFor(late, C, B, new Date(Date.UTC(2026, 0, 1 + k)).toISOString().slice(0, 10))).every(ds => new Set(ds.map(d => d.node.id)).size === ds.length), 'a day\'s challenges all have different bosses once the pool is big enough (the whole story cleared)');
+    // attempts and the reward, per slot
+    const rec = dailyRecord(s, d1.dateKey, B);
+    ok(rec.slots.length === n && rec.slots.every(r => r.attempts === 0 && !r.cleared) && attemptsLeft(s, B, d1.dateKey, 0) === B.daily.attemptsPerDay, 'a new day starts with daily.attemptsPerDay attempts on every challenge');
     for (let i = 0; i < B.daily.attemptsPerDay; i++) startDailyAttempt(s, d1, B);
-    ok(!startDailyAttempt(s, d1, B).ok && attemptsLeft(s, B, d1.dateKey) === 0, 'no attempts beyond daily.attemptsPerDay');
+    ok(!startDailyAttempt(s, d1, B).ok && attemptsLeft(s, B, d1.dateKey, 0) === 0 && attemptsLeft(s, B, d1.dateKey, 1) === B.daily.attemptsPerDay, 'no attempts beyond daily.attemptsPerDay on a challenge, and the others keep theirs');
+    ok(JSON.stringify(openSlots(s, B, d1.dateKey)) === JSON.stringify([...Array(n).keys()].slice(1)), 'a challenge out of attempts is no longer open');
     const sc = s.currencies.scrolls, ry = s.currencies.ryo, want = dailyReward(s, C, B);
     const paid = completeDaily(s, d1, C, B);
-    ok(paid && s.currencies.scrolls === sc + B.daily.rewards.scrolls && s.currencies.ryo === ry + want.ryo && s.daily.totalCleared === 1, 'the first clear pays daily.rewards');
-    ok(completeDaily(s, d1, C, B) === null && s.currencies.scrolls === sc + B.daily.rewards.scrolls, 'a second clear the same day pays nothing');
+    ok(paid && s.currencies.scrolls === sc + B.daily.rewards.scrolls && s.currencies.ryo === ry + want.ryo && s.daily.totalCleared === 1 && clearedToday(s, B, d1.dateKey) === 1, 'the first clear of a challenge pays daily.rewards');
+    ok(completeDaily(s, d1, C, B) === null && s.currencies.scrolls === sc + B.daily.rewards.scrolls, 'a second clear of the same challenge pays nothing');
+    const slot1 = today[1];
+    ok(startDailyAttempt(s, slot1, B).ok && completeDaily(s, slot1, C, B) && s.currencies.scrolls === sc + 2 * B.daily.rewards.scrolls && s.daily.totalCleared === 2 && clearedToday(s, B, d1.dateKey) === 2, 'the next challenge pays its own first clear');
     const d2 = dailyFor(s, C, B, '2026-03-02');
-    ok(attemptsLeft(s, B, d2.dateKey) === B.daily.attemptsPerDay && !dailyRecord(s, d2.dateKey).cleared && s.daily.totalCleared === 1, 'a new date resets attempts and the clear, not the lifetime count');
+    ok(attemptsLeft(s, B, d2.dateKey) === B.daily.attemptsPerDay && !slotRecord(s, 0, d2.dateKey, B).cleared && s.daily.totalCleared === 2, 'a new date resets attempts and the clears, not the lifetime count');
     ok(startDailyAttempt(s, d2, B).ok, 'the new day\'s challenge can be fought');
+    // the one-challenge save (v4) becomes the first slot
+    const v4 = migrate(JSON.parse(JSON.stringify({ ...defaultState(C, B), saveVersion: 4, daily: { date: '2026-03-01', attempts: 2, cleared: true, totalCleared: 7 } })), C, B);
+    ok(v4.saveVersion === SAVE_VERSION && Array.isArray(v4.daily.slots) && v4.daily.slots.length === 1 && v4.daily.slots[0].attempts === 2 && v4.daily.slots[0].cleared === true && v4.daily.attempts === undefined && v4.daily.totalCleared === 7, 'v4 → v5: the day\'s one record becomes slot 0, lifetime clears kept');
+    const rec4 = dailyRecord(v4, '2026-03-01', B);
+    ok(rec4.slots.length === n && rec4.slots[0].cleared && !rec4.slots[1].cleared && attemptsLeft(v4, B, '2026-03-01', 1) === B.daily.attemptsPerDay, 'the migrated day gets its other challenges fresh');
     // twists
     const dayWith = (id) => month.find(d => d.twist.id === id);
     const team = resolveTeam(s, null, C);
@@ -694,11 +741,14 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   for (const n of C.nodes.slice(0, firstDaily)) bs.progress.cleared[n.id] = { clears: 1 };
   for (const n of C.arc[B.daily.unlockArc].nodes) completeNode(bs, n, true, C, B);
   ok(dailyWaiting(bs, C, B, day) && tabBadges(bs, C, B, day).home, "today's Daily challenge not done: a dot on Home");
-  bs.daily = { ...bs.daily, date: day, attempts: B.daily.attemptsPerDay, cleared: false };
-  ok(!dailyWaiting(bs, C, B, day), 'no attempts left: no Daily dot');
-  bs.daily = { ...bs.daily, date: day, attempts: 1, cleared: true };
-  ok(!dailyWaiting(bs, C, B, day) && dailyWaiting(bs, C, B, '2999-01-01'), 'cleared today: no dot, and it comes back the next day');
-  ok(bs.daily.date === day, 'checking the dots never changes the save');
+  const fullDay = () => Array.from({ length: B.daily.challengesPerDay }, () => ({ attempts: B.daily.attemptsPerDay, cleared: false }));
+  bs.daily = { ...bs.daily, date: day, slots: fullDay() };
+  ok(!dailyWaiting(bs, C, B, day), 'no attempts left on any challenge: no Daily dot');
+  bs.daily = { ...bs.daily, date: day, slots: fullDay().map((r, k) => (k === 1 ? { attempts: 1, cleared: false } : r)) };
+  ok(dailyWaiting(bs, C, B, day), 'one challenge still open: a dot');
+  bs.daily = { ...bs.daily, date: day, slots: fullDay().map(r => ({ ...r, attempts: 1, cleared: true })) };
+  ok(!dailyWaiting(bs, C, B, day) && dailyWaiting(bs, C, B, '2999-01-01'), 'all cleared today: no dot, and it comes back the next day');
+  ok(bs.daily.date === day && bs.daily.slots.length === B.daily.challengesPerDay, 'checking the dots never changes the save');
 }
 
 // ---- the installable app (js/core/Pwa.js) ------------------------------------

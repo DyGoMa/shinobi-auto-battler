@@ -20,7 +20,7 @@ Use tickets on the **Summon** screen: the ticket buttons appear under the normal
 - **Combat:** win without losing anyone, win with a Poor or Bad nature matchup, overpower enemy jutsu in Jutsu Clashes, beat a boss while under-levelled, and survive the Boss Rush.
 - **Account:** your first summon, linking a Google account, playing on different days, and clearing Daily challenges.
 
-Every achievement's exact goal and reward is on the [Achievements](wiki:achievements) pages.
+Every achievement's exact goal and reward is on the [Achievements](wiki:achievements) pages. Version 0.12.1 added fifteen more, most of them paying summon tickets: the five side missions, replays of cleared battles (⏭ Skip counts), Hard mode clears, a bigger roster, five stars, three Kage, a ninja halfway to the level cap, more Clashes and flawless wins, Boss Rush round 14, a month of days played, more Daily challenges, and a hundred summons.
 
 ## Tips
 

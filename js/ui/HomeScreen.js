@@ -6,7 +6,7 @@ import { tutorialPending, nextLessonIndex, tutorialLessons } from '../core/Tutor
 import { LESSON_TITLE } from './TutorialScreen.js';
 import { helpButton } from './chrome.js';
 import { isUnlocked, claimableAchievements } from '../core/Achievements.js';
-import { isDailyUnlocked, dailyFor, dailyRecord, attemptsLeft, TWIST_TEXT } from '../core/Daily.js';
+import { isDailyUnlocked, dailiesFor, openSlots, clearedToday, TWIST_TEXT } from '../core/Daily.js';
 import { isHardUnlocked, currentHardNode } from '../core/Progression.js';
 
 export function render(game, ui) {
@@ -77,12 +77,13 @@ export function render(game, ui) {
 
 function dailyCard(game, ui) {
   const { C, B, state } = game;
-  if (!isDailyUnlocked(state, C, B)) return challengeCard('📅', 'Daily challenge', `A new fight with a twist every day. Unlocks after you clear ${C.arc[B.daily.unlockArc].name}.`, () => ui.go('daily'), true);
-  const d = dailyFor(state, C, B);
-  const rec = dailyRecord(state, d.dateKey);
-  const left = attemptsLeft(state, B, d.dateKey);
-  const text = rec.cleared ? `✓ Cleared today: ${TWIST_TEXT[d.twist.id].name}. Back tomorrow.` : `Today: ${TWIST_TEXT[d.twist.id].name}. ${left} attempt${left === 1 ? '' : 's'} left.`;
-  return challengeCard('📅', 'Daily challenge', text, () => ui.go('daily'), false, !rec.cleared && left > 0);
+  if (!isDailyUnlocked(state, C, B)) return challengeCard('📅', 'Daily challenges', `New fights with a twist every day. Unlocks after you clear ${C.arc[B.daily.unlockArc].name}.`, () => ui.go('daily'), true);
+  const ds = dailiesFor(state, C, B);
+  const open = openSlots(state, B, ds[0].dateKey);
+  const done = clearedToday(state, B, ds[0].dateKey);
+  const names = ds.map(d => TWIST_TEXT[d.twist.id].name).join(' · ');
+  const text = open.length ? `Today: ${names}. ${done} of ${ds.length} cleared, ${open.length} still open.` : done === ds.length ? `✓ All ${ds.length} cleared today. Back tomorrow.` : `Today: ${names}. ${done} of ${ds.length} cleared, no attempts left.`;
+  return challengeCard('📅', 'Daily challenges', text, () => ui.go('daily'), false, open.length > 0);
 }
 
 function hardCard(game, ui) {

@@ -4,7 +4,7 @@
 import { BALANCE } from '../config/balance.js';
 import { defaultPresets, sanitizePresets, sanitizeRosterView, ROSTER_VIEW_DEFAULT } from './Teams.js';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const VFX_LEVELS = ['low', 'medium', 'high'];
 export const STORY_SCENE_MODES = ['first', 'always', 'never'];
 
@@ -43,7 +43,7 @@ export function defaultState(C, B = BALANCE) {
     // Story scenes already played on this save (Phase 5 writes them): scene id -> timestamp.
     story: { seen: {} },
     // Combat and day records behind the achievements (js/core/Achievements.js).
-    stats: { battles: 0, wins: 0, losses: 0, clashWins: 0, flawlessWins: 0, counteredWins: 0, underdogBossWins: 0, daysPlayed: 0, lastDay: '' },
+    stats: { battles: 0, wins: 0, losses: 0, clashWins: 0, flawlessWins: 0, counteredWins: 0, underdogBossWins: 0, replayWins: 0, daysPlayed: 0, lastDay: '' },
     // status: 'new' (never started) | 'active' (lesson = next lesson index) | 'done'.
     // completed = every lesson won at least once; rewarded = the one-time reward is paid.
     tutorial: { status: 'new', lesson: 0, completed: false, rewarded: false },
@@ -52,8 +52,9 @@ export function defaultState(C, B = BALANCE) {
     // tutorialRewarded: the tutorial reward was paid on this account's save. It survives
     // Reset save and Import, and syncs with the cloud save, so the reward pays only once.
     account: { googleLinked: false, tutorialRewarded: false },
-    // The Daily challenge: today's date key, attempts used, cleared today, lifetime clears.
-    daily: { date: '', attempts: 0, cleared: false, totalCleared: 0 },
+    // The Daily challenges: today's date key, one record per challenge (attempts used,
+    // cleared today; js/core/Daily.js fills them), lifetime clears.
+    daily: { date: '', slots: [], totalCleared: 0 },
   };
 }
 
@@ -102,6 +103,16 @@ export const MIGRATIONS = {
       if (S.sfxVol === undefined) S.sfxVol = 0.8;
     }
     if (!isObj(s.story)) s.story = { seen: {} };
+    return s;
+  },
+  // v4 -> v5 (0.12.1): several Daily challenges a day. The one-challenge record
+  // { date, attempts, cleared } becomes the first slot of { date, slots: [...] }.
+  4: (s) => {
+    if (isObj(s.daily) && !Array.isArray(s.daily.slots)) {
+      const { attempts, cleared } = s.daily;
+      s.daily.slots = s.daily.date ? [{ attempts: Math.max(0, Math.floor(Number(attempts) || 0)), cleared: !!cleared }] : [];
+      delete s.daily.attempts; delete s.daily.cleared;
+    }
     return s;
   },
 };

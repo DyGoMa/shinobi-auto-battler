@@ -1,4 +1,4 @@
-# BALANCE_PASS.md — the 0.12.1 balancing pass (proposal, measured, not yet applied)
+# BALANCE_PASS.md — the 0.12.1 balancing pass (the proposal; applied in 0.12.1, see BALANCE.md §4 for what was measured on the way and what landed)
 
 The user's brief, before shipping 0.12.0: Sakura's heal feels weak; check the other ninja's kits so
 they are all balanced; replays should pay enough scrolls to be worth doing; Ryo comes a little too

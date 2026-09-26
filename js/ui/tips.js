@@ -43,8 +43,8 @@ export const SCREEN_TIPS = {
     text: (g) => `The same battles with enemies ${g.B.hardMode.levelOffset} levels higher and tougher bosses. Each first clear pays scrolls again, and replays pay more than the story's. It opens for each part once you clear it, and its battles unlock one after another.`,
   },
   daily: {
-    icon: '📅', title: 'The Daily challenge',
-    text: (g) => `A new fight every day, with a twist. You get ${g.B.daily.attemptsPerDay} attempts a day, and the reward is paid on your first clear.`,
+    icon: '📅', title: 'The Daily challenges',
+    text: (g) => `${g.B.daily.challengesPerDay || 1} new fights every day, each with a twist. You get ${g.B.daily.attemptsPerDay} attempts at each, and every challenge pays on its first clear.`,
   },
   settings: {
     icon: '⚙️', title: 'Settings',

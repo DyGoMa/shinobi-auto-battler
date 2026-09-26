@@ -57,7 +57,7 @@ A red dot on a tab means something is waiting: on **Home**, an achievement rewar
 ## Rewards
 
 - The **first clear** of a battle pays scrolls and Ryo, and boss battles pay {{x:economy.bossNodeBonusMult}} as much.
-- **Replays** pay Ryo and a few scrolls, so an earlier battle is a good place to farm when a boss is a wall.
+- **Replays** pay Ryo and scrolls, more the further the battle is in the story, so an earlier battle is a good place to farm when a boss is a wall, and a late one is a good place to farm summons (⏭ Skip makes it instant).
 - Clearing every battle of an arc pays a one-time **arc bonus**.
 - New ninja join the summon pools as the story goes on. Villains join once you clear their arc.
 

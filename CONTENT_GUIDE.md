@@ -302,7 +302,8 @@ Content holds the words, `balance.js` holds every number:
 ach_own_25: { target: 25, reward: { tickets: 3 } },
 ```
 
-* `type` is one of `ACHIEVEMENT_TYPES` (listed with what each measures at the top of `achievements.js`). `stat` achievements read a combat record (`ACHIEVEMENT_STATS`: flawless wins, countered wins, Overpowers, under-levelled boss wins, days played), recorded by `recordBattle` in `js/core/Achievements.js`.
+* `type` is one of `ACHIEVEMENT_TYPES` (listed with what each measures at the top of `achievements.js`). `stat` achievements read a combat record (`ACHIEVEMENT_STATS`: flawless wins, countered wins, Overpowers, under-levelled boss wins, days played, replay wins), recorded by `recordBattle` in `js/core/Achievements.js` (a story or Hard win of a battle already cleared is a replay win; ⏭ Skip counts).
+* Types added in 0.12.1: `arcsClear` (clear every battle of the arcs in `arcs`, a list of arc ids), `stars` (any ninja at `target` stars), `ownTier` (recruit `target` ninja of `tier`) and `levelReach` (any ninja at level `target`). `stars`, `ownTier` and `levelReach` need a `target` in balance.js like the other counted types; `npm run validate` checks the arc ids and the tier.
 * `{target}` in the description is replaced by the balance.js target.
 * Rewards: `ryo`, `scrolls`, `tickets` (a free summon) and `rareTickets` (a summon of `achievements.rareTicketMinTier` or better). Keep them small next to the story's income, then re-run `npm run campaign`, which claims every achievement as it unlocks (BALANCE.md §4).
 * **No luck-only achievements:** anything a player can't reach by playing (a Kage from one summon, say) doesn't belong.
@@ -313,7 +314,7 @@ ach_own_25: { target: 25, reward: { tickets: 3 } },
 
 Neither has content of its own; both reuse the story's battles.
 * **Hard mode** plays every node of a cleared part with `balance.hardMode` applied. After adding bosses, run `npm run autotune -- --mode=hard --write` (it writes `hardMode.nodeMult`), then `npm run sim`: every arc boss has a "Hard boss" row.
-* **The Daily challenge** picks from the final battle of every cleared arc. Twists live in `balance.daily.twists` (id, `power`, and `rounds` for the Boss gauntlet). A new twist **id** needs code: its text in `TWIST_TEXT` and its rule in `dailyBattleConfig` (`js/core/Daily.js`). Re-check with `npm run sim` (Info, "Daily challenge").
+* **The Daily challenges** (`balance.daily.challengesPerDay` a day, each its own boss, twist, attempts and first-clear reward) pick from the final battle of every cleared arc; a day's challenges all get different twists while `challengesPerDay` is at most the number of twists. Twists live in `balance.daily.twists` (id, `power`, and `rounds` for the Boss gauntlet). A new twist **id** needs code: its text in `TWIST_TEXT` and its rule in `dailyBattleConfig` (`js/core/Daily.js`). Re-check with `npm run sim` (Info, "Daily challenges").
 
 ## 13. Story scenes (`story/part1.js`, `story/shippuden-*.js`, `story/teach.js`)
 

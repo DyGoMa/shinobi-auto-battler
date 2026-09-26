@@ -1,9 +1,11 @@
-// Daily.js — the Daily challenge: one rotating fight per day, chosen from the
-// date alone (no server): an arc boss the player has already beaten, at their
-// story level, with a twist from balance.daily.twists (which also sets the
-// enemies' power). Pure functions; every number is in balance.daily.
+// Daily.js — the Daily challenges: balance.daily.challengesPerDay rotating fights a
+// day, chosen from the date alone (no server): each an arc boss the player has already
+// beaten, at their story level, with a twist from balance.daily.twists (which also sets
+// the enemies' power). Each challenge (a "slot") has its own attempts and its own
+// first-clear reward. Pure functions; every number is in balance.daily.
 //
-// state.daily = { date: 'YYYY-MM-DD', attempts, cleared, totalCleared }
+// state.daily = { date: 'YYYY-MM-DD', slots: [{ attempts, cleared }, …], totalCleared }
+// (0.12.1, save v5; the one-challenge shape { date, attempts, cleared } is migrated)
 import { BALANCE } from '../config/balance.js';
 import { hashString, localDateKey, beatenBy, enemyLevelForNode, nodeRewards } from './formulas.js';
 import { isArcCleared, currentNode, buildNodeEnemies, buildTeamUnits, resolveTeam } from './Progression.js';
@@ -32,40 +34,76 @@ export function storyLevel(state, C, B = BALANCE) {
   return enemyLevelForNode(n.globalIndex, B);
 }
 
-/** Today's challenge, or null while it's locked. Same date + same progress = same challenge. */
-export function dailyFor(state, C, B = BALANCE, dateKey = localDateKey()) {
+/** How many challenges a day (balance.daily.challengesPerDay, at least 1). */
+export function slotsPerDay(B = BALANCE) { return Math.max(1, Math.floor(B.daily.challengesPerDay || 1)); }
+
+/**
+ * Today's challenge in `slot` (0-based), or null while the Daily is locked. Same date,
+ * same progress and same slot = same challenge. The day's seed picks the first twist and
+ * the slots take the next ones in turn (so a day's challenges all differ); the slots'
+ * bosses are spread across the pool; the slot's own seed picks its nature.
+ */
+export function dailyFor(state, C, B = BALANCE, dateKey = localDateKey(), slot = 0) {
   if (!isDailyUnlocked(state, C, B)) return null;
   const pool = dailyPool(state, C, B);
   if (!pool.length) return null;
-  const seed = hashString(`daily:${dateKey}`);
-  const twist = B.daily.twists[(seed >>> 8) % B.daily.twists.length];
-  const start = seed % pool.length;
+  const daySeed = hashString(`daily:${dateKey}`);
+  const seed = hashString(`daily:${dateKey}:${slot}`);
+  const twist = B.daily.twists[((daySeed >>> 8) + slot) % B.daily.twists.length];
+  const stride = Math.max(1, Math.floor(pool.length / slotsPerDay(B)));
+  const start = (daySeed + slot * stride) % pool.length;
   const count = twist.id === 'bossRush' ? Math.min(twist.rounds || 3, pool.length) : 1;
   const rounds = Array.from({ length: count }, (_, k) => pool[(start + k) % pool.length]);
   const cyc = B.natureWheel.cycle;
   return {
-    dateKey, seed, twist, node: rounds[0], rounds,
+    dateKey, seed, slot, twist, node: rounds[0], rounds,
     nature: cyc[(seed >>> 16) % cyc.length],   // the locked nature (and the countered fallback)
     level: storyLevel(state, C, B),
   };
 }
 
-/** Today's record, reset when the date changes. */
-export function dailyRecord(state, dateKey = localDateKey()) {
+/** Every challenge of the day (one per slot), or null while the Daily is locked. */
+export function dailiesFor(state, C, B = BALANCE, dateKey = localDateKey()) {
+  const first = dailyFor(state, C, B, dateKey, 0);
+  if (!first) return null;
+  return [first, ...Array.from({ length: slotsPerDay(B) - 1 }, (_, k) => dailyFor(state, C, B, dateKey, k + 1))];
+}
+
+const freshSlot = () => ({ attempts: 0, cleared: false });
+
+/** Today's record (one entry per slot), reset when the date changes. */
+export function dailyRecord(state, dateKey = localDateKey(), B = BALANCE) {
   const d = state.daily;
-  if (d.date !== dateKey) { d.date = dateKey; d.attempts = 0; d.cleared = false; }
+  if (!Array.isArray(d.slots)) d.slots = [];
+  if (d.date !== dateKey) { d.date = dateKey; d.slots = []; }
+  for (let k = 0; k < slotsPerDay(B); k++) if (!d.slots[k] || typeof d.slots[k] !== 'object') d.slots[k] = freshSlot();
   return d;
 }
 
-export function attemptsLeft(state, B = BALANCE, dateKey = localDateKey()) {
-  return Math.max(0, B.daily.attemptsPerDay - dailyRecord(state, dateKey).attempts);
+/** The record of one slot today. */
+export function slotRecord(state, slot = 0, dateKey = localDateKey(), B = BALANCE) {
+  return dailyRecord(state, dateKey, B).slots[slot] || freshSlot();
+}
+
+export function attemptsLeft(state, B = BALANCE, dateKey = localDateKey(), slot = 0) {
+  return Math.max(0, B.daily.attemptsPerDay - slotRecord(state, slot, dateKey, B).attempts);
+}
+
+/** The slots still open today: not cleared, with attempts left. */
+export function openSlots(state, B = BALANCE, dateKey = localDateKey()) {
+  return dailyRecord(state, dateKey, B).slots.map((r, k) => (!r.cleared && r.attempts < B.daily.attemptsPerDay ? k : -1)).filter(k => k >= 0);
+}
+
+/** How many of today's challenges are cleared. */
+export function clearedToday(state, B = BALANCE, dateKey = localDateKey()) {
+  return dailyRecord(state, dateKey, B).slots.filter(r => r.cleared).length;
 }
 
 /** Spend an attempt (at the start of a daily battle). */
 export function startDailyAttempt(state, daily, B = BALANCE) {
-  const rec = dailyRecord(state, daily.dateKey);
-  if (rec.cleared) return { ok: false, error: 'Today\'s challenge is already cleared. A new one arrives tomorrow.' };
-  if (rec.attempts >= B.daily.attemptsPerDay) return { ok: false, error: 'No attempts left today. A new challenge arrives tomorrow.' };
+  const rec = slotRecord(state, daily.slot || 0, daily.dateKey, B);
+  if (rec.cleared) return { ok: false, error: 'This challenge is already cleared. New ones arrive tomorrow.' };
+  if (rec.attempts >= B.daily.attemptsPerDay) return { ok: false, error: 'No attempts left on this challenge today. New ones arrive tomorrow.' };
   rec.attempts++;
   return { ok: true };
 }
@@ -77,12 +115,12 @@ export function dailyReward(state, C, B = BALANCE) {
   return { scrolls: B.daily.rewards.scrolls, ryo: Math.round(replay.ryo * B.daily.rewards.ryoMult) };
 }
 
-/** Record a won daily. Pays the reward on the day's first clear. */
+/** Record a won daily. Pays the reward on that challenge's first clear of the day. */
 export function completeDaily(state, daily, C, B = BALANCE) {
-  const rec = dailyRecord(state, daily.dateKey);
+  const rec = slotRecord(state, daily.slot || 0, daily.dateKey, B);
   if (rec.cleared) return null;
   rec.cleared = true;
-  rec.totalCleared = (rec.totalCleared || 0) + 1;
+  state.daily.totalCleared = (state.daily.totalCleared || 0) + 1;
   const r = dailyReward(state, C, B);
   state.currencies.scrolls += r.scrolls;
   state.currencies.ryo += r.ryo;

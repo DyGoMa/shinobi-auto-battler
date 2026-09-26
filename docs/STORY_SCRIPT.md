@@ -1,6 +1,6 @@
 # Shinobi Auto-Battler — the story script
 
-Every scene in play order (803 lines), generated from js/content/story/ by tools/story-script.mjs. A › after a name marks an enemy (they stand on the right). Captions are the narrator.
+Every scene in play order (804 lines), generated from js/content/story/ by tools/story-script.mjs. A › after a name marks an enemy (they stand on the right). Captions are the narrator.
 
 ## Tutorial: The Academy
 
@@ -1798,8 +1798,9 @@ Every scene in play order (803 lines), generated from js/content/story/ by tools
 
 **the Daily challenge opening**
 
-**Guy:** The Daily challenge! A boss you've beaten, back with a TWIST, every single day!  
-**Guy:** Three attempts a day. The reward is paid on your first clear. Then you rest!  
+**Guy:** The Daily challenges! Bosses you've beaten, back with a TWIST, every single day!  
+**Guy:** Three challenges a day, Three attempts at each!  
+**Guy:** Each one pays on its first clear. Then you rest!  
 **Guy:** You will NOT rest. You will come back tomorrow. That is the power of youth!  
 **Lee:** Guy-sensei, I have already set an alarm for tomorrow's challenge.  
 

@@ -2,6 +2,19 @@
 
 ## Version {{cfg:version.current}}
 
+The balancing pass. Nothing new to unlock; the numbers behind the fights and the rewards are re-tuned from the game's own simulations (BALANCE.md §4 has the measurements).
+
+- **Heals are a rescue.** A healing Ultimate (Sakura, Karin, Tsunade, the Hundred Healings) now puts its big heal on the ally with the least HP left and a small one on everyone else, instead of the same top-up on all four. The medic runs to the wounded.
+- **Area Ultimates hit their target harder.** Rasen Shuriken, the Water Dragon, C4 Karura, Lava Monster and the rest are centred on their target, which takes the main hit; everything near it takes the splash. Against a boss they were far behind single-target jutsu; now they are close.
+- **Stuns are a little shorter**, so the stun kits (Shikamaru, Neji, Ay, Kamui and company) stay the control picks without being the only good ones. Ranged ninja attack a touch faster and take a little less damage; Hinata has more HP.
+- **Every boss re-tuned** for the new rules (story and Hard), so the win rates are where they were.
+- **Replays pay real scrolls.** Replaying a cleared battle (or ⏭ Skipping it) pays far more scrolls than before, growing through the story: late in the story a few replays pay for a 10× summon. Ryo from first clears, replays and arc bonuses is a little lower, so teams finish each part a few levels above the curve instead of well above it.
+- **{{num:daily.challengesPerDay}} Daily challenges a day**, each its own boss and twist from the date, its own {{num:daily.attemptsPerDay}} attempts and its own first-clear reward. The twists are a little firmer than before.
+- **Fifteen new achievements**, most paying summon tickets or Rare+ summons: the side missions, replays, Hard clears, the roster, stars, Kage, a ninja halfway to the level cap, Clashes, flawless wins, the Boss Rush, days played, the Dailies and a hundred summons. Existing saves unlock what they already qualify for.
+- Saves move to format 5 (the Daily record); nothing to do.
+
+## Version 0.12.0
+
 - **The story talks.** Every battle opens with a few lines from its characters over the stage, a boss gets the last word on its intro card, and a win has a short aftermath; each arc has an opening and an ending of its own. Tap to move on, **Skip ⏭** to skip a scene, **Auto** to let it run. A battle you replay plays no scenes.
 - **The characters teach the screens.** Jiraiya explains summoning, banners and the Boss Rush; Tsunade the Roster and duplicates; Shikamaru the map, ⏭ Skip and the Team Builder; Might Guy the Daily; Kakashi Hard mode; Konohamaru achievements. Iruka and Kakashi coach the tutorial, and Shikamaru introduces Auto-ult. Each once.
 - **Settings → Story:** play the scenes the first time, always, or never (the old tip cards come back), switch on auto-advance, or reset the scenes to see them again.

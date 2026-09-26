@@ -35,6 +35,15 @@
         "process.env.PORT='8092'; import('./tools/serve.mjs')"
       ],
       "port": 8092
+    },
+    {
+      "name": "shinobi-static-8093",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.PORT='8093'; import('./tools/serve.mjs')"
+      ],
+      "port": 8093
     }
   ]
 }

@@ -1,6 +1,6 @@
-# Hard mode and Daily challenge
+# Hard mode and Daily challenges
 
-Finished a part of the story? There's more to do: **Hard mode**, a new **Daily challenge** every day, and the Akatsuki **Boss Rush**. You'll find all three in the Challenges section of the Home screen, and as tabs at the top of the Story map.
+Finished a part of the story? There's more to do: **Hard mode**, new **Daily challenges** every day, and the Akatsuki **Boss Rush**. You'll find all three in the Challenges section of the Home screen, and as tabs at the top of the Story map.
 
 ## Hard mode
 
@@ -12,20 +12,20 @@ Finished a part of the story? There's more to do: **Hard mode**, a new **Daily c
 
 > Stuck on a Hard boss? The same tricks work as in the story: bring the nature that beats it, save Ultimates for its ⚠ specials, and level the ninja you use most. See [Team composition](wiki:guide/team-composition).
 
-## The Daily challenge
+## The Daily challenges
 
-The Daily challenge opens once you clear {{arc:daily.unlockArc}}.
+The Daily challenges open once you clear {{arc:daily.unlockArc}}.
 
-- Every day it picks a boss from an arc you've already cleared, and you fight it at your current story level with a **twist**. The enemies are weaker than usual to make up for it, most of all on the twists that take something away from you:
+- Every day there are {{num:daily.challengesPerDay}} challenges. Each picks a boss from an arc you've already cleared, and you fight it at your current story level with a **twist**; the day's challenges all have different twists. The enemies are weaker than usual to make up for it, most of all on the twists that take something away from you:
   - **Locked nature:** every enemy fights with the day's nature.
   - **No Ultimates:** your Ultimates are sealed; the enemies still use their jutsu.
   - **Boss gauntlet:** several bosses back to back, and nobody heals between them.
   - **Countered:** every enemy takes the nature that beats your team's main nature.
-- You get {{num:daily.attemptsPerDay}} attempts a day. Your first clear pays {{num:daily.rewards.scrolls}} scrolls, plus Ryo that grows as you go further in the story.
-- A new challenge arrives at midnight, your local time. Everyone at the same point of the story gets the same challenge on the same day.
-- The Daily challenge can't be skipped: every attempt is a real fight. While today's challenge is waiting, the Home tab shows a red dot.
+- You get {{num:daily.attemptsPerDay}} attempts at each challenge. Your first clear of each pays {{num:daily.rewards.scrolls}} scrolls, plus Ryo that grows as you go further in the story.
+- New challenges arrive at midnight, your local time. Everyone at the same point of the story gets the same challenges on the same day.
+- Daily challenges can't be skipped: every attempt is a real fight. While a challenge is still open today, the Home tab shows a red dot.
 
-> Tap **👥 Edit team** on the Daily screen to build for today's fight: the nature matchups and **✨ Auto** then use the day's enemies, locked nature included. On a **Countered** day the enemies' nature follows your team, so bring your strongest ninja instead.
+> Tap **👥 Edit team** on a challenge's card to build for that fight: the nature matchups and **✨ Auto** then use its enemies, locked nature included. On a **Countered** challenge the enemies' nature follows your team, so bring your strongest ninja instead.
 
 ## The Boss Rush
 
@@ -33,4 +33,4 @@ The Daily challenge opens once you clear {{arc:daily.unlockArc}}.
 
 ## Achievements
 
-Hard mode and the Daily challenge both count toward [achievements](wiki:guide/achievements), including a Rare+ summon for clearing Part I on Hard.
+Hard mode and the Daily challenges both count toward [achievements](wiki:guide/achievements), including a Rare+ summon for clearing Part I on Hard.

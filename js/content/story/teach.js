@@ -62,8 +62,9 @@ export const TEACH = {
   ],
   // the Daily challenge unlocking (the Land of Waves closer) and its lobby's first visit
   dailyFirst: [
-    L('guy', 'The Daily challenge! A boss you\'ve beaten, back with a TWIST, every single day!'),
-    L('guy', '{{dailyAttempts}} attempts a day. The reward is paid on your first clear. Then you rest!'),
+    L('guy', 'The Daily challenges! Bosses you\'ve beaten, back with a TWIST, every single day!'),
+    L('guy', '{{dailyCount}} challenges a day, {{dailyAttempts}} attempts at each!'),
+    L('guy', 'Each one pays on its first clear. Then you rest!'),
     L('guy', 'You will NOT rest. You will come back tomorrow. That is the power of youth!'),
     L('lee', 'Guy-sensei, I have already set an alarm for tomorrow\'s challenge.'),
   ],

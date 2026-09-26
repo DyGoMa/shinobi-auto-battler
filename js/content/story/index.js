@@ -10,7 +10,7 @@ export { TEACH, RUSH_BARKS } from './teach.js';
 export const STORY = { ...PART1_STORY, ...SHIPPUDEN_A_STORY, ...SHIPPUDEN_B_STORY };
 
 /** The teaching scenes' placeholders and the balance value each one shows (js/core/Story.js teachValues). */
-export const TEACH_PLACEHOLDERS = ['single', 'ten', 'tenTier', 'pity', 'reserve', 'gap', 'rushCount', 'hardOffset', 'dailyAttempts', 'starBonus', 'starCap'];
+export const TEACH_PLACEHOLDERS = ['single', 'ten', 'tenTier', 'pity', 'reserve', 'gap', 'rushCount', 'hardOffset', 'dailyAttempts', 'dailyCount', 'starBonus', 'starCap'];
 
 /** Names the dialogue uses that are not a roster, enemy, arc, node, banner or jutsu name. */
 export const STORY_NAMES = [

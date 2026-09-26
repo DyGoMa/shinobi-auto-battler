@@ -82,7 +82,7 @@ for (const n of CONTENT.tutorial?.nodes || []) {
 if (!(B.tutorial?.enemyLevel >= 1)) errors.push('balance.tutorial.enemyLevel must be at least 1');
 
 // ---- achievements (numbers in balance.achievements) ---------------------------
-const NEEDS_TARGET = ['hardClears', 'ownCount', 'stat', 'rushRound', 'summons', 'dailies'];
+const NEEDS_TARGET = ['hardClears', 'ownCount', 'stat', 'rushRound', 'summons', 'dailies', 'stars', 'ownTier', 'levelReach'];
 for (const a of CONTENT.achievements || []) {
   const cfg = B.achievements?.list?.[a.id];
   if (!cfg) { errors.push(`balance.achievements.list.${a.id} is missing (every achievement needs its target and reward there)`); continue; }
