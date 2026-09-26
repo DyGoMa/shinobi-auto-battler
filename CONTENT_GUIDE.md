@@ -335,3 +335,4 @@ arc_waves: {
 * Voices, spoiler rules and the dub's names are in docs/STORY_PLAN.md §2; a name the dialogue introduces that no content file has goes into `STORY_NAMES` (`story/index.js`) with its source in `tools/naming-sources.mjs`.
 * Teaching scenes (`teach.js` `TEACH`) show numbers through `{{placeholders}}` (`TEACH_PLACEHOLDERS`; the values come from balance.js in `js/core/Story.js` `teachValues`). Never type a number into a line.
 * A new arc needs its entry (an opener, a closer, an intro per battle, boss lines and an outro per boss battle) and, if it joins the Boss Rush, a bark in `RUSH_BARKS`. `npm run validate` and `npm run test:core` refuse anything missing, a speaker that does not exist, a line over 90 characters or an unknown placeholder.
+* To read the whole story as a script: `node tools/story-script.mjs` writes `docs/STORY_SCRIPT.md` in play order (`--html file.html` for a page); re-run it after editing the lines.
