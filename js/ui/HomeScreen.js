@@ -71,7 +71,7 @@ export function render(game, ui) {
       how('📜', 'Summon and level', 'Scrolls summon ninja (Genin to Kage). Ryo levels them up. Duplicates add stars, and every tier stays useful.'),
     ),
     rush || isArcCleared(state, C.arc.arc_tea) ? null : h('p.small.dim', { style: { marginTop: '14px' } }, `Tip: replaying a cleared battle pays Ryo, which helps when a boss is a wall. Ninja ${B.economy.catchUp.gap}+ levels behind your best one level up at a discount.`),
-    h('p.tiny.dim', { style: { marginTop: '20px' } }, 'Fan-made, non-commercial project. Naruto is © Masashi Kishimoto / Shueisha / Studio Pierrot. No official artwork is used: characters are shown as coloured tokens with initials.'),
+    h('p.tiny.dim', { style: { marginTop: '20px' } }, 'Fan-made, non-commercial project. Naruto is © Masashi Kishimoto / Shueisha / Studio Pierrot. All art and sound are original: drawn in code or generated for this project, nothing taken from the show.'),
   );
 }
 

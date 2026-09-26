@@ -61,9 +61,11 @@ function card(game, ui, d) {
   const own = state.roster[d.id];
   const avail = isCharacterAvailable(state, d, C);
   if (!own) {
-    return h('div.char-card.locked', { onclick: () => openDetail(game, ui, d) },
-      avatar(d, { unknown: !avail && !d.unlock?.achievement }),
-      h('div.name', avail || d.unlock?.achievement ? d.name : '???'),
+    // A ninja the story has not reached yet stays a silhouette: no name, no page (no spoilers).
+    const hidden = !avail && !d.unlock?.achievement;
+    return h('div.char-card.locked', { onclick: () => hidden ? ui.toast(`A ninja you haven't met yet. They join after ${C.arc[d.unlock?.arcCleared || d.unlock?.arcReached]?.name || 'a later arc'}.`) : openDetail(game, ui, d) },
+      avatar(d, { unknown: hidden }),
+      h('div.name', hidden ? '???' : d.name),
       h('div.meta', tierTag(d.tier)),
       h('div.tiny.dim', d.unlock?.achievement ? `🏆 Earn “${C.achievement[d.unlock.achievement].name}” to recruit` : avail ? 'Not recruited — summon to unlock' : `Joins after ${C.arc[d.unlock.arcCleared || d.unlock.arcReached]?.name}`),
     );
@@ -97,6 +99,7 @@ export function openDetail(game, ui, d) {
       for (let i = 0; i < times; i++) { const r = levelUp(state, d.id, B); if (!r.ok) break; done++; spent += r.cost; }
       if (done) { game.audio.levelUp(); game.commit('levelup'); ui.toast(`${d.short} reached Lv ${state.roster[d.id].level} (−${fmt(spent)} Ryo)`, 'good'); }
       rerender();
+      if (done) { const a = holder.querySelector('.avatar'); if (a) { a.classList.add('levelup', 'bump'); } }
     };
     return h('div',
       tipCard(game, 'character'),

@@ -67,6 +67,6 @@ export function render(game, ui) {
     // buttons never move (never on a desktop, never in the app).
     installNotice(game, ui),
     h('div.start-foot',
-      h('p.tiny.dim', 'Fan-made, non-commercial. Naruto © Masashi Kishimoto / Shueisha / Studio Pierrot. No official artwork or audio.'),
+      h('p.tiny.dim', 'Fan-made, non-commercial. Naruto © Masashi Kishimoto / Shueisha / Studio Pierrot. Original art and sound, nothing taken from the show.'),
       h('span.build-stamp', game.build?.label || 'dev')));
 }

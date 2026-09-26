@@ -14,6 +14,9 @@ import { tutorialPending, tutorialLessons, nextLessonIndex } from '../core/Tutor
 import { tipCard } from './tips.js';
 import { screenHead } from './chrome.js';
 import { openLevelToRecommended } from './AutoLevelDialog.js';
+import { icon } from '../render/icons.js';
+import { Stage, stageDefFor, W as STAGE_W, GROUND_Y } from '../render/Stage.js';
+import { prefersReducedMotion } from './Intro.js';
 
 const PART_NAME = { 1: 'Part I', 2: 'Part II' };
 const showCleared = {};   // `${part}:${hard}` -> the cleared arcs are unfolded
@@ -89,10 +92,46 @@ export function render(game, ui, params) {
   );
 }
 
-/** After the map is on the page: bring the current (or chosen) battle into view. */
+/** After the map is on the page: bring the current (or chosen) battle into view, and start the backdrop. */
 export function afterRender(el) {
-  const target = el.querySelector('.node.selected') || el.querySelector('.node.current');
+  const target = el.querySelector('.pin.selected') || el.querySelector('.pin.current');
   if (target) target.scrollIntoView({ block: 'center', behavior: 'auto' });
+  const box = el.querySelector('.map-stage');
+  if (box && box._start) box._start();
+}
+
+/**
+ * The arc's stage behind the battle pins: the same drawn stage as the battle, dimmed, with a
+ * slow pan and its weather. Drawn once at once (so a hidden page still shows it) and then at
+ * ~30 fps while it is on screen; a phone in Low effects or reduced motion gets the still.
+ */
+function mapStage(game, arc) {
+  const box = h('div.map-stage');
+  const canvas = h('canvas.bg', { 'aria-hidden': 'true' });
+  box.appendChild(canvas);
+  const def = stageDefFor({ arcId: arc.id }, arc.theme);
+  const stage = new Stage(def);
+  const g = canvas.getContext('2d');
+  const still = prefersReducedMotion() || game.state.settings.vfx === 'low';
+  let t = 0, raf = 0, last = 0;
+  const draw = (dt) => {
+    const r = box.getBoundingClientRect(); const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const pw = Math.max(1, Math.round((r.width || 640) * dpr)), ph = Math.max(1, Math.round((r.height || 400) * dpr));
+    if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
+    const sc = Math.max(pw / STAGE_W, ph / (GROUND_Y + 100));
+    g.setTransform(sc, 0, 0, sc, (pw - STAGE_W * sc) / 2, 0);
+    stage.draw(g, dt, { x: still ? 0 : Math.sin(t * 0.2) * 20, zoom: 1 }, 0.12, !still);
+  };
+  const frame = (now) => {
+    if (!box.isConnected) return;
+    raf = requestAnimationFrame(frame);
+    if (now - last < 33) return;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    draw(dt);
+  };
+  box._start = () => { draw(0); if (!still) { last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); } };
+  box.appendChild(h('div.stage-name', def.name));
+  return box;
 }
 
 /** Part I's first card while the tutorial is still to do. */
@@ -117,7 +156,7 @@ function arcCard(game, ui, a, selected, cur, hard, V) {
     { onclick: () => reached ? ui.go('story', { arcId: a.id, hard }) : ui.toast(hard ? `Clear ${a.name}'s previous arc on Hard first.` : `Clear the previous arc to reach ${a.name}.`), role: 'button', tabindex: '0', 'aria-label': `${a.name}: ${done} of ${a.nodes.length} cleared${hard ? ' on Hard' : ''}${reached ? '' : ', locked'}` },
     reached ? null : h('span.lock', { 'aria-hidden': 'true' }, '🔒'),
     h('h3', a.name),
-    h('div.eps', `${episodesLabel(a.episodes)} · ${a.nodes.length} battles`),
+    h('div.eps', `${episodesLabel(a.episodes)} · ${a.nodes.length} battles`, a.filler ? h('span.pill.side', { style: { marginLeft: '8px' } }, 'Side mission') : null),
     h('div.prog', h('div.bar', h('i', { style: { width: `${(done / a.nodes.length) * 100}%` } })), h('div.tiny.muted', { style: { marginTop: '4px' } }, V.arcCleared(a) ? (hard ? '✓ Cleared on Hard' : '✓ Arc cleared') : `${done} / ${a.nodes.length} cleared${hard ? ' on Hard' : ''}`)),
   );
   card.style.setProperty('--a1', a.theme?.accent || '#555');
@@ -131,39 +170,41 @@ function arcDetail(game, ui, arc, nodeId, hard, V) {
   const sel = (nodeId && C.node[nodeId]?.arcId === arc.id) ? C.node[nodeId]
     : (cur && cur.arcId === arc.id ? cur : arc.nodes[arc.nodes.length - 1]);
 
-  const map = h('div.node-map');
-  map.style.setProperty('--m1', arc.theme?.far || '#1b2633');
-  const row = h('div.node-row', { style: { gridTemplateColumns: `repeat(${arc.nodes.length}, 1fr)` } });
+  // The battle pins over the arc's stage: a winding path across the picture, the boss last.
+  const map = mapStage(game, arc);
+  const n = arc.nodes.length;
+  const posOf = (i) => ({ x: ((i + 0.5) / n) * 100, y: n === 1 ? 58 : 44 + (i % 2 ? 22 : 0) + (i === n - 1 ? -6 : 0) });
   let hinted = false;
-  arc.nodes.forEach((n, i) => {
-    const cleared = V.cleared(n);
-    const unlocked = V.unlocked(n);
-    const isCur = cur && cur.id === n.id;
-    const prev = C.nodes[n.globalIndex - 1];
+  arc.nodes.forEach((node, i) => {
+    const cleared = V.cleared(node);
+    const unlocked = V.unlocked(node);
+    const isCur = cur && cur.id === node.id;
+    const prev = C.nodes[node.globalIndex - 1];
     const hint = !unlocked && prev ? `Clear ${prev.name} first` : null;
-    const rec = recommendedPower(n, C, B, { hard });
-    const cls = ['node', n.isBossNode ? 'boss' : '', cleared ? 'cleared' : '', isCur ? 'current' : '', !unlocked ? 'locked' : '', sel.id === n.id ? 'selected' : ''].filter(Boolean).join('.');
-    const b = h('button.' + cls, { type: 'button', style: { marginTop: i % 2 ? '26px' : '0' }, title: hint || null, onclick: () => ui.go('story', { arcId: arc.id, nodeId: n.id, hard }),
-      'aria-label': `${n.name}${cleared ? ', cleared' : isCur ? ', next battle' : unlocked ? '' : `, locked: ${hint}`}. Recommended power ${fmt(rec)}.`, 'aria-current': sel.id === n.id ? 'true' : null },
-      h('div.dot', cleared ? '✓' : !unlocked ? '🔒' : n.isBossNode ? '👑' : String(i + 1)),
-      h('div.lbl', n.name),
+    const rec = recommendedPower(node, C, B, { hard });
+    const cls = ['pin', node.isBossNode ? 'boss' : '', cleared ? 'cleared' : '', isCur ? 'current' : '', !unlocked ? 'locked' : '', sel.id === node.id ? 'selected' : ''].filter(Boolean).join('.');
+    const p = posOf(i);
+    const b = h('button.' + cls, { type: 'button', style: { left: `${p.x}%`, top: `${p.y}%` }, title: hint || null, onclick: () => ui.go('story', { arcId: arc.id, nodeId: node.id, hard }),
+      'aria-label': `${node.name}${cleared ? ', cleared' : isCur ? ', next battle' : unlocked ? '' : `, locked: ${hint}`}. Recommended power ${fmt(rec)}.`, 'aria-current': sel.id === node.id ? 'true' : null },
+      cleared ? icon('check') : !unlocked ? icon('lock') : node.isBossNode ? icon('crown') : String(i + 1),
+      h('div.lbl', node.name),
       h('div.rec', { 'aria-hidden': 'true' }, `⚡${shortPower(rec)}`),
       // The first locked battle says what opens it (the others say it on tap and to screen readers).
       hint && !hinted ? h('div.hint', { 'aria-hidden': 'true' }, hint) : null);
     if (hint) hinted = true;
-    row.appendChild(b);
+    map.appendChild(b);
   });
-  // connecting path
+  // the path between the pins
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('class', 'path'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('viewBox', '0 0 100 100'); svg.setAttribute('aria-hidden', 'true');
-  const pts = arc.nodes.map((_, i) => `${((i + 0.5) / arc.nodes.length) * 100},${i % 2 ? 46 : 30}`).join(' ');
   const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-  pl.setAttribute('points', pts); pl.setAttribute('fill', 'none'); pl.setAttribute('stroke', 'rgba(255,255,255,0.22)'); pl.setAttribute('stroke-width', '1.2'); pl.setAttribute('stroke-dasharray', '2 2'); pl.setAttribute('vector-effect', 'non-scaling-stroke');
+  pl.setAttribute('points', arc.nodes.map((_, i) => { const p = posOf(i); return `${p.x},${p.y}`; }).join(' '));
+  pl.setAttribute('fill', 'none'); pl.setAttribute('stroke', 'rgba(255,255,255,0.45)'); pl.setAttribute('stroke-width', '2'); pl.setAttribute('stroke-dasharray', '6 5'); pl.setAttribute('vector-effect', 'non-scaling-stroke'); pl.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(pl);
-  map.append(svg, row);
+  map.appendChild(svg);
 
   return h('div',
-    h('div.section-title', h('h2', arc.name), h('span.pill', episodesLabel(arc.episodes))),
+    h('div.section-title', h('h2', arc.name), h('div.row.tight', arc.filler ? h('span.pill.side', 'Side mission') : null, h('span.pill', episodesLabel(arc.episodes)))),
     h('p', arc.blurb),
     map,
     h('p.tiny.dim.map-legend', '✓ cleared · glowing = next battle · 🔒 locked · ⚡ recommended team power'),
