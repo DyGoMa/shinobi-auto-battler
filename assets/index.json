@@ -1,6 +1,8 @@
 {
   "files": [
     "assets/portraits/e_mizuki.webp",
+    "assets/portraits/hd/naruto_p1.webp",
+    "assets/portraits/hd/naruto_p2.webp",
     "assets/portraits/hd/sakura_p1.webp",
     "assets/portraits/kakashi_p1.webp",
     "assets/portraits/kakashi_p2.webp",
@@ -13,6 +15,7 @@
     "assets/portraits/zabuza.webp",
     "assets/sprites/e_mizuki.webp",
     "assets/sprites/hd/naruto_p1.webp",
+    "assets/sprites/hd/naruto_p2.webp",
     "assets/sprites/kakashi_p1.webp",
     "assets/sprites/kakashi_p2.webp",
     "assets/sprites/naruto_p1.webp",
@@ -129,13 +132,13 @@
       "feet": 0.98
     },
     "assets/sprites/naruto_p1.webp": {
-      "top": 0.195,
-      "chin": 0.414,
+      "top": 0.08,
+      "chin": 0.246,
       "feet": 0.98
     },
     "assets/sprites/naruto_p2.webp": {
-      "top": 0.207,
-      "chin": 0.445,
+      "top": 0.067,
+      "chin": 0.212,
       "feet": 0.98
     },
     "assets/sprites/sakura_p1.webp": {

@@ -6,7 +6,7 @@
   },
   "status": {
     "portrait:naruto_p2": {
-      "savedAt": "2026-09-26T20:50:23.410Z",
+      "savedAt": "2026-09-27T07:46:26.960Z",
       "leftover": 0,
       "flip": false
     },
@@ -41,7 +41,7 @@
       "flip": false
     },
     "sprite:naruto_p2": {
-      "savedAt": "2026-09-26T21:04:55.849Z",
+      "savedAt": "2026-09-27T07:35:07.491Z",
       "leftover": 0,
       "flip": false
     },
@@ -86,14 +86,31 @@
       "flip": false
     },
     "sprite:naruto_p1": {
-      "savedAt": "2026-09-27T02:48:50.010Z",
-      "leftover": 10833,
+      "savedAt": "2026-09-27T07:34:34.245Z",
+      "leftover": 0,
+      "flip": false
+    },
+    "portrait:naruto_p1": {
+      "savedAt": "2026-09-27T07:34:08.282Z",
+      "leftover": 0,
       "flip": false
     }
   },
   "meta": {
     "sprite:sakura_p1": {
       "generator": ""
+    },
+    "sprite:naruto_p1": {
+      "generator": "gemini"
+    },
+    "sprite:naruto_p2": {
+      "generator": "chatgpt"
+    },
+    "portrait:naruto_p1": {
+      "generator": "gemini"
+    },
+    "portrait:naruto_p2": {
+      "generator": "gemini"
     }
   },
   "base": {}

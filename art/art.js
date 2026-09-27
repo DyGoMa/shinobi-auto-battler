@@ -189,6 +189,7 @@ const CHECKLIST = {
     'Attach the files below in the order listed (Image 1 first), then paste the prompt and send.',
     'On a picture you like, open More and choose Redo with Pro: that redraws it with Nano Banana Pro, Gemini\'s best image model. Download the Pro version at full size (2K on your plan).',
     'To fix one detail, reply in the same chat: "Change only [the detail]. Keep the pose, proportions, line weight, colours and background exactly the same." For proportions, start a new chat instead.',
+    'Gemini cannot zoom out a picture it made (it says it did, and changes nothing). If a portrait is framed too close, shrink it onto a bigger canvas of the same background colour and ask Gemini, in a new chat, to complete the cut-off body into the empty area.',
   ],
   chatgpt: [
     'Start a new chat for this image (an old chat carries its pictures and drifts).',
@@ -379,7 +380,7 @@ async function loadFromUrl(e, url, { keyed = false } = {}) {
   let info;
   // the untouched pixels, so the key-strength slider can key again from the original
   const orig = keyed ? null : new ImageData(new Uint8ClampedArray(d.data), c.width, c.height);
-  if (keyed) { state.bg = null; info = { keyed: 0, holes: 0, already: true }; }
+  if (keyed) { state.bg = null; info = { keyed: 0, holes: 0, already: true, checkedFor: KEY_RGB[e.keyColour] ? e.keyColour : 'magenta' }; }
   else { const r = keyBackground(d.data, c.width, c.height, { strength: state.strength }); state.bg = r.bg; info = r; g.putImageData(d, 0, 0); }
   state.work = { canvas: c, ctx: g, source: keyed ? 'game' : 'file', flip: false, info, orig };
   state.history = [];
@@ -438,7 +439,7 @@ function headReadoutContent(e) {
   if (st.kind === 'giant') return h('div.art-warn.info', 'A giant: drawn at one fixed size, so there is no head check. Put the soles line on the lowest point it stands on.');
   const what = st.cm ? `${st.cm} cm${st.estimated ? ' (estimated)' : ''}` : 'no height yet';
   const target = c.target ? `the target is ${c.target.toFixed(2)} heads (${what})` : `no target (${what})`;
-  if (state.marks.guessed) return h('div.art-warn.info', `Drag the cyan line to the top of the skull (under the hair) and the yellow one to the chin. Guessed now: ${c.heads.toFixed(2)} heads tall; ${target}.`);
+  if (state.marks.guessed) return h('div.art-warn.info', `Drag the cyan line to the top of the skull and the yellow one to the chin. With tall hair, a hat or anything on the head, put the skull line where the skull would be without it: a little above the headband, below where the hair starts to rise. Guessed now: ${c.heads.toFixed(2)} heads tall; ${target}.`);
   if (c.ok) return h('div.art-warn.good', `✓ ${c.heads.toFixed(2)} heads tall; ${target}. Same head size as Part I Naruto.`);
   return h('div.art-warn.bad', `⚠ ${c.heads.toFixed(2)} heads tall, but ${target}: the head is about ${Math.round(Math.abs(c.target / c.heads - 1) * 100)}% too ${c.off < 0 ? 'big' : 'small'}. Regenerate it (attach Part I Naruto's sprite as the reference), or save it anyway: the game still draws it at the right height.`);
 }
@@ -454,11 +455,18 @@ async function saveMarks(e) {
 function snapshot() { const { canvas, ctx } = state.work; state.history.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (state.history.length > 8) state.history.shift(); }
 function undo(e) { const im = state.history.pop(); if (!im) return; state.work.ctx.putImageData(im, 0, 0); renderWork(e); }
 
-/** The leftover check: opaque patches coloured like the background (or, for the game's own file, like white or magenta). */
+// a key colour's name (the manifest's keyColour) as rgb
+const KEY_RGB = { magenta: [255, 0, 255], green: [0, 255, 0], cyan: [0, 255, 255], yellow: [255, 255, 0] };
+/**
+ * The leftover check: opaque patches coloured like the background. For the game's own file (already
+ * keyed) the background is gone, so it looks for the image's key colour only: checking white too
+ * flagged white clothing (Naruto's fur collar) as background.
+ */
 function checkLeftovers() {
   const { canvas, ctx } = state.work; const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const minHole = Math.max(DEFAULTS.minHole, Math.round(DEFAULTS.warnHoleFrac * canvas.width * canvas.height));
-  const bgs = state.bg ? [state.bg] : [[255, 255, 255], [255, 0, 255]];
+  const e = state.entries.find(x => x.key === state.key);
+  const bgs = state.bg ? [state.bg] : [KEY_RGB[e?.keyColour] || KEY_RGB.magenta];
   let patches = [];
   for (const bg of bgs) patches = patches.concat(leftovers(d.data, canvas.width, canvas.height, bg, { holeTol: DEFAULTS.holeTol, minHole }));
   patches.sort((a, b) => b.size - a.size);
@@ -494,7 +502,7 @@ function renderWork(e) {
     ? (state.marks ? btn('📏 Save head marks', () => saveMarks(e), 'primary') : h('span.small.muted', 'To change it, reprocess the original or drop a new picture, then save.'))
     : btn('💾 Save to the game', () => save(e, check), 'primary');
   const size = `${w.canvas.width} × ${w.canvas.height}`;
-  const info = w.info.already ? `the game's file (${size}); checked for white and magenta leftovers` : `${size} · background ${state.bg ? `rgb(${state.bg.join(', ')})` : '?'} · ${Math.round(w.info.keyed * 100)}% keyed${w.info.holes ? ` · ${w.info.holes} enclosed patch${w.info.holes === 1 ? '' : 'es'} removed` : ''}${w.info.inked ? ` · lines to black (${w.info.inked.toLocaleString('en-US')} px)` : ''}${w.info.outline?.added ? ` · outline ${w.info.outline.measured} → ${w.info.outline.target} px` : w.info.outline?.target ? ` · outline ${w.info.outline.measured} px, already at weight` : ''}`;
+  const info = w.info.already ? `the game's file (${size}); checked for ${w.info.checkedFor || 'key colour'} leftovers` : `${size} · background ${state.bg ? `rgb(${state.bg.join(', ')})` : '?'} · ${Math.round(w.info.keyed * 100)}% keyed${w.info.holes ? ` · ${w.info.holes} enclosed patch${w.info.holes === 1 ? '' : 'es'} removed` : ''}${w.info.inked ? ` · lines to black (${w.info.inked.toLocaleString('en-US')} px)` : ''}${w.info.outline?.added ? ` · outline ${w.info.outline.measured} → ${w.info.outline.target} px` : w.info.outline?.target ? ` · outline ${w.info.outline.measured} px, already at weight` : ''}`;
   wrap.replaceChildren(...[
     h('div.art-actions', flipBtn, rekey, wandBtn, undoBtn, saveBtn),
     slider,
@@ -552,7 +560,7 @@ function rekeyFromOriginal(e, strength) {
 function setWarnEl(check) {
   if (!check.patches.length) return h('div.art-warn.good', '✓ No leftover background found. Look at the four backgrounds below to be sure.');
   const big = check.patches[0];
-  return h('div.art-warn.bad', `⚠ ${check.patches.length} patch${check.patches.length === 1 ? '' : 'es'} of background colour still opaque (${check.pixels.toLocaleString('en-US')} px; the biggest ${big.size.toLocaleString('en-US')} px at ${big.x0}–${big.x1}, ${big.y0}–${big.y1}), outlined in red. The whites of the eyes trigger this on a white background: if it is art, leave it; if it is background, switch the wand on and click it.`);
+  return h('div.art-warn.bad', `⚠ ${check.patches.length} patch${check.patches.length === 1 ? '' : 'es'} of background colour still opaque (${check.pixels.toLocaleString('en-US')} px; the biggest ${big.size.toLocaleString('en-US')} px at ${big.x0}–${big.x1}, ${big.y0}–${big.y1}), outlined in red. Clothing or eyes in a colour close to the background can trigger this: if it is art, leave it; if it is background, switch the wand on and click it.`);
 }
 function setWarn(text, cls) { const wrap = $('#workWrap'); if (wrap) wrap.replaceChildren(h('div.art-warn.' + cls, text)); }
 function flipCanvas() { const { canvas, ctx } = state.work; const copy = document.createElement('canvas'); copy.width = canvas.width; copy.height = canvas.height; copy.getContext('2d').drawImage(canvas, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.drawImage(copy, 0, 0); ctx.restore(); }

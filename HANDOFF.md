@@ -2,7 +2,23 @@
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
 
-## The art pass, session of 2026-09-26 (where it stands, and what is next)
+## The reference set is done (session of 2026-09-27)
+
+All four Naruto pictures are saved and live: Part I sprite and portrait (Gemini), Shippuden sprite (ChatGPT) and portrait (Gemini). Every other character is built against them. Checks green: `npm run validate`, **381 core tests**, no balance change.
+
+**Proportions are anime-true.** The user supplied official Part I / Part II art: it measures about 5.8 and 6.4 heads (skull line about a quarter of a head above the headband, the user's convention for anyone with tall hair or headgear). Both generators kept drawing those proportions against our old 4.3–4.5 target, so the user chose anime-true for the whole cast. Part I Naruto's saved marks give **5.42 heads** = `REF_HEADS` (`js/core/stature.js`); Shippuden Naruto is 6.30 against his 6.1 target (the two heads within 3 % in real size). Sprite prompts now also give the head as a share of the image height (`90 / heads` %, Part I Naruto ≈ 17 %). **Whenever Part I Naruto's marks change, reset `REF_HEADS` from `assets/index.json` figures and run `node tools/manifest.mjs`**; nothing does it automatically.
+
+**Canon outfit fixes** (checked against the official art): Shippuden sleeves are black to the wrists, black collar, shoulders and front panel, orange side panels; both eras wear a closed kunai holster on the right thigh over a bandage wrap; Shippuden trousers end below the knee, tall charcoal sandals; Naruto grins with his teeth showing (other characters' descriptions keep "held closed"). `NARUTO_P2_BODY` joins `NARUTO_P1_BODY` in `tools/prompt-builder.mjs`.
+
+**Methods that worked (use them for the rest of the cast):**
+* **Cut-out edits.** Gemini redraws the whole figure (and shrinks the head) when asked to add something to a full sprite, and it cannot zoom out a picture it made (it says it did and changes nothing). So: crop only the area to change (a thigh, the face, a sleeve), have Gemini edit just that crop in a new chat, then paste it back. The paste-back scripts align the edit to the crop (scale ±5 %, offset ±12 px; every edit so far landed at scale 1, offset 0), replace only the pixels that changed inside the zone, feather the edge, and for a transparent sprite keep the original alpha and stay about 9 px inside the silhouette so the original outline survives. The scripts are one-offs in the session scratchpad, not in `tools/`; worth turning into a studio tool if the cast needs many fixes.
+* **Portraits from the sprite.** Reference images are not enough for Gemini to change a face it has drawn (a remake with the new sprite attached came back 96 % identical to the old portrait). Instead: crop the sprite's head and chest to the portrait framing (hair top about 6 % from the top, chin about 58 % down, crop at the chest), enlarge it to 2000 px on the key colour, and ask Gemini to redraw it crisply without changing anything. The face then matches the sprite exactly. Skip Redo with Pro on these, it drifts the face.
+* **Proportion fix without a generator.** Part I Naruto's head was 10 % bigger than Shippuden's in real size; his body below the chin was stretched 6 % (seamless, anchored at the chin row), which brought them level.
+* **Small studio fixes this session:** the leftover check on a saved file looks only for the entry's key colour (it used to flag Naruto's white fur collar); the Gemini checklist warns that Gemini cannot zoom out; the portrait framing wording gives positions (medium close-up, hair ~6 % from the top, chin ~58 %); the portrait of Part I Naruto attaches his current portrait for framing plus his sprite for the face; a doubled article in headband descriptions is gone.
+
+**Next:** the rest of the cast, in story order. Sprite: attach Naruto's sprite of the era, generate (ChatGPT follows proportions better; Gemini gives crisper lines), check the head count in the studio, fix details with cut-outs. Portrait: build it from the character's own sprite as above.
+
+## The art pass, session of 2026-09-26 (superseded where the section above differs)
 
 Everything below is committed. Checks green: `npm run validate`, syntax, **381 core tests**, sim and campaign unchanged (no balance change). The user makes the pictures in Gemini (Google AI Pro) and ChatGPT (Plus); the art studio (`npm run serve`, then `/art.html`; hard-refresh or add `?v=N` when a page looks stale, the browser caches the modules) does the rest. The user's standing art direction is in the memory note `sprite-proportions-and-portrait-framing`.
 

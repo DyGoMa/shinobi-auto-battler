@@ -6,7 +6,7 @@
 import { HEIGHTS } from '../content/heights.js';
 
 export const REF_CM = HEIGHTS.naruto?.p1 ?? 147.5;   // Naruto, end of Part I (databook): the reference figure
-export const REF_HEADS = 4.3;                // his height in heads (the reference set's target: slim, anime-close; re-measured from his new sprite's marks)
+export const REF_HEADS = 5.42;               // his height in heads, measured from his sprite's marks (assets/index.json figures): (feet - top) / (chin - top)
 export const HEAD_CM = REF_CM / REF_HEADS;   // one head, in canon centimetres (about 41 cm)
 export const GIANT_SCALE = 2.5;              // a giant stands 2.5× Part I Naruto (about twice Kakashi)
 export const DEFAULT_CM = 165;               // anyone the table misses (flagged by tools/validate.mjs)

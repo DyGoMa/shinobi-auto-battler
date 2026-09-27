@@ -2,6 +2,7 @@
 
 ## Coming with the art (in progress)
 
+- **New Naruto art.** Part I and Shippuden Naruto have new full-body art and portraits, drawn to the anime's own proportions and outfits (the kunai holster on his thigh, the black sleeves in Shippuden). The rest of the cast follows.
 - **Everyone stands at their real height.** Every ninja is drawn at their canon height for the part of the story (from the databooks), with the same head size for everyone, so Kakashi towers over Team 7 and Onoki is tiny. Bosses no longer get a size boost; giant beasts share one giant size.
 - **Settings → Image quality** (Auto / High / Standard). Auto loads the large art on a computer or tablet and the lighter art on a phone; High or Standard picks one for you.
 - **Enemies you already know look like themselves.** Kakashi in the Survival Test, Sasuke, Mizuki and every other familiar face fought as an enemy now uses their full art instead of a stand-in figure.
