@@ -17,13 +17,45 @@
 //   assets/portraits/<id>_p1.webp     the Part I outfit of a character who fights in both parts
 //   assets/portraits/<id>_p2.webp     the Shippuden outfit, likewise
 //   assets/sprites/<id>.webp          the full-body still (same era rules with _p1 / _p2)
+//
+// Two sizes: each image may also exist in a large "hd" copy (assets/portraits/hd/<id>.webp at 768,
+// assets/sprites/hd/<id>.webp at 1024) beside the standard one (256 / 512). The quality setting picks
+// the set: 'high' prefers hd, 'standard' prefers the standard file, each falling back to the other
+// when only one exists (art saved before the two sizes). 'auto' picks by the screen: high on PCs and
+// big tablets, standard on phones and small tablets. A device only ever loads the set it picked.
 export const ERAS = ['p1', 'p2'];
+export const QUALITIES = ['auto', 'high', 'standard'];
+export const PORTRAIT_HD_PX = 768, SPRITE_HD_PX = 1024;
+/**
+ * What 'auto' means on this device: high when the screen's short side is at least 700 CSS px (a PC or a
+ * big tablet), standard below (a phone or a small tablet). A screen that reports no size yet (a page
+ * opened in the background) falls back to the window's size.
+ */
+export function autoQuality() {
+  try {
+    const sc = globalThis.screen || {}, w = globalThis.window || {};
+    const width = sc.width || w.innerWidth || 0, height = sc.height || w.innerHeight || 0;
+    return Math.min(width, height) >= 700 ? 'high' : 'standard';
+  } catch { return 'standard'; }
+}
+/** Apply the setting ('auto' | 'high' | 'standard'). Auto is decided each time an image is picked. Returns the set in use now. */
+export function setQuality(setting) { registry.setting = setting === 'high' || setting === 'standard' ? setting : 'auto'; return quality(); }
+export function quality() { return registry.setting === 'auto' ? autoQuality() : registry.setting; }
+export const hdOf = (path) => path.replace(/^assets\/(portraits|sprites)\//, 'assets/$1/hd/');
+export const baseOf = (path) => path.replace(/^assets\/(portraits|sprites)\/hd\//, 'assets/$1/');
+/** The file to load for a standard path: its hd copy on high (when it exists), else itself, else the other. */
+function pick(path) {
+  const hd = hdOf(path);
+  if (quality() === 'high') return known(hd) ? hd : known(path) ? path : null;
+  return known(path) ? path : known(hd) ? hd : null;
+}
 
 const registry = {
   ready: false,           // the index has been read (or failed)
   files: new Set(),       // paths that exist, from assets/index.json
   reuse: new Map(),       // enemy id → the id whose art it wears, from assets/index.json
   figures: new Map(),     // sprite path → { top, chin, feet }: the skull, chin and soles (fractions of the image height)
+  setting: 'standard',    // the image quality setting: 'auto' | 'high' | 'standard' (setQuality; the game starts it from Settings)
   images: new Map(),      // path → Image (loaded) | null (failed)
   loading: new Map(),     // path → Promise
   listeners: new Map(),   // path → Set<fn>
@@ -49,7 +81,7 @@ export async function loadIndex({ fetchFn = globalThis.fetch, base = null } = {}
 /** For tests and tools: seed the index without a fetch. */
 export function setIndex(files, reuse = {}, figures = {}) { registry.files = new Set(files); registry.reuse = new Map(Object.entries(reuse)); registry.figures = new Map(Object.entries(figures)); registry.ready = true; }
 /** A sprite's figure record (where the top of the skull and the soles are), or null. */
-export function figureOf(path) { return (path && registry.figures.get(path)) || null; }
+export function figureOf(path) { return (path && registry.figures.get(baseOf(path))) || null; }   // the hd copy shares its standard file's record
 /** The id whose art `id` wears when it has none of its own (or null). */
 export function reusedId(id) { return registry.reuse.get(id) || null; }
 export function known(path) { return registry.files.has(path); }
@@ -71,8 +103,9 @@ export function spriteCandidates(id, era = null) {
 }
 /** The first candidate that exists in the index, or null. */
 // An id's own files win; with none, the art it reuses (its roster twin or an earlier fight's enemy).
-export function portraitPath(id, era = null) { const r = reusedId(id); return portraitCandidates(id, era).find(known) || (r && portraitCandidates(r, era).find(known)) || null; }
-export function spritePath(id, era = null) { const r = reusedId(id); return spriteCandidates(id, era).find(known) || (r && spriteCandidates(r, era).find(known)) || null; }
+const firstPick = (list) => { for (const c of list) { const p = pick(c); if (p) return p; } return null; };
+export function portraitPath(id, era = null) { const r = reusedId(id); return firstPick(portraitCandidates(id, era)) || (r && firstPick(portraitCandidates(r, era))) || null; }
+export function spritePath(id, era = null) { const r = reusedId(id); return firstPick(spriteCandidates(id, era)) || (r && firstPick(spriteCandidates(r, era))) || null; }
 
 /** The loaded image for a path (or null), starting the download if it has not started. */
 export function image(path) {

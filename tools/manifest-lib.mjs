@@ -3,8 +3,9 @@
 // file it will be saved as, the name to drop it in /incoming under, the pixel sizes, who faces
 // which way, and the full Gemini prompt (the style anchor + the character + the facing).
 // Pure: no file system here (tools/manifest.mjs and tools/ingest.mjs write the files).
-import { STYLE_ANCHOR, SPRITE_ANCHOR, FACE_RIGHT, FACE_LEFT, VILLAGE_PLATE, DESCRIPTIONS, ALIASES } from './prompts-data.mjs';
-import { statureOf, proportionsLine } from '../js/core/stature.js';
+import { VILLAGE_PLATE, DESCRIPTIONS, ALIASES } from './prompts-data.mjs';
+import { statureOf } from '../js/core/stature.js';
+import { buildPrompts } from './prompt-builder.mjs';
 
 /** The dual-era characters (ART_BIBLE §3.5): a Part I and a Shippuden file each. */
 export const DUAL_ERA = ['naruto', 'sakura', 'sasuke', 'kakashi', 'shikamaru', 'choji', 'ino', 'kiba', 'shino', 'hinata', 'neji', 'lee', 'tenten', 'guy', 'asuma', 'kurenai', 'gaara', 'temari', 'kankuro', 'jiraiya', 'tsunade', 'shizune', 'orochimaru', 'kabuto', 'iruka'];
@@ -40,14 +41,20 @@ export function buildManifest(C, { now = new Date().toISOString(), overrides = n
     if (d.one) return d.one;
     return d[era] || d.p2 || d.p1 || null;
   };
-  const prompt = (anchor, desc, facing, extra = '') => `${anchor}\n\nCHARACTER: ${desc}\n${extra ? extra + '\n' : ''}${facing === 'left' ? FACE_LEFT : FACE_RIGHT}`;
-  const push = ({ id, key, name, era, facing, desc, note = '' }) => {
-    portraits.push({ id, name, era, facing, file: `assets/portraits/${id}.webp`, incoming: id, px: PORTRAIT_PX, generate: GENERATE_PX, aspect: '1:1', usage: PORTRAIT_USAGE, flip: false, note, prompt: prompt(STYLE_ANCHOR, desc, facing) });
-    // The sprite's target: its canon height and its height in heads (the studio checks the head marks against it).
+  // Every picture faces the viewer's right: the game mirrors the enemy side itself (Renderer, avatar()).
+  const push = ({ id, key, name, era, desc, note = '' }) => {
+    const facing = 'right';
     const plain = name.replace(/\s*\((Part I|Shippuden)\)$/, '').replace(/\s+—\s+.*$/, '');
-    const st = statureOf(id, era, { reuse: (k) => ALIASES[k] || null });
+    const reuseFn = (k) => ALIASES[k] || null;
+    // The prompts per generator (tools/prompt-builder.mjs): prompts.gemini, prompts.chatgpt (key colour) and
+    // prompts.chatgptTransparent; refs: the files to attach, in order. `prompt` is the Gemini one (older tools read it).
+    const pp = buildPrompts({ kind: 'portrait', id, era, name: plain, desc, reuse: reuseFn });
+    portraits.push({ id, name, era, facing, file: `assets/portraits/${id}.webp`, incoming: id, px: PORTRAIT_PX, generate: GENERATE_PX, aspect: '1:1', usage: PORTRAIT_USAGE, flip: false, note, keyColour: pp.keyColour, refs: pp.refs, prompts: { gemini: pp.gemini, chatgpt: pp.chatgpt, chatgptTransparent: pp.chatgptTransparent }, prompt: pp.gemini });
+    // The sprite's target: its canon height and its height in heads (the studio checks the head marks against it).
+    const st = statureOf(id, era, { reuse: reuseFn });
     const stature = { kind: st.kind, cm: st.cm, heads: st.heads ? Math.round(st.heads * 100) / 100 : null, estimated: st.estimated, known: st.known };
-    sprites.push({ id, name, era, facing, file: `assets/sprites/${id}.webp`, incoming: `sprite_${id}`, px: SPRITE_PX, generate: GENERATE_PX, aspect: '1:1', usage: SPRITE_USAGE, flip: false, note, stature, prompt: prompt(SPRITE_ANCHOR, desc, facing, proportionsLine(plain, id, era, { reuse: (k) => ALIASES[k] || null })) });
+    const sp = buildPrompts({ kind: 'sprite', id, era, name: plain, desc, reuse: reuseFn });
+    sprites.push({ id, name, era, facing, file: `assets/sprites/${id}.webp`, incoming: `sprite_${id}`, px: SPRITE_PX, generate: GENERATE_PX, aspect: '1:1', usage: SPRITE_USAGE, flip: false, note, stature, keyColour: sp.keyColour, refs: sp.refs, prompts: { gemini: sp.gemini, chatgpt: sp.chatgpt, chatgptTransparent: sp.chatgptTransparent }, prompt: sp.gemini });
     void key;
   };
   // ---- the roster: player characters face right; the dual-era ones get a file per era
@@ -57,13 +64,13 @@ export function buildManifest(C, { now = new Date().toISOString(), overrides = n
       for (const era of ['p1', 'p2']) {
         const desc = descOf(d.id, era) || genericDescription(d, C);
         if (!descOf(d.id, era)) missingDescriptions.push(`${d.id}:${era}`);
-        push({ id: `${d.id}_${era}`, key: d.id, name: `${d.name} (${era === 'p1' ? 'Part I' : 'Shippuden'})`, era, facing: 'right', desc });
+        push({ id: `${d.id}_${era}`, key: d.id, name: `${d.name} (${era === 'p1' ? 'Part I' : 'Shippuden'})`, era, desc });
       }
     } else {
       const era = eraOfChar(d, C);
       const desc = descOf(d.id, era) || genericDescription(d, C);
       if (!descOf(d.id, era)) missingDescriptions.push(d.id);
-      push({ id: d.id, key: d.id, name: d.name, era, facing: 'right', desc });
+      push({ id: d.id, key: d.id, name: d.name, era, desc });
     }
   }
   // ---- enemies: one picture per distinct name; a character who is also in the roster reuses that portrait (mirrored by the game)
@@ -85,18 +92,19 @@ export function buildManifest(C, { now = new Date().toISOString(), overrides = n
     const pid = key && key.startsWith('e_') ? key : d.id;
     if (seenNames.has(pid)) { reuse.push({ id: d.id, uses: pid }); continue; }
     const era = firstPart.get(d.id) === 1 ? 'p1' : firstPart.get(d.id) === 2 ? 'p2' : (d.id.startsWith('npc_') ? 'p1' : 'p2');
-    const facing = d.role === 'Civilian' ? 'right' : 'left';
     const desc = descOf(pid, era) || genericDescription(d, C);
     if (!descOf(pid, era)) missingDescriptions.push(d.id);
     seenNames.set(d.name, pid); seenNames.set(pid, pid);
-    push({ id: pid, key: pid, name: d.name + (d.title ? ` — ${d.title}` : ''), era, facing, desc, note: d.role === 'Civilian' ? 'a civilian the team protects' : '' });
+    push({ id: pid, key: pid, name: d.name + (d.title ? ` — ${d.title}` : ''), era, desc, note: d.role === 'Civilian' ? 'a civilian the team protects' : '' });
     if (pid !== d.id) reuse.push({ id: d.id, uses: pid, note: 'the same picture' });
   }
-  // The art page keeps the user's own wording per image in assets/art-overrides.json (prompts: { "portrait:<id>": "..." }).
+  // The user's own wording stays in assets/art-overrides.json (prompts: "<kind>:<id>" for the Gemini tab,
+  // "<kind>:<id>@chatgpt" for the ChatGPT tab). The manifest only flags it; the art page shows theirs beside the
+  // generated prompt, which follows design changes, so a change never touches their wording.
   const ov = overrides?.prompts || {};
-  for (const e of portraits) if (ov[`portrait:${e.id}`]) { e.prompt = ov[`portrait:${e.id}`]; e.promptOverride = true; }
-  for (const e of sprites) if (ov[`sprite:${e.id}`]) { e.prompt = ov[`sprite:${e.id}`]; e.promptOverride = true; }
-  return { generated: now, version: 1, style: { portrait: STYLE_ANCHOR, sprite: SPRITE_ANCHOR, faceRight: FACE_RIGHT, faceLeft: FACE_LEFT }, portraits, sprites, reuse, missingDescriptions };
+  for (const e of portraits) if (ov[`portrait:${e.id}`] || ov[`portrait:${e.id}@chatgpt`]) e.promptOverride = true;
+  for (const e of sprites) if (ov[`sprite:${e.id}`] || ov[`sprite:${e.id}@chatgpt`]) e.promptOverride = true;
+  return { generated: now, version: 2, portraits, sprites, reuse, missingDescriptions };
 }
 
 /**

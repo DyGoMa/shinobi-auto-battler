@@ -1,5 +1,6 @@
 // SettingsScreen.js — battle options, help, audio and visuals, account and cloud
 // save, the save itself (export, import, reset) and version info.
+import { setQuality as setImageQuality, autoQuality } from '../render/Assets.js';
 import { h, btn, toggle, fmt } from './dom.js';
 import { ryoReserve } from '../core/AutoLevel.js';
 import { SAVE_VERSION, VFX_LEVELS } from '../core/SaveManager.js';
@@ -75,6 +76,8 @@ export function render(game, ui) {
       row('Sound effects', 'Hits, jutsu, the interface and the summon ceremony.', h('div.row.tight', slider('Sound effects volume', s.sfxVol ?? 0.8, (v) => { s.sfxVol = v; game.audio.apply(s); game.commit('settings'); }), toggle(s.sfx !== false, (on) => { s.sfx = on; game.audio.apply(s); game.commit('settings'); }, 'Sound effects')), 'set-sfx'),
       row('Effect detail', { low: 'Low: hits, jutsu and readouts only, no weather or particles. The choice under "reduce motion" too.', medium: 'Medium (recommended): the full effects at phone-friendly counts.', high: 'High: every particle, weather and camera move. Best on a fast phone or a computer.' }[VFX_LEVELS.includes(s.vfx) ? s.vfx : 'medium'],
         seg('Effect detail', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High']], VFX_LEVELS.includes(s.vfx) ? s.vfx : 'medium', (v) => set('vfx', v)), 'set-vfx'),
+      row('Image quality', imageQualityText(s.imageQuality),
+        seg('Image quality', [['auto', 'Auto'], ['high', 'High'], ['standard', 'Standard']], ['high', 'standard'].includes(s.imageQuality) ? s.imageQuality : 'auto', (v) => { s.imageQuality = v; setImageQuality(v); game.commit('settings'); ui.refresh(); }), 'set-quality'),
     ),
 
     accountCard(game, ui),
@@ -282,4 +285,12 @@ function reserveInput(game, ui) {
     game.commit('settings'); ui.toast(`Smart spend keeps 🪙 ${fmt(v)} in reserve.`, 'good');
   });
   return input;
+}
+
+/** The Image quality row's line: what each choice loads, and what Auto picked on this device. */
+function imageQualityText(q) {
+  const auto = autoQuality() === 'high' ? 'High on this screen' : 'Standard on this screen';
+  if (q === 'high') return 'High: the large art everywhere (portraits 768, sprites 1024). Sharpest on a computer or tablet; more data and memory on a phone.';
+  if (q === 'standard') return 'Standard: the phone-sized art (portraits 256, sprites 512). Lightest on data and memory.';
+  return `Auto (recommended): high on computers and big tablets, standard on phones. Now: ${auto}.`;
 }

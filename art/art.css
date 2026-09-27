@@ -70,3 +70,65 @@ button.wandon { outline: 2px solid #ffaa3c; }
 .art-marks .mark.skull { border-color: #4de1ff; color: #4de1ff; }
 .art-marks .mark.chin { border-color: #ffd84d; color: #ffd84d; }
 .art-marks .mark.feet { border-color: rgba(255,255,255,0.55); color: #ddd; pointer-events: none; cursor: default; }
+/* Studio buttons: the studio builds plain <button>s (not the game's .btn), so they get their own clear look. */
+.art-main button, .art-head button { font: inherit; font-size: 0.9rem; font-weight: 600; min-height: 34px; padding: 6px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface3); color: var(--text); cursor: pointer; }
+.art-main button:hover:not(:disabled), .art-head button:hover:not(:disabled) { border-color: var(--accent2); background: #54432f; }
+.art-main button.primary { background: var(--primary-grad); border-color: var(--primary-edge); color: var(--primary-ink); }
+.art-main button.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--primary-grad); }
+.art-main button.ghost { background: rgba(255,255,255,0.04); border-color: var(--dim); color: var(--text); }
+.art-main button.ghost:hover:not(:disabled) { background: var(--surface2); }
+.art-main button:disabled { opacity: 0.45; cursor: not-allowed; }
+.art-main button.small { min-height: 28px; padding: 3px 10px; font-size: 0.82rem; }
+.art-main button:focus-visible, .art-head button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+/* the Gemini steps under the prompt */
+.art-howto { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); font-size: 0.88rem; }
+.art-howto h4 { margin: 0 0 6px; font-size: 0.92rem; }
+.art-howto ol { margin: 0; padding-left: 20px; }
+.art-howto li { margin: 4px 0; }
+.art-howto code { background: var(--surface2); padding: 1px 5px; border-radius: 5px; font-size: 0.82rem; }
+.art-howto .ref { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.art-howto .ref img { width: 64px; height: 64px; object-fit: contain; background: repeating-conic-gradient(#3a3f4a 0% 25%, #262a33 0% 50%) 0 0 / 12px 12px; border-radius: 8px; }
+.art-howto a.dl { display: inline-flex; align-items: center; min-height: 34px; padding: 6px 14px; border-radius: 10px; font-weight: 600; text-decoration: none; background: var(--primary-grad); border: 1px solid var(--primary-edge); color: var(--primary-ink); }
+.art-howto a.dl:hover { filter: brightness(1.08); }
+/* the key-strength slider */
+.art-strength { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 4px; padding: 8px 12px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--line); }
+.art-strength label { font-size: 0.9rem; font-weight: 600; }
+.art-strength input[type="range"] { flex: 1 1 200px; accent-color: var(--accent); }
+.art-strength .art-numwrap { display: inline-flex; align-items: center; gap: 4px; }
+.art-strength .art-num { width: 64px; min-height: 28px; padding: 2px 6px; border-radius: 8px; border: 1px solid var(--dim); background: var(--surface2); color: var(--text); font: inherit; font-weight: 600; text-align: right; }
+.art-strength button.small { min-width: 32px; font-size: 1rem; }
+.art-strength .art-ink { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; padding-left: 8px; border-left: 1px solid var(--line); }
+.art-strength .art-ink input { width: 16px; height: 16px; accent-color: var(--accent); }
+.art-compare { display: block; border-radius: 12px; border: 1px solid var(--line); }
+/* the prompt card: generator, side by side with the reference, the generated prompt and its changes */
+.art-generator { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; font-size: 0.9rem; }
+.art-generator select { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--dim); background: var(--surface2); color: var(--text); }
+.art-side { margin-top: 10px; }
+.art-side canvas { display: block; border-radius: 12px; border: 1px solid var(--line); }
+.art-sbs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.art-sbs-tile { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: repeating-conic-gradient(#3a3f4a 0% 25%, #262a33 0% 50%) 0 0 / 16px 16px; }
+.art-sbs-tile img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; }
+.art-sbs-tile figcaption { padding: 4px 8px; background: rgba(0,0,0,0.45); }
+.art-gen { margin-top: 12px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); }
+.art-gen summary { cursor: pointer; }
+.art-diff { margin-top: 8px; max-height: 260px; overflow: auto; white-space: pre-wrap; font: 0.8rem/1.45 ui-monospace, Consolas, monospace; padding: 8px; border-radius: 8px; background: var(--surface2); }
+.art-diff .ins { background: rgba(95,214,138,0.25); color: #b8f5cf; }
+.art-diff .del { background: rgba(255,93,93,0.22); color: #ffb3b3; text-decoration: line-through; }
+/* prompt tabs, the checklist, the attachments and the background switch */
+.art-prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.art-tabs, .art-bgswitch { display: inline-flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--line); }
+.art-tabs button, .art-bgswitch button { min-height: 30px; padding: 4px 12px; border: 0; background: transparent; }
+.art-tabs button.on, .art-bgswitch button.on { background: var(--primary-grad); color: var(--primary-ink); }
+.art-bgswitch { align-items: center; margin: 8px 0; }
+.art-bgswitch > span { padding: 0 6px; }
+.art-check { margin: 8px 0; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); font-size: 0.88rem; }
+.art-check summary { cursor: pointer; }
+.art-check ol { margin: 6px 0 0; padding-left: 20px; }
+.art-check li { margin: 4px 0; }
+.art-attach { margin: 8px 0; font-size: 0.88rem; }
+.art-attach ol { margin: 4px 0 0; padding-left: 20px; }
+.art-attach-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+.art-attach-row img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: repeating-conic-gradient(#3a3f4a 0% 25%, #262a33 0% 50%) 0 0 / 10px 10px; }
+.art-attach-row > div { flex: 1; }
+.art-attach-missing { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 8px; border: 1px dashed var(--dim); color: var(--dim); }
+.art-attach a.dl.small { min-height: 28px; padding: 3px 10px; font-size: 0.82rem; border-radius: 8px; display: inline-flex; align-items: center; text-decoration: none; background: var(--primary-grad); border: 1px solid var(--primary-edge); color: var(--primary-ink); font-weight: 600; }

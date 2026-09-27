@@ -42,14 +42,27 @@ async function api(req, res, path) {
   }
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });
   const body = await readBody(req);
+  if (path === '/api/art/meta') {
+    // per-image notes: which generator made it (gemini | chatgpt | other | '')
+    const { id, kind, generator } = body;
+    if (!SAFE_ID.test(String(id)) || !['portrait', 'sprite'].includes(kind) || !['', 'gemini', 'chatgpt', 'other'].includes(String(generator ?? ''))) return json(res, 400, { ok: false, error: 'bad id, kind or generator' });
+    const o = await loadOverrides(); o.meta = o.meta || {};
+    const k = `${kind}:${id}`; o.meta[k] = { ...(o.meta[k] || {}), generator: generator || '' };
+    await saveOverrides(o);
+    return json(res, 200, { ok: true });
+  }
   if (path === '/api/art/prompt') {
-    const { id, kind, prompt } = body;
+    const { id, kind, prompt, base, tab } = body;
+    const pk = `${kind}:${id}` + (tab === 'chatgpt' ? '@chatgpt' : '');   // each prompt tab keeps its own wording
     if (!SAFE_ID.test(String(id)) || !['portrait', 'sprite'].includes(kind)) return json(res, 400, { ok: false, error: 'bad id or kind' });
     const o = await loadOverrides(); o.prompts = o.prompts || {};
-    if (prompt && String(prompt).trim()) o.prompts[`${kind}:${id}`] = String(prompt); else delete o.prompts[`${kind}:${id}`];
+    // base: the generated prompt the user's wording was made from, so the page can show what the generator changed since
+    o.base = o.base || {};
+    if (prompt && String(prompt).trim()) { o.prompts[pk] = String(prompt); if (typeof base === 'string') o.base[pk] = base; }
+    else { delete o.prompts[pk]; delete o.base[pk]; }
     await saveOverrides(o);
     const r = await run(['tools/manifest.mjs']);
-    return json(res, 200, { ok: r.ok, log: r.log, override: !!o.prompts[`${kind}:${id}`] });
+    return json(res, 200, { ok: r.ok, log: r.log, override: !!o.prompts[pk] });
   }
   if (path === '/api/art/save') {
     const { id, kind, incoming, flip, leftover, png, head } = body;

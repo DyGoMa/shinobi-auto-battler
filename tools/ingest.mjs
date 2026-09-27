@@ -13,12 +13,13 @@
 // (portraits 256², sprites 512² with the figure bottom-centred), write the WebP to assets/, then
 // rewrite assets/index.json and docs/ASSET_CHECKLIST.md and report what is still missing.
 // Processed files move to /incoming/done (--keep leaves them). Needs `npm install` (sharp).
-import { readdirSync, existsSync, mkdirSync, renameSync, writeFileSync, readFileSync } from 'node:fs';
+import { readdirSync, existsSync, mkdirSync, renameSync, writeFileSync, readFileSync, unlinkSync } from 'node:fs';
+import { hdOf, PORTRAIT_HD_PX, SPRITE_HD_PX } from '../js/render/Assets.js';
 import { join, extname, basename } from 'node:path';
 import sharp from 'sharp';
 import { CONTENT } from '../js/content/index.js';
 import { buildManifest, checklistMarkdown, reuseMap, PORTRAIT_PX, SPRITE_PX } from './manifest-lib.mjs';
-import { keyBackground, bounds } from './key-lib.mjs';
+import { keyBackground, inkLines, matchOutline, outlineRatioOf, bounds } from './key-lib.mjs';
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -39,6 +40,16 @@ const MIN_SIDE = 512, ASPECT_TOL = 0.12, QUALITY = 82;
 const manifest = existsSync('assets/manifest.json') ? JSON.parse(readFileSync('assets/manifest.json', 'utf8')) : buildManifest(CONTENT);
 const byIncoming = new Map([...manifest.portraits.map(e => [e.incoming, { ...e, kind: 'portrait' }]), ...manifest.sprites.map(e => [e.incoming, { ...e, kind: 'sprite' }])]);
 
+let refRatioMemo;
+/** The reference sprite's outline weight for its height (hd copy first), or null before it exists. */
+async function refRatio() {
+  if (refRatioMemo !== undefined) return refRatioMemo;
+  const f = ['assets/sprites/hd/naruto_p1.webp', 'assets/sprites/naruto_p1.webp'].find(existsSync);
+  if (!f) return (refRatioMemo = null);
+  const { data, info } = await sharp(f).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  return (refRatioMemo = outlineRatioOf(new Uint8ClampedArray(data), info.width, info.height));
+}
+
 async function ingestOne(file) {
   const stem = basename(file, extname(file));
   const entry = byIncoming.get(stem);
@@ -53,14 +64,26 @@ async function ingestOne(file) {
   if (Math.abs(w / h - 1) > ASPECT_TOL) return { file, skip: `not square (${w}×${h}); generate at 1024 × 1024` };
   // raw RGBA, keyed
   const { data, info } = await img.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const { keyed, holes } = keyBackground(data, info.width, info.height);
+  // A picture that arrives already transparent (the art studio keyed it) is not keyed again: its
+  // transparent pixels would read as a black background and the keyer would eat the (black) outlines.
+  // A generated picture is fully opaque, so any real share of transparency means it was keyed. (The
+  // border alone is not enough: a portrait's chest runs off the bottom edge, so part of it is opaque.)
+  let clear = 0, sampled = 0;
+  for (let k = 0; k < info.width * info.height; k += 7) { sampled++; if (data[k * 4 + 3] < 8) clear++; }
+  const preKeyed = clear / sampled > 0.01;
+  const { keyed, holes } = preKeyed ? { keyed: 0, holes: 0 } : keyBackground(data, info.width, info.height);
+  // outlines to the ink, as the art studio does by default (a studio save arrives already done)
+  if (!preKeyed && !flag('--keep-line-colour')) inkLines(data, info.width, info.height);
+  // a sprite's outer outline to Part I Naruto's weight, as the art studio does by default
+  // (the target weight is the reference sprite's own; Part I Naruto himself sets it and is left as drawn)
+  if (!preKeyed && entry.kind === 'sprite' && entry.id !== 'naruto_p1' && !flag('--keep-outline')) matchOutline(data, info.width, info.height, (await refRatio()) ? { ratio: await refRatio() } : {});
   const flip = entry.flip || FLIP.has(entry.id);
   let stage = sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } });
   if (flip) stage = stage.flop();
-  let out;
+  let squareBuf, squareSide;   // the finished square at full size: both sizes are made from it
   if (entry.kind === 'portrait') {
     const side = Math.min(info.width, info.height);
-    out = stage.extract({ left: Math.floor((info.width - side) / 2), top: Math.floor((info.height - side) / 2), width: side, height: side }).resize(PORTRAIT_PX, PORTRAIT_PX, { kernel: 'lanczos3' });
+    squareBuf = await stage.extract({ left: Math.floor((info.width - side) / 2), top: Math.floor((info.height - side) / 2), width: side, height: side }).png().toBuffer(); squareSide = side;
   } else {
     // the figure's opaque box, bottom-centred in a square with a small margin (feet at the bottom)
     const b = bounds(flip ? await stage.raw().toBuffer() : data, info.width, info.height) || { x0: 0, y0: 0, x1: info.width - 1, y1: info.height - 1 };
@@ -78,15 +101,23 @@ async function ingestOne(file) {
     // sharp resizes before it composites, so the square is built first and resized in a second pass
     const square = await sharp({ create: { width: side, height: side, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
       .composite([{ input: cut, left: Math.round((side - bw) / 2), top: side - bh - Math.round(side * 0.02) }]).png().toBuffer();
-    out = sharp(square).resize(SPRITE_PX, SPRITE_PX, { kernel: 'lanczos3' });
+    squareBuf = square; squareSide = side;
   }
+  // Two sizes (js/render/Assets.js): the standard file (256 / 512) and the hd copy (768 / 1024) in an hd/
+  // folder beside it. The hd copy is only made when the picture has the detail for it (no upscaling).
+  const px = entry.kind === 'portrait' ? PORTRAIT_PX : SPRITE_PX, hdPx = entry.kind === 'portrait' ? PORTRAIT_HD_PX : SPRITE_HD_PX;
+  const out = sharp(squareBuf).resize(px, px, { kernel: 'lanczos3' });
+  const outHd = squareSide >= hdPx * 0.9 ? sharp(squareBuf).resize(hdPx, hdPx, { kernel: 'lanczos3' }) : null;
   const target = entry.file;
   if (!DRY) {
     mkdirSync(target.split('/').slice(0, -1).join('/'), { recursive: true });
     await out.webp({ quality: QUALITY, alphaQuality: 90 }).toFile(target);
+    const hdTarget = hdOf(target);
+    if (outHd) { mkdirSync(hdTarget.split('/').slice(0, -1).join('/'), { recursive: true }); await outHd.webp({ quality: QUALITY, alphaQuality: 90 }).toFile(hdTarget); }
+    else if (existsSync(hdTarget)) unlinkSync(hdTarget);   // an older hd copy of a replaced picture would show the old art
     if (!KEEP) { mkdirSync(DONE, { recursive: true }); renameSync(join(IN, file), join(DONE, file)); }
   }
-  return { file, id: entry.id, kind: entry.kind, target, keyed: Math.round(keyed * 100), holes, flip, size: `${w}×${h}` };
+  return { file, id: entry.id, kind: entry.kind, target, hd: !!outHd, keyed: Math.round(keyed * 100), holes, flip, size: `${w}×${h}` };
 }
 
 async function main() {
@@ -94,15 +125,15 @@ async function main() {
   const files = INDEX_ONLY ? [] : readdirSync(IN).filter(f => /\.(png|jpe?g|webp)$/i.test(f) && (!FILE || f === FILE));
   const results = [];
   for (const f of files) { try { const r = await ingestOne(f); if (r) results.push(r); } catch (e) { results.push({ file: f, skip: `failed: ${e.message}` }); } }
-  for (const r of results) console.log(r.skip ? `  ✗ ${r.file}: ${r.skip}` : `  ✓ ${r.file} → ${r.target} (${r.kind}, ${r.size}, ${r.keyed}% keyed${r.holes ? `, ${r.holes} enclosed patch${r.holes === 1 ? '' : 'es'} removed` : ''}${r.flip ? ', mirrored' : ''})${DRY ? ' [dry run]' : ''}`);
+  for (const r of results) console.log(r.skip ? `  ✗ ${r.file}: ${r.skip}` : `  ✓ ${r.file} → ${r.target} (${r.kind}, ${r.size}, ${r.keyed}% keyed${r.holes ? `, ${r.holes} enclosed patch${r.holes === 1 ? '' : 'es'} removed` : ''}${r.flip ? ', mirrored' : ''}${r.hd ? ', + hd copy' : ', no hd copy (under ' + (r.kind === 'portrait' ? PORTRAIT_HD_PX : SPRITE_HD_PX) * 0.9 + ' px of detail)'})${DRY ? ' [dry run]' : ''}`);
   // the index of what exists, and the checklist
   const present = new Set();
-  for (const dir of ['assets/portraits', 'assets/sprites']) if (existsSync(dir)) for (const f of readdirSync(dir)) if (f.endsWith('.webp')) present.add(`${dir}/${f}`);
+  for (const dir of ['assets/portraits', 'assets/sprites', 'assets/portraits/hd', 'assets/sprites/hd']) if (existsSync(dir)) for (const f of readdirSync(dir)) if (f.endsWith('.webp')) present.add(`${dir}/${f}`);
   if (!DRY) {
     // figures: this run's, else the ones already in the index, else a guess from the file's opaque box
     const old = existsSync('assets/index.json') ? (JSON.parse(readFileSync('assets/index.json', 'utf8')).figures || {}) : {};
     const figs = {};
-    for (const f of [...present].sort()) if (f.startsWith('assets/sprites/')) figs[f] = figures[f] || (old[f] && !old[f].auto ? old[f] : await guessFigure(f));
+    for (const f of [...present].sort()) if (f.startsWith('assets/sprites/') && !f.startsWith('assets/sprites/hd/')) figs[f] = figures[f] || (old[f] && !old[f].auto ? old[f] : await guessFigure(f));
     if (MARK) {
       const f = `assets/sprites/${MARK.id}.webp`;
       if (!figs[f]) throw new Error(`no sprite ${f} to mark`);

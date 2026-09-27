@@ -15,6 +15,7 @@ import { validateStory, countLines } from '../js/core/Story.js';
 import { STORY } from '../js/content/story/index.js';
 import { HEIGHTS } from '../js/content/heights.js';
 import { statureOf } from '../js/core/stature.js';
+import { hdOf } from '../js/render/Assets.js';
 
 const errors = validateContent(CONTENT);
 
@@ -34,9 +35,9 @@ for (const id of bossIds) { const d = CONTENT.enemy[id]; if (d && (typeof d.titl
 for (const d of Object.values(CONTENT.enemy)) if (d.title !== undefined && (typeof d.title !== 'string' || d.title.length > 40)) errors.push(`enemy ${d.id}: title must be a short string`);
 // ---- the art manifest and the asset index (tools/manifest.mjs, tools/ingest.mjs) ----------
 const art = buildManifest(CONTENT);
-const files = new Set([...art.portraits, ...art.sprites].map(e => e.file));
+const files = new Set([...art.portraits, ...art.sprites].flatMap(e => [e.file, hdOf(e.file)]));   // each image may also have its hd copy
 for (const d of Object.values(CONTENT.char)) if (!files.has(`assets/portraits/${d.id}.webp`) && !files.has(`assets/portraits/${d.id}_p1.webp`)) errors.push(`roster ${d.id} has no portrait entry in the art manifest`);
-for (const e of [...art.portraits, ...art.sprites]) { if (!e.prompt.startsWith('STYLE ANCHOR')) errors.push(`manifest ${e.id}: the prompt must start with the style anchor`); if (!/#FF00FF/.test(e.prompt)) errors.push(`manifest ${e.id}: the prompt must ask for the flat magenta background`); if (!/FACING: the character faces the viewer's (RIGHT|LEFT)/.test(e.prompt)) errors.push(`manifest ${e.id}: the prompt must state the facing`); }
+for (const e of [...art.portraits, ...art.sprites]) for (const [tab, t] of Object.entries(e.prompts || {})) { if (!t.includes("STYLE: ")) errors.push(`manifest ${e.id} (${tab}): the prompt needs the style block`); if (!/BACKGROUND: /.test(t)) errors.push(`manifest ${e.id} (${tab}): the prompt needs a background block`); if (!/toward the viewer's RIGHT/.test(t)) errors.push(`manifest ${e.id} (${tab}): the prompt must face the viewer's right`); if (tab !== 'chatgptTransparent' && !/#FF00FF|#00FF00|#00FFFF|#FFFF00/.test(t)) errors.push(`manifest ${e.id} (${tab}): the prompt must ask for the flat key colour`); }
 let indexed = 0;
 if (existsSync('assets/index.json')) {
   const idx = JSON.parse(readFileSync('assets/index.json', 'utf8'));
@@ -60,7 +61,7 @@ if (existsSync('assets/manifest.json')) {
   }
   for (const d of Object.values(CONTENT.char)) if (!statureOf(d.id, 'p2', { reuse }).known) errors.push(`roster ${d.id} has no height (js/content/heights.js)`);
   for (const d of Object.values(CONTENT.enemy)) if (!statureOf(d.id, 'p2', { reuse, basedOn: d.basedOn }).known) errors.push(`enemy ${d.id} has no height: add it to js/content/heights.js, or give it basedOn`);
-  for (const f of idx.files || []) if (f.startsWith('assets/sprites/') && !idx.figures?.[f]) errors.push(`assets/index.json has no figure record for ${f} (run node tools/ingest.mjs --index-only)`);
+  for (const f of idx.files || []) if (f.startsWith('assets/sprites/') && !f.startsWith('assets/sprites/hd/') && !idx.figures?.[f]) errors.push(`assets/index.json has no figure record for ${f} (run node tools/ingest.mjs --index-only)`);
 }
 
 // ---- balance.js sanity ----------------------------------------------------

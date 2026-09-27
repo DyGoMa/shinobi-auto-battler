@@ -37,7 +37,7 @@ export function defaultState(C, B = BALANCE) {
     // speed: one of balance.qol.battleSpeeds (the last pick, in battle or Settings).
     // skipPullAnim: summons show their cards at once. ryoReserve: Smart spend never goes
     // below it. rosterView: the Roster's last sort and filters.
-    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true, music: true, sfx: true, vfx: 'medium',
+    settings: { muted: false, autoUlt: false, autoUltMode: 'smart', speed: 1, tips: true, music: true, sfx: true, vfx: 'medium', imageQuality: 'auto',
       musicVol: 0.6, sfxVol: 0.8, storyScenes: 'first', dialogueAuto: false,
       skipPullAnim: false, ryoReserve: B.qol.ryoReserve, rosterView: { ...ROSTER_VIEW_DEFAULT } },
     // Story scenes already played on this save (Phase 5 writes them): scene id -> timestamp.
@@ -195,6 +195,8 @@ export function migrate(raw, C, B = BALANCE) {
     S.rosterView = sanitizeRosterView(S.rosterView, B);
     // v4: effect detail, audio volumes, story scene settings
     if (!VFX_LEVELS.includes(S.vfx)) S.vfx = 'medium';
+    // image quality: which art set loads ('auto' picks by the screen; js/render/Assets.js)
+    if (!['auto', 'high', 'standard'].includes(S.imageQuality)) S.imageQuality = 'auto';
     for (const k of ['musicVol', 'sfxVol']) { const v = Number(S[k]); S[k] = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : fresh.settings[k]; }
     if (!STORY_SCENE_MODES.includes(S.storyScenes)) S.storyScenes = 'first';
     S.dialogueAuto = !!S.dialogueAuto;

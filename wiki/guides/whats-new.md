@@ -1,5 +1,13 @@
 # What's new
 
+## Coming with the art (in progress)
+
+- **Everyone stands at their real height.** Every ninja is drawn at their canon height for the part of the story (from the databooks), with the same head size for everyone, so Kakashi towers over Team 7 and Onoki is tiny. Bosses no longer get a size boost; giant beasts share one giant size.
+- **Settings → Image quality** (Auto / High / Standard). Auto loads the large art on a computer or tablet and the lighter art on a phone; High or Standard picks one for you.
+- **Enemies you already know look like themselves.** Kakashi in the Survival Test, Sasuke, Mizuki and every other familiar face fought as an enemy now uses their full art instead of a stand-in figure.
+- **The tutorial's Nature Wheel lesson** says plainly that you answer the question to unlock the fight, and tapping the locked button points you to it.
+- **The Story map** keeps its backdrop after Auto team (it used to go black).
+
 ## Version {{cfg:version.current}}
 
 The balancing pass. Nothing new to unlock; the numbers behind the fights and the rewards are re-tuned from the game's own simulations (BALANCE.md §4 has the measurements).

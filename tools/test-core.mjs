@@ -25,6 +25,7 @@ import { autoPickTeam } from '../js/core/TeamPicker.js';
 import { DEFAULT_BOT } from './common.mjs';
 import { localDateKey, nodeRewards } from '../js/core/formulas.js';
 import * as Assets from '../js/render/Assets.js';
+import { keyBackground, saturated, inkLines, INK, matchOutline, outlineWeight, OUTLINE_RATIO } from './key-lib.mjs';
 import { statureOf, proportionsLine, REF_CM, REF_HEADS, HEAD_CM, GIANT_SCALE } from '../js/core/stature.js';
 import { STAGES, stageIdFor, stageDefFor, stageFromTheme } from '../js/render/Stage.js';
 import { lookFor } from '../js/render/Figure.js';
@@ -885,6 +886,67 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(Assets.figureOf('assets/sprites/naruto_p1.webp')?.chin === 0.414 && Assets.figureOf('assets/sprites/nobody.webp') === null, 'the figure record of a sprite (skull, chin, soles) comes from the index');
   Assets.setIndex([]);
 
+  // The keyer on a magenta background: a dark square ringed by a blended (ink + magenta) edge, with a
+  // small magenta pocket inside. The edge loses its tint, the pocket goes, and strength scales the tolerances.
+  {
+    const W = 64, H = 64, img = () => { const q = new Uint8ClampedArray(W * H * 4); for (let k = 0; k < W * H; k++) { const x = k % W, y = (k / W) | 0; const inSq = x >= 16 && x < 48 && y >= 16 && y < 48, ring = inSq && (x === 16 || x === 47 || y === 16 || y === 47), pocket = x >= 30 && x < 34 && y >= 30 && y < 34; const c = !inSq || pocket ? [255, 0, 255] : ring ? [150, 15, 140] : [40, 25, 20]; q.set([...c, 255], k * 4); } return q; };
+    const q = img(); keyBackground(q, W, H);
+    const at = (x, y) => [...q.slice((y * W + x) * 4, (y * W + x) * 4 + 4)];
+    const edge = at(16, 30), inside = at(24, 24), pocket = at(31, 31);
+    ok(saturated([255, 0, 255]) && !saturated([250, 250, 250]), 'magenta is a vivid background, white is not');
+    ok(edge[3] < 255 && Math.abs(edge[0] - 40) < 12 && Math.abs(edge[2] - 20) < 12 && inside[3] === 255, 'a blended edge pixel takes the ink colour inside it and gives the magenta share up as transparency');
+    ok(pocket[3] === 0, 'a small enclosed pocket of a vivid background is keyed out (it never appears in the art)');
+    const weak = img(); const r = keyBackground(weak, W, H, { strength: 0.3 });
+    ok(r.keyed > 0 && at(0, 0)[3] === 0, 'strength scales the tolerances and still keys the flat background');
+  }
+
+  // Two sizes: High prefers the hd copy, Standard the standard file, each falling back to the other.
+  Assets.setIndex(['assets/sprites/naruto_p1.webp', 'assets/sprites/hd/naruto_p1.webp', 'assets/sprites/kakashi_p1.webp', 'assets/portraits/hd/sakura_p1.webp'], {}, { 'assets/sprites/naruto_p1.webp': { top: 0.2, chin: 0.4, feet: 0.98 } });
+  Assets.setQuality('high');
+  ok(Assets.spritePath('naruto', 'p1') === 'assets/sprites/hd/naruto_p1.webp' && Assets.spritePath('kakashi', 'p1') === 'assets/sprites/kakashi_p1.webp', 'High quality loads the hd copy, or the standard file when there is no hd copy');
+  ok(Assets.figureOf('assets/sprites/hd/naruto_p1.webp')?.chin === 0.4, 'the hd copy shares the head marks of its standard file');
+  Assets.setQuality('standard');
+  ok(Assets.spritePath('naruto', 'p1') === 'assets/sprites/naruto_p1.webp' && Assets.portraitPath('sakura', 'p1') === 'assets/portraits/hd/sakura_p1.webp', 'Standard loads the standard file, or the hd copy when that is all there is');
+  ok(['high', 'standard'].includes(Assets.setQuality('auto')) && Assets.QUALITIES.join() === 'auto,high,standard', 'Auto resolves to high or standard by the screen');
+  Assets.setQuality('standard'); Assets.setIndex([]);
+  ok(migrate({ ...defaultState(C, B), settings: { ...defaultState(C, B).settings, imageQuality: 'ultra' } }, C, B).settings.imageQuality === 'auto' && defaultState(C, B).settings.imageQuality === 'auto', 'image quality defaults to Auto, and an unknown value goes back to Auto');
+
+  // Black lines: a thin dark-red stroke on light red cloth turns to the ink; a wide shadow of the same colour stays.
+  {
+    const W = 80, H = 80, q = new Uint8ClampedArray(W * H * 4);
+    for (let k = 0; k < W * H; k++) { const x = k % W; const c = (x >= 20 && x < 24) ? [105, 22, 21] : (x >= 44 && x < 70) ? [105, 22, 21] : [220, 60, 70]; q.set([...c, 255], k * 4); }
+    const n = inkLines(q, W, H);
+    const px = (x, y) => [...q.slice((y * W + x) * 4, (y * W + x) * 4 + 3)];
+    const line = px(21, 40), shadow = px(57, 40), cloth = px(10, 40);
+    ok(n > 0 && Math.abs(line[0] - INK[0]) + Math.abs(line[1] - INK[1]) + Math.abs(line[2] - INK[2]) < 12, 'black lines: a thin dark-red stroke becomes the near-black ink');
+    ok(shadow[0] === 105 && shadow[1] === 22 && cloth[0] === 220, 'black lines: a wide shadow of the same colour and the cloth around it are left alone');
+  }
+
+  // Outline weight: a figure with a thin outline gets an ink stroke outside it up to the reference weight.
+  {
+    const W = 300, H = 520, q = new Uint8ClampedArray(W * H * 4);
+    for (let y = 10; y < 510; y++) for (let x = 100; x < 200; x++) { const edge = x < 102 || x > 197; q.set(edge ? [20, 16, 14, 255] : [230, 120, 60, 255], (y * W + x) * 4); }
+    const before = outlineWeight(q, W, H).measured, r = matchOutline(q, W, H), after = outlineWeight(q, W, H).measured;
+    ok(before === 2 && r.added > 1 && Math.abs(after - OUTLINE_RATIO * 500) <= 1.5, 'Match outline: a 2 px outline on a 500 px figure grows to the reference weight (about 4.7 px)');
+    ok(q[(250 * W + 150) * 4] === 230, 'Match outline: the drawing inside the figure is untouched');
+    const again = matchOutline(q, W, H);
+    ok(again.added === 0, 'Match outline: a figure already at the weight is left alone');
+  }
+
+  // Outline in gaps: a wide enclosed gap (an arm away from the hip) gets the stroke; a narrow one (fingers) stays open.
+  {
+    const W = 300, H = 520, q = new Uint8ClampedArray(W * H * 4);
+    for (let y = 10; y < 510; y++) for (let x = 60; x < 240; x++) {
+      const wide = x >= 120 && x < 160 && y >= 200 && y < 300, slit = x >= 200 && x < 203 && y >= 200 && y < 300;
+      if (wide || slit) continue;
+      const edge = x < 62 || x > 237 || (x >= 118 && x < 162 && y >= 198 && y < 302) || (x >= 198 && x < 205 && y >= 198 && y < 302);
+      q.set(edge ? [20, 16, 14, 255] : [230, 120, 60, 255], (y * W + x) * 4);
+    }
+    matchOutline(q, W, H, { ratio: 0.01 });
+    ok(q[(250 * W + 140) * 4 + 3] === 0 && q[(250 * W + 121) * 4 + 3] === 255 && q[(250 * W + 121) * 4] < 40, 'Match outline: a wide enclosed gap gets the outline inside its edge, its middle stays see-through');
+    ok(q[(250 * W + 201) * 4 + 3] === 0, 'Match outline: a gap narrower than twice the outline is left as drawn (it stays open)');
+  }
+
   // Canon heights: Part I Naruto is the reference, every head is his head size, giants have one size.
   const nar1 = statureOf('naruto', 'p1'), nar2 = statureOf('naruto_p2', 'p2'), kak = statureOf('kakashi', 'p1');
   ok(nar1.scale === 1 && nar1.cm === REF_CM && Math.abs(nar1.heads - REF_HEADS) < 1e-9, 'Part I Naruto is the reference figure (scale 1, ' + REF_HEADS + ' heads)');
@@ -892,7 +954,8 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   ok(statureOf('e_kakashi_bell2', 'p1', { reuse: (k) => (k === 'e_kakashi_bell2' ? 'kakashi' : null) }).cm === kak.cm && statureOf('e_nobody', 'p1', { basedOn: 'kakashi' }).cm === kak.cm, 'an enemy takes its height from the art it reuses or the ninja it is based on');
   ok(statureOf('e_manda', 'p2').scale === GIANT_SCALE && statureOf('e_manda', 'p2').kind === 'giant', 'a giant stands at the one giant size');
   ok(!statureOf('e_nobody_at_all', 'p1').known, 'an id with no height is flagged as unknown (validate lists it)');
-  ok(/PROPORTIONS: Kakashi Hatake is 181 cm tall. Draw the figure 4.4 heads tall/.test(proportionsLine('Kakashi Hatake', 'kakashi_p1', 'p1')) && /giant creature/.test(proportionsLine('Manda', 'e_manda', 'p2')), 'the sprite prompt states the height and the head count, or the giant rule');
+  const M_ = buildManifest(C, { now: '2026-01-01T00:00:00.000Z' });
+  ok(/PROPORTIONS: Kakashi Hatake is 181 cm tall and drawn \d\.\d heads tall/.test(M_.sprites.find(e => e.id === 'kakashi_p1').prompts.gemini) && /giant creature/.test(M_.sprites.find(e => e.id === 'e_manda').prompts.gemini) && M_.sprites.find(e => e.id === 'sakura_p1').refs[0].file === 'assets/sprites/naruto_p1.webp' && M_.portraits.find(e => e.id === 'sakura_p1').refs.length === 2 && M_.sprites.find(e => e.id === 'naruto_p1').refs.length === 0, 'the sprite prompt states the height and head count (or the giant rule); each image lists the Naruto reference it attaches');
 
   const arcs = Object.values(C.arc);
   const missing = arcs.filter(a => { const id = stageIdFor({ arcId: a.id }); return !id || !STAGES[id]; }).map(a => a.id);
@@ -924,8 +987,8 @@ ok(decodeSave(encodeSave(uni)).note === uni.note, 'unicode survives export/impor
   const covered = new Set([...M.portraits.map(e => e.id), ...M.reuse.map(r => r.id)]);
   ok(Object.values(C.enemy).every(d => covered.has(d.id) || M.portraits.some(e => e.id === d.id)), 'every enemy either has its own portrait entry or reuses one');
   ok(M.portraits.length === M.sprites.length && M.sprites.every(e => e.incoming === `sprite_${e.id}` && e.px === 512) && M.portraits.every(e => e.incoming === e.id && e.px === 256), 'one sprite per portrait; incoming names and pixel sizes follow the manifest rules');
-  ok(M.portraits.every(e => e.prompt.startsWith('STYLE ANCHOR') && e.prompt.includes('#FF00FF') && /FACING: the character faces the viewer's (RIGHT|LEFT)/.test(e.prompt)), 'every prompt starts with the style anchor, asks for the magenta background and states the facing');
-  ok(M.portraits.find(e => e.id === 'zabuza').facing === 'right' && M.portraits.find(e => e.id === 'e_mizuki').facing === 'left' && M.portraits.find(e => e.id === 'npc_tazuna').facing === 'right', 'player characters and civilians face right, enemies face left');
+  ok([...M.portraits, ...M.sprites].every(e => ['gemini', 'chatgpt', 'chatgptTransparent'].every(k => e.prompts?.[k]?.includes('STYLE: ') && e.prompts[k].includes("toward the viewer's RIGHT"))) && M.sprites.every(e => /#FF00FF|#00FF00|#00FFFF|#FFFF00/.test(e.prompts.gemini) && e.prompts.chatgptTransparent.includes('real alpha channel')), 'every image has a Gemini and two ChatGPT prompts (key colour, transparent) with the style block, facing right');
+  ok([...M.portraits, ...M.sprites].every(e => e.facing === 'right') && M.sprites.find(e => e.id === 'sakura_p1').keyColour === 'cyan' && M.sprites.find(e => e.id === 'ino_p1').keyColour === 'green' && M.sprites.find(e => e.id === 'naruto_p1').keyColour === 'magenta', 'every picture faces right (the game mirrors the enemy side); each character gets the first key colour none of their colours clash with (Sakura: pink hair and green eyes, so cyan)');
   ok(M.portraits.find(e => e.id === 'naruto_p1').prompt.includes('Hidden Leaf Village symbol') && M.portraits.find(e => e.id === 'zabuza').prompt.includes('Hidden Mist Village symbol'), 'the prompts spell out the village symbol on the headband');
   ok(M.missingDescriptions.length === 0, `every manifest entry has a written description${M.missingDescriptions.length ? ` (generic: ${M.missingDescriptions.join(', ')})` : ''}`);
   const md = checklistMarkdown(M, new Set(['assets/portraits/naruto_p1.webp']), { now: '2026-01-01T00:00:00.000Z' });

@@ -9,13 +9,28 @@ import { CONTENT as C } from '../js/content/index.js';
 import * as Assets from '../js/render/Assets.js';
 import { h, avatar } from '../js/ui/dom.js';
 import { drawFigure, lookFor } from '../js/render/Figure.js';
-import { keyBackground, leftovers, wandRemove, backgroundColor, bounds, DEFAULTS } from '../tools/key-lib.mjs';
+import { keyBackground as keyBackgroundRaw, inkLines, matchOutline, outlineRatioOf, leftovers, wandRemove, backgroundColor, bounds, DEFAULTS } from '../tools/key-lib.mjs';
 import { REF_CM, REF_HEADS, GIANT_SCALE } from '../js/core/stature.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const MAX_SIDE = 1536;         // work at most this big in the browser (a 1024² generation is used as is)
-const state = { manifest: null, index: new Set(), reuse: {}, figures: {}, overrides: { prompts: {}, status: {} }, originals: {}, entries: [], groups: [], key: null, work: null, history: [], wand: false, bg: null, marks: null };
-const HEADS_TOL = 0.06;        // a sprite within 6% of its target height in heads passes the head check
+const state = { manifest: null, index: new Set(), reuse: {}, figures: {}, strength: 1, inkLines: true, matchOutline: true, overrides: { prompts: {}, status: {} }, originals: {}, entries: [], groups: [], key: null, work: null, history: [], wand: false, bg: null, marks: null };
+const HEADS_TOL = 0.10;
+/** Every key in the studio: the background out, then (the Black lines box, on by default) the outlines to the ink. */
+function keyBackground(data, W, H, opts = {}) {
+  // A picture that is already transparent (a studio save, reprocessed) is not keyed again: its see-through
+  // pixels would read as a black background and the keyer would eat the black outlines. The line steps
+  // below still run.
+  let clear = 0, n = 0; for (let k = 0; k < W * H; k += 7) { n++; if (data[k * 4 + 3] < 8) clear++; }
+  const r = clear / n > 0.01 ? { bg: null, keyed: 0, holes: 0, preKeyed: true } : keyBackgroundRaw(data, W, H, opts);
+  r.inked = state.inkLines ? inkLines(data, W, H) : 0;
+  // a sprite's outer outline to Part I Naruto's weight (the Match outline box, on by default; sprites only)
+  // a sprite's outline to the reference's weight (Part I Naruto's own page sets that weight, so it is left as drawn)
+  const isSprite = String(state.key || '').startsWith('sprite:'), isRef = state.key === 'sprite:naruto_p1';
+  r.outline = state.matchOutline && isSprite && !isRef ? matchOutline(data, W, H, state.refRatio ? { ratio: state.refRatio } : {}) : null;
+  r.checker = r.preKeyed ? false : paintedChecker(data, W, H);
+  return r;
+}        // a sprite within 6% of its target height in heads passes the head check
 
 // ------------------------------------------------------------------ data
 async function getJSON(url, fallback) { try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return fallback; return await r.json(); } catch { return fallback; } }
@@ -40,6 +55,23 @@ async function loadIndex() {
   const idx = await getJSON('assets/index.json', { files: [] });
   state.index = new Set(idx.files || []); state.reuse = idx.reuse || {}; state.figures = idx.figures || {};
   Assets.setIndex([...state.index], state.reuse, state.figures);
+  Assets.setQuality('high');   // the studio judges the sharpest version: the hd copy wherever it exists
+  // the outline weight every sprite is matched to: the reference sprite's own (Part I Naruto), measured from its file
+  const ref = state.index.has('assets/sprites/hd/naruto_p1.webp') ? 'assets/sprites/hd/naruto_p1.webp' : state.index.has('assets/sprites/naruto_p1.webp') ? 'assets/sprites/naruto_p1.webp' : null;
+  state.refRatio = null;
+  if (ref) { try { const im = await loadImage(ref + '?t=' + Date.now()); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); state.refRatio = outlineRatioOf(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height); } catch { /* no reference yet */ } }
+}
+/**
+ * A checkerboard painted in (ChatGPT sometimes draws the "transparent" pattern instead of real alpha): the
+ * border is opaque, grey-white, and alternates between two light tones.
+ */
+function paintedChecker(data, W, H) {
+  const tones = []; let opaque = 0, n = 0;
+  for (let x = 0; x < W; x += 3) for (const y of [0, 1, H - 2, H - 1]) { const i = (y * W + x) * 4; n++; if (data[i + 3] > 250) opaque++; const r = data[i], g = data[i + 1], b = data[i + 2]; if (Math.max(r, g, b) - Math.min(r, g, b) < 14 && r > 150) tones.push(r); }
+  if (opaque / n < 0.95 || tones.length / n < 0.9) return false;
+  tones.sort((a, b) => a - b);
+  const lo = tones[Math.floor(tones.length * 0.2)], hi = tones[Math.floor(tones.length * 0.8)];
+  return hi - lo >= 12;   // two distinct light greys along the edge: a painted checkerboard, not a flat colour
 }
 /** The roster or enemy definition behind a manifest id (naruto_p1 → naruto, e_aoi_boss → the enemy). */
 function defOf(id) {
@@ -72,7 +104,6 @@ function groupEntries() {
 const isDone = (e) => state.index.has(e.file);
 const statusOf = (e) => state.overrides.status[e.key] || null;
 const isFlagged = (e) => (statusOf(e)?.leftover || 0) > 0;
-const hasOwnPrompt = (e) => !!state.overrides.prompts[e.key];
 const originalOf = (e) => state.originals[e.incoming] || null;
 
 // ------------------------------------------------------------------ the list
@@ -118,9 +149,7 @@ function renderEntry(e) {
       other ? h('button.ghost.small', { type: 'button', onclick: () => select(other.key) }, other.kind === 'portrait' ? '→ the portrait' : '→ the sprite') : null),
       h('div.art-kv', { style: { marginTop: '8px' } }, h('b', 'Used for'), h('span', e.usage), h('b', 'File'), h('span', e.file), h('b', 'Generate at'), h('span', `${e.generate} × ${e.generate}, ${e.aspect}; drop it here as PNG, JPG or WebP`), e.note ? h('b', 'Note') : null, e.note ? h('span', e.note) : null)),
     h('div.art-two',
-      h('div.card.art-prompt', h('h3', 'Prompt'), ta,
-        h('div.art-actions', btn('Copy', () => navigator.clipboard.writeText(ta.value).then(() => flash(promptNote, 'copied')), 'primary'),
-          btn('Save prompt', () => savePrompt(e, ta.value, promptNote, ta)), hasOwnPrompt(e) ? btn('Back to the manifest\'s', () => savePrompt(e, null, promptNote, ta), 'ghost') : null, promptNote)),
+      promptCard(e),
       h('div.card', h('h3', 'The picture'),
         dropZone(e),
         h('div.art-actions', { id: 'loaders' },
@@ -132,6 +161,195 @@ function renderEntry(e) {
   );
   renderPreviews(e);
 }
+// ------------------------------------------------------------------ the prompt card
+// Two tabs, Gemini and ChatGPT (the choice is remembered). Each: the app's own "before you generate"
+// checklist (how to reach its best image model), the files to attach in order with a download button for
+// each, then the prompt. Your own wording for a tab is kept apart from the generated prompt (which follows
+// design changes); when the generated one changed since you saved yours, the changes are highlighted.
+// The ChatGPT tab has a background switch: transparent (try it first) or the flat key colour.
+const GENERATORS = [['', '(not recorded)'], ['gemini', 'Gemini'], ['chatgpt', 'ChatGPT'], ['other', 'Other']];
+const store = { get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private window */ } } };
+state.tab = store.get('art.tab', 'chatgpt');
+state.bgMode = store.get('art.bg', 'transparent');
+const ovKey = (e, tab = state.tab) => tab === 'chatgpt' ? `${e.key}@chatgpt` : e.key;
+const ownOf = (e, tab = state.tab) => state.overrides.prompts[ovKey(e, tab)] || null;
+const hasOwnPrompt = (e) => !!(state.overrides.prompts[e.key] || state.overrides.prompts[`${e.key}@chatgpt`]);
+/** The generated prompt for a tab (ChatGPT: by the background switch). */
+const generatedOf = (e, tab = state.tab) => {
+  const P = e.prompts || { gemini: e.prompt, chatgpt: e.prompt, chatgptTransparent: e.prompt };
+  return tab === 'gemini' ? P.gemini : (state.bgMode === 'transparent' ? P.chatgptTransparent : P.chatgpt);
+};
+const KEY_LABEL = { magenta: 'magenta', green: 'green', cyan: 'cyan', yellow: 'yellow' };
+
+const CHECKLIST = {
+  gemini: [
+    'Start a new chat for this image (an old chat carries its pictures and drifts).',
+    'Set the model picker to Pro, then choose Create images (or Images in the sidebar). Flash-Lite makes lower-quality images; avoid it.',
+    'If Settings has Media Watermark, turn it off, so the sparkle mark does not land on the background.',
+    'Attach the files below in the order listed (Image 1 first), then paste the prompt and send.',
+    'On a picture you like, open More and choose Redo with Pro: that redraws it with Nano Banana Pro, Gemini\'s best image model. Download the Pro version at full size (2K on your plan).',
+    'To fix one detail, reply in the same chat: "Change only [the detail]. Keep the pose, proportions, line weight, colours and background exactly the same." For proportions, start a new chat instead.',
+  ],
+  chatgpt: [
+    'Start a new chat for this image (an old chat carries its pictures and drifts).',
+    'In the model picker choose a Thinking model, so the picture is made "with thinking" (ChatGPT Images 2.5 plans and checks the image first; best quality).',
+    'Attach the files below in the order listed (Image 1 first), then paste the prompt and send.',
+    'Download the picture (not a screenshot). With the transparent background, the studio checks the file: if ChatGPT painted a grey checkerboard instead of real transparency, switch the background to the key colour and generate again.',
+    'To fix one detail, reply in the same chat: "Change only [the detail]. Keep identical: pose, proportions, head size, line weight, colours, background." For proportions, start a new chat instead.',
+  ],
+};
+/** Where this image sits in the reference set (Naruto's four pictures come first, in this order). */
+const REF_SET = ['sprite:naruto_p1', 'portrait:naruto_p1', 'sprite:naruto_p2', 'portrait:naruto_p2'];
+
+function promptCard(e) {
+  const tab = state.tab;
+  const own = ownOf(e);
+  const generated = generatedOf(e);
+  const note = h('span.small.muted', own ? 'your wording for this tab, kept in assets/art-overrides.json' : 'the generated prompt');
+  const mine = h('textarea' + (own ? '.own' : ''), { spellcheck: 'false' }); mine.value = own || generated;
+  const redraw = () => { const card = $('#promptCard'); if (card) card.replaceWith(promptCard(e)); renderSideBySide(e, state.lastPreview || null); };
+  const tabs = h('div.art-tabs', { role: 'tablist' }, ...[['gemini', 'Gemini'], ['chatgpt', 'ChatGPT']].map(([t, label]) =>
+    h('button' + (t === tab ? '.on' : ''), { type: 'button', role: 'tab', 'aria-selected': String(t === tab), onclick: () => { state.tab = t; store.set('art.tab', t); redraw(); } }, label)));
+  const step = REF_SET.indexOf(e.key);
+  const refBanner = step >= 0
+    ? h('div.art-warn.info', `Reference set, step ${step + 1} of 4. ` + ['Part I Naruto\'s sprite is the ruler for every sprite: its head size, proportions and outline weight are what everyone is measured against. Make it first.', 'Part I Naruto\'s portrait sets the framing for every portrait. Make it with his new sprite attached.', 'Shippuden Naruto\'s sprite: the same style and head size, three years older and 166 cm.', 'Shippuden Naruto\'s portrait: framed like the Part I portrait, looking like the Shippuden sprite.'][step])
+    : null;
+  const bgSwitch = tab === 'chatgpt'
+    ? h('div.art-bgswitch', h('span.small', 'Background:'),
+      ...[['transparent', 'Transparent (try first)'], ['key', `Flat ${KEY_LABEL[e.keyColour || 'magenta']}`]].map(([v, label]) =>
+        h('button' + (state.bgMode === v ? '.on' : ''), { type: 'button', onclick: () => { state.bgMode = v; store.set('art.bg', v); redraw(); } }, label)))
+    : h('p.tiny.muted', `Background: flat ${KEY_LABEL[e.keyColour || 'magenta']} (Gemini cannot make a transparent picture).`);
+  const parts = [
+    h('div.art-prompt-head', h('h3', 'Prompt'), tabs),
+    refBanner,
+    h('details.art-check', { open: true }, h('summary', h('b', `Before you generate in ${tab === 'gemini' ? 'Gemini' : 'ChatGPT'}`)), h('ol', ...CHECKLIST[tab].map(t => h('li', t)))),
+    attachments(e),
+    bgSwitch,
+    mine,
+    h('div.art-actions',
+      btn('Copy', () => navigator.clipboard.writeText(mine.value).then(() => flash(note, 'copied')), 'primary'),
+      btn(own ? 'Save my prompt' : 'Save as my prompt', () => savePrompt(e, mine.value, note)),
+      own ? btn('Back to the generated prompt', () => savePrompt(e, null, note), 'ghost') : null, note),
+  ];
+  if (own) {
+    const base = state.overrides.base?.[ovKey(e)];
+    const changed = base != null && base !== generated;
+    const header = changed
+      ? h('div.art-warn.info', 'The generated prompt has changed since you saved yours (a design change). The changes are highlighted: green was added, red was removed. Carry over what you want, then save yours again.')
+      : base == null
+        ? h('div.art-warn.info', 'Your prompt was saved before changes were tracked, so the highlights show how the generated prompt differs from yours: green is only in the generated one, red only in yours.')
+        : h('p.small.muted', 'Unchanged since you saved yours.');
+    parts.push(h('details.art-gen', { open: changed || base == null },
+      h('summary', h('b', 'The generated prompt'), h('span.small.muted', ' follows design changes; yours is never touched')),
+      header,
+      h('div.art-diff', ...diffWords(changed ? base : base == null ? own : generated, generated)),
+      h('div.art-actions', btn('Copy the generated prompt', () => navigator.clipboard.writeText(generated).then(() => flash(note, 'copied the generated prompt')), 'ghost'))));
+  }
+  parts.push(generatorPicker(e), h('div.art-side', { id: 'sideBySide' }, h('p.small.muted', 'Load a picture to see it beside the reference.')));
+  return h('div.card.art-prompt', { id: 'promptCard' }, ...parts);
+}
+
+/** The files to attach, numbered, each with what it controls and a download button (the hd copy when there is one). */
+function attachments(e) {
+  const refs = e.refs || [];
+  if (!refs.length) return h('p.small', h('b', 'Attach: nothing. '), 'This is the first picture of the reference set; it is made from the prompt alone.');
+  return h('div.art-attach', h('b.small', 'Attach, in this order:'),
+    h('ol', ...refs.map((r) => {
+      const have = state.index.has(r.file) || state.index.has(Assets.hdOf(r.file));
+      const src = state.index.has(Assets.hdOf(r.file)) ? Assets.hdOf(r.file) : r.file;
+      const name = src.split('/').pop().replace('.webp', '');
+      return h('li', h('div.art-attach-row',
+        have ? h('img', { src, alt: '' }) : h('span.art-attach-missing', '?'),
+        h('div', h('b', r.label), h('div.tiny.muted', r.role.split(':')[0])),
+        have ? h('a.dl.small', { href: src, download: `ref_${name}.webp` }, '⬇ Download') : h('span.tiny.muted', 'not made yet: make it first')));
+    })));
+}
+
+/** Word-level differences from a to b: [spans]; ins = only in b (green), del = only in a (red). */
+function diffWords(a, b) {
+  const A = String(a).split(/(\s+)/), B = String(b).split(/(\s+)/);
+  if (a === b) return [h('span', b)];
+  const n = A.length, m = B.length;
+  const L = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = []; let i = 0, j = 0;
+  const push = (cls, t) => { const last = out[out.length - 1]; if (last && last.cls === cls) last.t += t; else out.push({ cls, t }); };
+  while (i < n && j < m) {
+    if (A[i] === B[j]) { push('', B[j]); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) { push('del', A[i]); i++; }
+    else { push('ins', B[j]); j++; }
+  }
+  while (i < n) push('del', A[i++]);
+  while (j < m) push('ins', B[j++]);
+  return out.map(p => p.cls ? h('span.' + p.cls, p.t) : h('span', p.t));
+}
+
+function generatorPicker(e) {
+  const cur = state.overrides.meta?.[e.key]?.generator || '';
+  const sel = h('select', { 'aria-label': 'Generator used' }, ...GENERATORS.map(([v, t]) => h('option', { value: v, selected: v === cur }, t)));
+  const note = h('span.small.muted', '');
+  sel.addEventListener('change', async () => {
+    const r = await post('/api/art/meta', { id: e.id, kind: e.kind, generator: sel.value });
+    if (!r.ok) { note.textContent = 'not saved: ' + (r.error || 'is the local server running?'); return; }
+    state.overrides.meta = state.overrides.meta || {}; state.overrides.meta[e.key] = { ...(state.overrides.meta[e.key] || {}), generator: sel.value };
+    flash(note, 'saved'); renderList();
+  });
+  return h('div.art-generator', h('label', 'This picture was made with ', sel), note);
+}
+
+// ------------------------------------------------------------------ side by side with the reference
+// Under the prompt: the reference (Part I Naruto) and this picture at the same scale. A sprite: both at
+// canon height, feet on one line, with Naruto's skull and chin marked and a ±10 % band around each (a
+// head inside the bands is within the head check's allowance). A portrait: Naruto's portrait and this
+// one side by side, for framing and line weight.
+function renderSideBySide(e, img) {
+  const box = $('#sideBySide'); if (!box) return;
+  if (!img) { box.replaceChildren(h('p.small.muted', 'Load a picture to see it beside the reference.')); return; }
+  if (e.kind === 'portrait') {
+    const refPath = Assets.portraitPath('naruto', 'p1');
+    const tile = (src, label) => h('figure.art-sbs-tile', src ? h('img', { src, alt: label }) : h('span.small.muted', 'no reference yet'), h('figcaption.tiny', label));
+    box.replaceChildren(h('div.art-sbs', tile(refPath, 'Part I Naruto (reference)'), tile(img.src, 'this portrait')));
+    return;
+  }
+  const def = e.def || { id: e.id, name: e.name, tier: 'genin' }; const look = lookFor(def, C);
+  const st = e.stature || {};
+  const stature = st.kind === 'giant' ? GIANT_SCALE : (st.cm || REF_CM) / REF_CM;
+  const fig = (state.marks && state.work && img.width === state.work.canvas.width) ? state.marks : (state.figures[e.file] || null);
+  const REF = 'assets/sprites/naruto_p1.webp';
+  const refPath = Assets.spritePath('naruto', 'p1');
+  const refFig = state.figures[REF] || null;
+  const CW = 480, CH = 420, gy = CH - 34, SK = 86;
+  const cv = sharpCanvas(CW, CH, 'canvas.art-compare');
+  const draw = () => {
+    const g = cv.g;
+    g.fillStyle = '#e9eef5'; g.fillRect(0, 0, CW, CH);
+    g.fillStyle = '#c9d3df'; g.fillRect(0, gy, CW, CH - gy);
+    const scale = (gy - 16) / (SK * Math.max(1, stature) * 1.35);
+    const ref = refPath ? Assets.image(refPath) : null;
+    drawFigure(g, lookFor(C.char.naruto, C), { x: CW * 0.28, y: gy, facing: 1, scale, stature: 1, t: 0, sprite: ref, fig: refFig, expression: 'set' });
+    drawFigure(g, look, { x: CW * 0.72, y: gy, facing: 1, scale, stature, t: 0, sprite: img, fig, expression: 'set' });
+    const rf = refFig && refFig.chin != null ? refFig : null;
+    if (rf) {
+      const hh = SK / (rf.feet - rf.top) * scale;
+      const skullY = gy - SK * scale, chinY = gy - (rf.feet - rf.chin) * hh, band = (chinY - skullY) * HEADS_TOL;
+      g.fillStyle = 'rgba(0,150,200,0.12)'; g.fillRect(0, skullY - band, CW, band * 2);
+      g.fillStyle = 'rgba(210,150,0,0.14)'; g.fillRect(0, chinY - band, CW, band * 2);
+      g.save(); g.setLineDash([7, 5]); g.lineWidth = 1.5;
+      g.strokeStyle = 'rgba(0,150,200,0.9)'; g.beginPath(); g.moveTo(0, skullY); g.lineTo(CW, skullY); g.stroke();
+      g.strokeStyle = 'rgba(200,140,0,0.95)'; g.beginPath(); g.moveTo(0, chinY); g.lineTo(CW, chinY); g.stroke();
+      g.restore();
+      g.fillStyle = 'rgba(0,0,0,0.6)'; g.font = '11px system-ui, sans-serif'; g.textAlign = 'right';
+      g.fillText('Naruto\'s skull ±10 %', CW - 6, skullY - band - 3); g.fillText('Naruto\'s chin ±10 %', CW - 6, chinY - band - 3);
+    }
+    g.fillStyle = 'rgba(0,0,0,0.7)'; g.font = '12px system-ui, sans-serif'; g.textAlign = 'center';
+    g.fillText(`Part I Naruto (reference, ${Math.round(REF_CM)} cm)`, CW * 0.28, gy + 21);
+    g.fillText(`this sprite (${st.kind === 'giant' ? 'giant size' : `${st.cm ?? '?'} cm`})`, CW * 0.72, gy + 21);
+  };
+  cv.onDraw(draw);
+  if (refPath && !Assets.image(refPath)) Assets.onLoad(refPath, () => { if (cv.c.isConnected) draw(); });
+  box.replaceChildren(cv.c, h('p.tiny.muted', 'Both at canon height, feet on one line. A head whose skull and chin sit inside the shaded bands is within the ±10 % allowance.'));
+}
+
 function btn(label, onclick, cls = '') { return h('button' + (cls ? '.' + cls.split(' ').join('.') : ''), { type: 'button', onclick }, label); }
 function flash(el, text) { const old = el.textContent; el.textContent = text; setTimeout(() => { el.textContent = old; }, 1400); }
 function dropZone(e) {
@@ -146,7 +364,11 @@ function dropZone(e) {
 // ------------------------------------------------------------------ loading and keying
 function loadImage(src) { return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; }); }
 async function loadFile(e, file) { const url = URL.createObjectURL(file); try { await loadFromUrl(e, url, { keyed: false }); } finally { URL.revokeObjectURL(url); } }
-async function loadCurrent(e) { await loadFromUrl(e, e.file + '?t=' + Date.now(), { keyed: true }); }
+/** The game's file to show for an entry: its hd copy when there is one, else the standard file. */
+const bestFile = (e) => state.index.has(Assets.hdOf(e.file)) ? Assets.hdOf(e.file) : e.file;
+/** Put a picture in the game's registry under both of the entry's paths, so the game's own frames show it. */
+const showInGame = (e, img) => { for (const f of [e.file, Assets.hdOf(e.file)]) { Assets._registry.files.add(f); Assets._registry.images.set(f, img); } };
+async function loadCurrent(e) { await loadFromUrl(e, bestFile(e) + '?t=' + Date.now(), { keyed: true }); }
 /** Put an image on the work canvas. keyed: it is already transparent (the game's file): only check it. */
 async function loadFromUrl(e, url, { keyed = false } = {}) {
   let img; try { img = await loadImage(url); } catch { setWarn('Could not read that image.', 'bad'); return; }
@@ -155,9 +377,11 @@ async function loadFromUrl(e, url, { keyed = false } = {}) {
   const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, c.width, c.height);
   const d = g.getImageData(0, 0, c.width, c.height);
   let info;
+  // the untouched pixels, so the key-strength slider can key again from the original
+  const orig = keyed ? null : new ImageData(new Uint8ClampedArray(d.data), c.width, c.height);
   if (keyed) { state.bg = null; info = { keyed: 0, holes: 0, already: true }; }
-  else { const r = keyBackground(d.data, c.width, c.height); state.bg = r.bg; info = r; g.putImageData(d, 0, 0); }
-  state.work = { canvas: c, ctx: g, source: keyed ? 'game' : 'file', flip: false, info };
+  else { const r = keyBackground(d.data, c.width, c.height, { strength: state.strength }); state.bg = r.bg; info = r; g.putImageData(d, 0, 0); }
+  state.work = { canvas: c, ctx: g, source: keyed ? 'game' : 'file', flip: false, info, orig };
   state.history = [];
   state.marks = e.kind === 'sprite' ? initialMarks(e, d.data, c.width, c.height, keyed) : null;
   renderWork(e);
@@ -262,23 +486,68 @@ function renderWork(e) {
   const work = h('div.art-work', view, hl, state.marks ? marksLayer(e) : null);
   const flipBtn = btn(w.flip ? 'Flip back' : 'Flip', () => { snapshot(); flipCanvas(); w.flip = !w.flip; renderWork(e); }, 'ghost');
   const wandBtn = btn('🪄 Wand' + (state.wand ? ' on' : ''), () => { state.wand = !state.wand; renderWork(e); }, state.wand ? 'wandon' : 'ghost');
-  const rekey = w.source === 'file' && state.bg ? btn('Key again (auto)', () => { snapshot(); const d = w.ctx.getImageData(0, 0, w.canvas.width, w.canvas.height); const r = keyBackground(d.data, w.canvas.width, w.canvas.height, { bg: state.bg }); w.ctx.putImageData(d, 0, 0); w.info = r; renderWork(e); }, 'ghost') : null;
+  const rekey = w.source === 'file' && state.bg ? btn('Key again (auto)', () => { snapshot(); const d = w.ctx.getImageData(0, 0, w.canvas.width, w.canvas.height); const r = keyBackground(d.data, w.canvas.width, w.canvas.height, { bg: state.bg, strength: state.strength }); w.ctx.putImageData(d, 0, 0); w.info = r; renderWork(e); }, 'ghost') : null;
+  const slider = w.orig ? strengthSlider(e) : null;
   const undoBtn = btn('Undo', () => undo(e), 'ghost'); undoBtn.disabled = !state.history.length;
   // the game's file is 256 / 512 px: too small to re-ingest, so a fix starts from the original or a new picture
   const saveBtn = w.source === 'game'
     ? (state.marks ? btn('📏 Save head marks', () => saveMarks(e), 'primary') : h('span.small.muted', 'To change it, reprocess the original or drop a new picture, then save.'))
     : btn('💾 Save to the game', () => save(e, check), 'primary');
   const size = `${w.canvas.width} × ${w.canvas.height}`;
-  const info = w.info.already ? `the game's file (${size}); checked for white and magenta leftovers` : `${size} · background ${state.bg ? `rgb(${state.bg.join(', ')})` : '?'} · ${Math.round(w.info.keyed * 100)}% keyed${w.info.holes ? ` · ${w.info.holes} enclosed patch${w.info.holes === 1 ? '' : 'es'} removed` : ''}`;
-  wrap.replaceChildren(
+  const info = w.info.already ? `the game's file (${size}); checked for white and magenta leftovers` : `${size} · background ${state.bg ? `rgb(${state.bg.join(', ')})` : '?'} · ${Math.round(w.info.keyed * 100)}% keyed${w.info.holes ? ` · ${w.info.holes} enclosed patch${w.info.holes === 1 ? '' : 'es'} removed` : ''}${w.info.inked ? ` · lines to black (${w.info.inked.toLocaleString('en-US')} px)` : ''}${w.info.outline?.added ? ` · outline ${w.info.outline.measured} → ${w.info.outline.target} px` : w.info.outline?.target ? ` · outline ${w.info.outline.measured} px, already at weight` : ''}`;
+  wrap.replaceChildren(...[
     h('div.art-actions', flipBtn, rekey, wandBtn, undoBtn, saveBtn),
+    slider,
     h('p.tiny.muted', info),
+    w.info?.checker ? h('div.art-warn.bad', 'This picture has a grey checkerboard painted in, not real transparency. In the ChatGPT tab, switch the background to the key colour and generate again.') : null,
+    w.canvas.width !== w.canvas.height && w.source === 'file'
+      ? h('div.art-warn.info', `Gemini made this ${w.canvas.width} × ${w.canvas.height}, not square. Saving ${e.kind === 'portrait' ? 'crops it to a square around the character' : 'pads it to a square'}, which works, but for the best framing reply in Gemini: “Make it a square 1:1 image, 1024 × 1024.”`)
+      : null,
     work,
     state.marks ? headReadoutEl(e) : null,
     setWarnEl(check),
     h('div', { id: 'saveLog' }),
-  );
+  ].filter(Boolean));   // replaceChildren would print a null as the text "null"
   renderPreviews(e, w.canvas);
+}
+
+/**
+ * Key strength: every colour tolerance of the keyer at once (100 % = the defaults). Lower keeps
+ * more of a character whose colours are close to the background (pink hair on magenta); higher
+ * takes more of a background with noise or a soft gradient. Moving it keys again from the
+ * original picture (Flip is kept; wand edits start over).
+ */
+function strengthSlider(e) {
+  const MIN = 30, MAX = 200;
+  const pct = Math.round(state.strength * 100);
+  const clampPct = (v) => Math.max(MIN, Math.min(MAX, Math.round(Number(v))));
+  // the slider, − and +, and the number box all set the same value; the key runs again when it settles
+  const input = h('input', { type: 'range', min: String(MIN), max: String(MAX), step: '1', value: String(pct), 'aria-label': 'Key strength' });
+  const num = h('input.art-num', { type: 'number', min: String(MIN), max: String(MAX), step: '1', value: String(pct), 'aria-label': 'Key strength in percent' });
+  const apply = (v) => { const p = clampPct(v); if (!Number.isFinite(p)) return; input.value = num.value = String(p); if (p !== Math.round(state.strength * 100)) rekeyFromOriginal(e, p / 100); };
+  input.addEventListener('input', () => { num.value = input.value; });
+  input.addEventListener('change', () => apply(input.value));
+  num.addEventListener('change', () => apply(num.value));
+  num.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') apply(num.value); });
+  const minus = btn('−', () => apply(clampPct(num.value) - 1), 'ghost small'); minus.setAttribute('aria-label', 'Key strength down 1');
+  const plus = btn('+', () => apply(clampPct(num.value) + 1), 'ghost small'); plus.setAttribute('aria-label', 'Key strength up 1');
+  const reset = btn('Reset', () => apply(100), 'ghost small');
+  const ink = h('input', { type: 'checkbox', checked: state.inkLines, onchange: (ev) => { state.inkLines = ev.target.checked; rekeyFromOriginal(e, state.strength); } });
+  const inkBox = h('label.art-ink', { title: 'Recolour the outlines to near-black when the generator drew them dark red or brown, or tinted them toward the background. Dark fills (shadows) are left alone.' }, ink, ' Black lines');
+  const isSprite = String(state.key || '').startsWith('sprite:');
+  const outlineBox = isSprite && state.key !== 'sprite:naruto_p1' ? h('label.art-ink', { title: 'Thicken the outer outline to the weight of Part I Naruto for the height of the figure, so every sprite reads the same in battle. The drawing inside is untouched.' }, h('input', { type: 'checkbox', checked: state.matchOutline, onchange: (ev) => { state.matchOutline = ev.target.checked; rekeyFromOriginal(e, state.strength); } }), ' Match outline') : null;
+  return h('div.art-strength', h('label', 'Key strength'), input, minus, h('span.art-numwrap', num, h('span', '%')), plus, reset, inkBox, outlineBox,
+    h('span.tiny.muted', 'Lower keeps colours close to the background; higher removes more background.'));
+}
+function rekeyFromOriginal(e, strength) {
+  const w = state.work; if (!w?.orig) return;
+  state.strength = strength;
+  const d = new ImageData(new Uint8ClampedArray(w.orig.data), w.orig.width, w.orig.height);
+  const r = keyBackground(d.data, d.width, d.height, { bg: state.bg, strength });
+  w.ctx.putImageData(d, 0, 0); w.info = r;
+  if (w.flip) flipCanvas();
+  state.history = [];
+  renderWork(e);
 }
 function setWarnEl(check) {
   if (!check.patches.length) return h('div.art-warn.good', '✓ No leftover background found. Look at the four backgrounds below to be sure.');
@@ -291,13 +560,14 @@ function flipCanvas() { const { canvas, ctx } = state.work; const copy = documen
 /** The four backgrounds and the in-game contexts, from the work canvas (or the game's file when there is none). */
 function renderPreviews(e, canvas = null) {
   const bgs = $('#bgs'), ctx = $('#ctx'); if (!bgs || !ctx) return;
-  const src = canvas ? canvas.toDataURL('image/png') : (isDone(e) ? e.file + '?t=' + Date.now() : null);
+  const src = canvas ? canvas.toDataURL('image/png') : (isDone(e) ? bestFile(e) + '?t=' + Date.now() : null);
   bgs.replaceChildren(...['black', 'white', 'red', 'checker'].map(k => h('div.bg.' + k, src ? h('img', { src, alt: '' }) : h('span', 'nothing loaded'), h('span', k))));
-  if (!src) { ctx.replaceChildren(h('p.small.muted', 'Load a picture (or save one) to see it in the game\'s frames.')); return; }
+  if (!src) { ctx.replaceChildren(h('p.small.muted', 'Load a picture (or save one) to see it in the frames of the game.')); state.lastPreview = null; renderSideBySide(e, null); return; }
   const img = new Image(); img.src = src;
   img.onload = () => {
     // The previews read the image through the game's own asset registry, so they are the real tokens.
-    Assets._registry.files.add(e.file); Assets._registry.images.set(e.file, img);
+    showInGame(e, img);
+    state.lastPreview = img; renderSideBySide(e, img);
     ctx.replaceChildren(...(e.kind === 'portrait' ? portraitContexts(e) : spriteContexts(e, img)));
   };
 }
@@ -313,32 +583,63 @@ function portraitContexts(e) {
   const boss = h('div.ctx', h('div.tiny', 'Boss card'), h('div.art-frame', h('div.bosscard', av({ size: 'lg', facing: -1 }), h('div.txt', h('div.tag', 'BOSS'), h('div.name', def.name), h('div.title', def.title || 'Title on the intro card')))));
   return [tokens, ultCard, card, slot, dlg, boss];
 }
+/** A canvas drawn at the screen's real resolution (a 1× canvas is stretched by the browser on a sharp screen and looks soft). */
+/**
+ * A canvas drawn at exactly the size it is shown, in real screen pixels. Drawing at a fixed size and
+ * letting the page shrink it to fit (or the screen scale it up) resamples the finished picture, and that
+ * is what made the previews soft. Here the drawing is laid out in cssW × cssH units, and the backing
+ * store follows the displayed width × devicePixelRatio; it redraws when that changes.
+ */
+function sharpCanvas(cssW, cssH, cls = 'canvas.art-field') {
+  const c = h(cls); c.style.width = '100%'; c.style.maxWidth = cssW + 'px'; c.style.aspectRatio = `${cssW} / ${cssH}`; c.style.height = 'auto';
+  const g = c.getContext('2d');
+  const out = { c, g, draw: null };
+  const fit = () => {
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const shown = c.clientWidth || cssW, k = (shown / cssW) * dpr;
+    const bw = Math.max(1, Math.round(cssW * k)), bh = Math.max(1, Math.round(cssH * k));
+    if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+    g.setTransform(k, 0, 0, k, 0, 0); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    if (out.draw) out.draw();
+  };
+  out.onDraw = (fn) => { out.draw = fn; fit(); };
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => fit()).observe(c);
+  return out;
+}
 function spriteContexts(e, img) {
   const def = e.def || { id: e.id, name: e.name, tier: 'genin' }; const look = lookFor(def, C); const enemy = !!def.side;
-  const W = 760, H = 330, y = 290;
-  const c = h('canvas.art-field', { width: W, height: H }); const g = c.getContext('2d');
   // the sprite at its canon height (from the marks being set, else the saved ones), beside Part I Naruto, the reference
   const st = e.stature || {};
   const stature = st.kind === 'giant' ? GIANT_SCALE : (st.cm || REF_CM) / REF_CM;
   const fig = (state.marks && state.work && img.width === state.work.canvas.width) ? state.marks : (state.figures[e.file] || null);
   const REF = 'assets/sprites/naruto_p1.webp';
-  const draw = () => {
+  const refPath = Assets.spritePath('naruto', 'p1');           // the hd copy in the studio when there is one
+  const refFig = state.figures[REF] || null;
+  const isRef = e.file === REF;
+  const nar = C.char.naruto, narLook = lookFor(nar, C);
+  const size = st.kind === 'giant' ? 'giant size' : `${st.cm ?? '?'} cm`;
+
+  // 2. The battlefield at the game's size, drawn at the screen's resolution.
+  const W = 760, H = 330, y = 290;
+  const field = sharpCanvas(W, H);
+  const drawField = () => {
+    const g = field.g;
     const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, e.era === 'p1' ? '#7fb2e5' : '#1b2230'); sky.addColorStop(1, e.era === 'p1' ? '#c9e3f6' : '#2a3140'); g.fillStyle = sky; g.fillRect(0, 0, W, H);
     g.fillStyle = e.era === 'p1' ? '#6f9a4a' : '#3a3f4a'; g.fillRect(0, y, W, H - y); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, y, W, 3);
-    const ref = Assets.known(REF) ? Assets.image(REF) : null;
-    const nar = C.char.naruto;
-    if (e.file !== REF) drawFigure(g, lookFor(nar, C), { x: 100, y, facing: 1, scale: 1, stature: 1, t: 0, sprite: ref, fig: state.figures[REF] || null, expression: 'set' });
+    const ref = refPath ? Assets.image(refPath) : null;
+    if (!isRef) drawFigure(g, narLook, { x: 100, y, facing: 1, scale: 1, stature: 1, t: 0, sprite: ref, fig: refFig, expression: 'set' });
     drawFigure(g, look, { x: 260, y, facing: 1, scale: 1, stature, t: 0, sprite: img, fig, expression: 'set' });
     drawFigure(g, look, { x: 420, y, facing: 1, scale: 1, stature, t: 0, sprite: null, expression: 'set' });
     drawFigure(g, look, { x: 620, y, facing: -1, scale: 1, stature, t: 0, sprite: img, fig, expression: 'menace' });
     g.fillStyle = 'rgba(0,0,0,0.65)'; g.font = '12px system-ui, sans-serif'; g.textAlign = 'center';
-    const size = st.kind === 'giant' ? 'giant size' : `${st.cm ?? '?'} cm`;
-    for (const [x, t] of [[100, e.file === REF ? '' : `Part I Naruto (${Math.round(REF_CM)} cm)`], [260, `this sprite (${size})`], [420, 'code figure'], [620, enemy ? 'enemy side' : 'mirrored (enemy side)']]) if (t) g.fillText(t, x, y + 24);
+    for (const [x, t] of [[100, isRef ? '' : `Part I Naruto (${Math.round(REF_CM)} cm)`], [260, `this sprite (${size})`], [420, 'code figure'], [620, enemy ? 'enemy side' : 'mirrored (enemy side)']]) if (t) g.fillText(t, x, y + 24);
   };
-  draw();
-  if (Assets.known(REF) && !Assets.image(REF)) Assets.onLoad(REF, () => { if (c.isConnected) draw(); });
-  const token = h('div.ctx', h('div.tiny', 'The battlefield, at the game\'s size and canon heights'), c);
-  const note = h('p.small.muted', 'The game stands the soles on the ground and scales soles-to-skull to the canon height, so hair never makes anyone shorter. Beside Part I Naruto, the heads should look the same size.');
+  const drawAll = () => { drawField(); };
+  field.onDraw(drawAll);
+  if (refPath && !Assets.image(refPath)) Assets.onLoad(refPath, () => { if (field.c.isConnected) drawAll(); });
+
+  const token = h('div.ctx', h('div.tiny', 'The battlefield, at the game\'s size and canon heights'), field.c);
+  const note = h('p.small.muted', 'The game stands the soles on the ground and scales soles-to-skull to the canon height, so hair never makes anyone shorter.');
   return [token, note];
 }
 
@@ -350,32 +651,61 @@ async function post(url, body) {
 }
 
 // ------------------------------------------------------------------ saving
-async function savePrompt(e, prompt, noteEl, ta) {
+async function savePrompt(e, prompt, noteEl) {
   noteEl.textContent = 'saving…';
-  const r = await post('/api/art/prompt', { id: e.id, kind: e.kind, prompt });
+  // base: the generated prompt this wording was made from, so a later design change shows up as a difference
+  const r = await post('/api/art/prompt', { id: e.id, kind: e.kind, tab: state.tab, prompt, base: generatedOf(e) });
   if (!r.ok) { noteEl.textContent = 'could not save: ' + (r.error || r.log || 'is the local server running?'); return; }
-  if (prompt) state.overrides.prompts[e.key] = prompt; else delete state.overrides.prompts[e.key];
+  state.overrides = await getJSON('assets/art-overrides.json', state.overrides);
+  state.overrides.prompts = state.overrides.prompts || {}; state.overrides.base = state.overrides.base || {};
   state.manifest = await getJSON('assets/manifest.json', state.manifest);
   const fresh = (e.kind === 'portrait' ? state.manifest.portraits : state.manifest.sprites).find(x => x.id === e.id);
-  if (fresh) { e.prompt = fresh.prompt; if (!prompt) ta.value = fresh.prompt; }
-  ta.classList.toggle('own', !!prompt);
-  noteEl.textContent = prompt ? (/#FF00FF/.test(prompt) ? 'saved: your wording (kept in assets/art-overrides.json)' : 'saved: your wording. It no longer asks for the flat magenta background; any flat colour keys out, but keep it flat and avoid white (the whites of the eyes)') : 'back to the manifest\'s prompt';
+  if (fresh) { e.prompt = fresh.prompt; e.prompts = fresh.prompts; e.refs = fresh.refs; e.keyColour = fresh.keyColour; e.promptOverride = fresh.promptOverride; }
+  // redraw just the prompt card (the picture being worked on stays)
+  const card = $('#promptCard'); if (card) card.replaceWith(promptCard(e));
+  renderSideBySide(e, state.lastPreview || null);
+  const n2 = $('#promptCard .art-actions span.small.muted');
+  if (n2) n2.textContent = prompt ? 'saved: your wording for this tab' : 'back to the generated prompt';
   renderList();
+}
+/**
+ * The ingest takes square pictures only, and Gemini sometimes answers wide (1024 × 559). A portrait
+ * is cropped to a square around the character (same height, so the head keeps its share and the
+ * chest still reaches the bottom; a tall one keeps its top); a sprite is padded to a square with the
+ * feet on the bottom edge (the ingest crops to the figure anyway). mapY moves a head mark (a fraction
+ * of the old height) into the square.
+ */
+function squared(e, c) {
+  const W = c.width, H = c.height;
+  if (W === H) return { canvas: c, mapY: (y) => y };
+  const out = document.createElement('canvas');
+  if (e.kind === 'portrait') {
+    const side = Math.min(W, H); out.width = out.height = side;
+    const b = bounds(c.getContext('2d').getImageData(0, 0, W, H).data, W, H);
+    const cx = b ? (b.x0 + b.x1) / 2 : W / 2;
+    const sx = W > H ? Math.round(Math.max(0, Math.min(W - side, cx - side / 2))) : 0;
+    out.getContext('2d').drawImage(c, sx, 0, side, side, 0, 0, side, side);
+    return { canvas: out, mapY: (y) => (y * H) / side };
+  }
+  const side = Math.max(W, H); out.width = out.height = side;
+  out.getContext('2d').drawImage(c, Math.round((side - W) / 2), side - H);
+  return { canvas: out, mapY: (y) => (y * H + (side - H)) / side };
 }
 async function save(e, check) {
   const log = $('#saveLog'); if (log) log.replaceChildren(h('p.small.muted', 'Saving and ingesting…'));
-  const png = state.work.canvas.toDataURL('image/png');
-  const head = state.marks && !state.marks.guessed ? [state.marks.top, state.marks.chin].map(n => Math.round(n * 10000) / 10000) : null;
+  const sq = squared(e, state.work.canvas);
+  const png = sq.canvas.toDataURL('image/png');
+  const head = state.marks && !state.marks.guessed ? [state.marks.top, state.marks.chin].map(n => Math.round(sq.mapY(n) * 10000) / 10000) : null;
   const r = await post('/api/art/save', { id: e.id, kind: e.kind, incoming: e.incoming, flip: false, leftover: check.pixels, png, head });
   if (!r.ok) { if (log) log.replaceChildren(h('div.art-warn.bad', 'Not saved: ' + (r.error || 'the ingest failed')), r.log ? h('pre.art-log', r.log) : null); return; }
-  await loadIndex(); Assets._registry.images.delete(e.file);
+  await loadIndex(); for (const f of [e.file, Assets.hdOf(e.file)]) Assets._registry.images.delete(f);
   state.overrides.status[e.key] = { savedAt: new Date().toISOString(), leftover: check.pixels };
   state.originals = (await getJSON('/api/art/originals', { files: {} })).files || {};
   if (log) log.replaceChildren(h('div.art-warn.good', `✓ Saved: ${r.file}. The previews now show the file the game will load.`), h('pre.art-log', r.log));
   renderList();
   // show the ingested file (the truth) in the previews, keeping the work canvas for further edits
-  const img = await loadImage(e.file + '?t=' + Date.now()).catch(() => null);
-  if (img) { Assets._registry.images.set(e.file, img); renderPreviews(e, null); }
+  const img = await loadImage(bestFile(e) + '?t=' + Date.now()).catch(() => null);
+  if (img) { showInGame(e, img); renderPreviews(e, null); }
 }
 
 // ------------------------------------------------------------------ boot

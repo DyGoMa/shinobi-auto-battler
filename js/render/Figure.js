@@ -238,6 +238,30 @@ function drawBeast(g, look, o, s, f) {
 const SPRITE_SKULL_UNITS = 86;
 const DEFAULT_FIG = { top: 0.196, feet: 0.98 };
 
+// Sharp sprites: a 1024-px sprite drawn about 100 px tall in one step comes out soft (the browser
+// samples a few source pixels per screen pixel). It is shrunk by halving first, the way mipmaps work, to
+// about the size it is shown at (in real screen pixels), and the result is kept for that size.
+const shrunk = new WeakMap();   // Image -> Map(bucket px -> canvas)
+function sharpSprite(img, deviceH) {
+  if (typeof document === 'undefined' || !img.height || deviceH >= img.height * 0.8) return img;
+  const bucket = Math.max(16, Math.ceil(deviceH / 16) * 16);
+  if (bucket >= img.height * 0.8) return img;
+  let byImg = shrunk.get(img); if (!byImg) { byImg = new Map(); shrunk.set(img, byImg); }
+  let c = byImg.get(bucket); if (c) return c;
+  let src = img, w = img.width, h = img.height;
+  while (h / 2 >= bucket) {
+    const nw = Math.max(1, Math.round(w / 2)), nh = Math.max(1, Math.round(h / 2));
+    const t = document.createElement('canvas'); t.width = nw; t.height = nh;
+    const tg = t.getContext('2d'); tg.imageSmoothingEnabled = true; tg.imageSmoothingQuality = 'high'; tg.drawImage(src, 0, 0, nw, nh);
+    src = t; w = nw; h = nh;
+  }
+  const fw = Math.max(1, Math.round(w * bucket / h));
+  c = document.createElement('canvas'); c.width = fw; c.height = bucket;
+  const cg = c.getContext('2d'); cg.imageSmoothingEnabled = true; cg.imageSmoothingQuality = 'high'; cg.drawImage(src, 0, 0, fw, bucket);
+  byImg.set(bucket, c);
+  return c;
+}
+
 /** o.stature: the figure's canon height relative to Part I Naruto (js/core/stature.js); o.fig: the sprite's figure record. */
 export function drawFigure(g, look, o) {
   const s = (o.scale || 1) * (o.stature ?? 1), f = o.facing || 1, sil = !!o.silhouette, t = o.t || 0;
@@ -252,7 +276,10 @@ export function drawFigure(g, look, o) {
   if (o.sprite) {
     // Soles to the top of the skull is SPRITE_SKULL_UNITS × stature, whatever the hair adds; the soles stand on the ground.
     const fig = o.fig || DEFAULT_FIG, span = Math.max(0.2, (fig.feet ?? 0.98) - (fig.top ?? DEFAULT_FIG.top));
-    const img = o.sprite, hh = SPRITE_SKULL_UNITS / span, ww = hh * (img.width / img.height), y0 = -(fig.feet ?? 0.98) * hh;
+    const hh = SPRITE_SKULL_UNITS / span, ww = hh * (o.sprite.width / o.sprite.height), y0 = -(fig.feet ?? 0.98) * hh;
+    const m = g.getTransform ? g.getTransform() : null;
+    const img = sharpSprite(o.sprite, m ? Math.abs(hh * Math.hypot(m.c, m.d)) : hh);
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
     if (o.flash) { g.save(); g.globalAlpha *= o.flash * 0.8; g.filter = 'brightness(3)'; g.drawImage(img, -ww / 2, y0, ww, hh); g.restore(); }
     g.drawImage(img, -ww / 2, y0, ww, hh);
     g.restore();

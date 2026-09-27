@@ -16,7 +16,7 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 - **Roster**: every ninja in the game, with sorting and filters. Spend Ryo here to level them up, by hand or with **⬆ Level to recommended** and **💰 Smart spend**. See [Levelling and economy](wiki:guide/levelling).
 - **Summon**: spend scrolls to recruit ninja. See [Summoning and pity](wiki:guide/summoning).
 - **Wiki**: this reference. Every screen has a **?** button that opens its page here.
-- **Settings**: sound and music, effect detail, battle options, the story scenes, tips, your cloud save, and **App** (install the game on your home screen, check for updates).
+- **Settings**: sound and music, effect detail, image quality, battle options, the story scenes, tips, your cloud save, and **App** (install the game on your home screen, check for updates).
 - **🏆 Achievements** (top of the screen): goals across the whole game, and their rewards.
 
 ## The story scenes

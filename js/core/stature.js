@@ -6,7 +6,7 @@
 import { HEIGHTS } from '../content/heights.js';
 
 export const REF_CM = HEIGHTS.naruto?.p1 ?? 147.5;   // Naruto, end of Part I (databook): the reference figure
-export const REF_HEADS = 3.6;                // his height in heads in the sprite style (measured on naruto_p1)
+export const REF_HEADS = 4.3;                // his height in heads (the reference set's target: slim, anime-close; re-measured from his new sprite's marks)
 export const HEAD_CM = REF_CM / REF_HEADS;   // one head, in canon centimetres (about 41 cm)
 export const GIANT_SCALE = 2.5;              // a giant stands 2.5× Part I Naruto (about twice Kakashi)
 export const DEFAULT_CM = 165;               // anyone the table misses (flagged by tools/validate.mjs)
@@ -40,5 +40,5 @@ export function proportionsLine(name, id, era, opts = {}) {
   if (s.kind === 'giant') return 'PROPORTIONS: a giant creature, drawn with its natural anatomy (not humanoid proportions); fill most of the frame, standing on the bottom edge, whole silhouette visible.';
   if (s.kind === 'beast') return `PROPORTIONS: an animal or creature about ${Math.round(s.cm)} cm tall at the top of its silhouette, drawn with its natural anatomy; the whole silhouette visible, standing on the bottom edge.`;
   const heads = s.heads.toFixed(1);
-  return `PROPORTIONS: ${name} is ${Math.round(s.cm * 10) / 10} cm tall. Draw the figure ${heads} heads tall: the head, from the chin to the top of the skull (not counting hair that sticks up), is exactly 1/${heads} of the height from the soles to the top of the skull. Every character in this set has the same head size; Naruto Uzumaki in Part I (${Math.round(REF_CM)} cm) is ${REF_HEADS} heads tall, so a taller character has a longer body and legs, not a bigger head. If a reference image of Part I Naruto's sprite is attached, match its head size and line weight exactly, but not his outfit, pose or colours.`;
+  return `PROPORTIONS: ${name} is ${Math.round(s.cm * 10) / 10} cm tall. Draw the figure ${heads} heads tall: the head, from the chin to the top of the skull (not counting hair that sticks up), is exactly 1/${heads} of the height from the soles to the top of the skull. Every character in this set has the same head size; Naruto Uzumaki in Part I (${Math.round(REF_CM)} cm) is ${REF_HEADS} heads tall, so a taller character has a longer body and legs, not a bigger head. If a reference image of Part I Naruto's sprite is attached, match its head size and line weight exactly, but not his outfit, pose or colours, and not its line colour: the lines here are near-black.`;
 }

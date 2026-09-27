@@ -17,7 +17,7 @@ import { loadBuildInfo, formatBuild } from './core/Version.js';
 import { setupPwa } from './ui/pwa.js';
 import { setupInstall } from './ui/install.js';
 import { isStandalone } from './core/Pwa.js';
-import { loadIndex as loadAssetIndex } from './render/Assets.js';
+import { loadIndex as loadAssetIndex, setQuality as setImageQuality } from './render/Assets.js';
 
 async function boot() {
   // The art index (assets/index.json): which portraits and sprites exist. Nothing waits on
@@ -74,6 +74,7 @@ async function boot() {
     if (ui) { ui.refreshTop(); if (fresh.length) ui.achievementsUnlocked(fresh); }
   };
   audio.apply(save.state.settings);
+  setImageQuality(save.state.settings.imageQuality);   // the art set: standard on phones, high on PCs (Settings)
 
   // The build stamp on the menu and in Settings: version.json is written by the Pages
   // deploy; a local checkout has none and shows "dev".
