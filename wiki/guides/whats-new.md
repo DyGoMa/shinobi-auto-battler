@@ -2,6 +2,8 @@
 
 ## Coming with the art (in progress)
 
+- **One battle screen for every device.** The fight fills the top, and a panel under it shows the dialogue while someone is talking (so it never covers the fight) and the Nature Wheel and your foes otherwise. The four portrait cards sit in one row on every screen, as compact tiles on a phone. Tap the dialogue to move it on.
+- **Bigger fighters.** Everyone on the battlefield is drawn about 40% bigger on a computer (a little bigger on a phone, where they were already enlarged), and each team stands in two staggered rows so nobody hides behind a teammate.
 - **New Naruto art.** Part I and Shippuden Naruto have new full-body art and portraits, drawn to the anime's own proportions and outfits (the kunai holster on his thigh, the black sleeves in Shippuden). The rest of the cast follows.
 - **Everyone stands at their real height.** Every ninja is drawn at their canon height for the part of the story (from the databooks), with the same head size for everyone, so Kakashi towers over Team 7 and Onoki is tiny. Bosses no longer get a size boost; giant beasts share one giant size.
 - **Settings → Image quality** (Auto / High / Standard). Auto loads the large art on a computer or tablet and the lighter art on a phone; High or Standard picks one for you.

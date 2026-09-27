@@ -2,6 +2,13 @@
 
 > **Standing rule (Session 4 onwards):** any session that changes a system must update the matching Wiki guide in `wiki/guides/` (and "What's new" for anything a player will notice) before committing. `npm run validate` checks the guides' links and config placeholders; see CONTENT_GUIDE.md §9.
 
+## One battle screen for every device (session of 2026-09-27)
+
+The user asked for bigger fighters and one battle layout on PC and phone, with the dialogue under the stage. Decisions (the user's): stage, then a message panel, then the cards; fighters +40 %; two staggered rows instead of wider spacing (no gameplay change); four cards across everywhere.
+* **Layout** (`js/ui/BattleScreen.js` `_layout`, `css/style.css` "Battle layout"): `#battle` rows are the top bar, the stage (`--stage-h`: 16:9 at the full width, or shorter so the panel keeps `--panel-min`, 96–150 px), the message panel (`.binfo`, the rest), the cards. The old portrait-only `.binfo` and the 2-by-2 phone cards are gone; under 640 px each card is a compact tile.
+* **Dialogue** plays in the panel (`host: this.info`), laid over `.binfo-body` (the Nature Wheel and the foes), so it never covers the fight. Tapping the dialogue advances it; tapping the stage no longer does. Map and screen scenes are unchanged.
+* **Fighter size** (`js/render/Renderer.js`): `UNIT_BOOST = 1.4` on every screen; phone portrait still grows to keep a head ~35 CSS px, capped at `MAX_UNIT_SCALE = 3.0` (a 40 % boost on the phone's old 2.6 put a boss's head off the stage); `MAX_BIG = 5.4` caps a giant. Because `unitScale > 1` now everywhere, the two-row stagger and the front row's bars under its feet apply on PC too.
+
 ## The reference set is done (session of 2026-09-27)
 
 All four Naruto pictures are saved and live: Part I sprite and portrait (Gemini), Shippuden sprite (ChatGPT) and portrait (Gemini). Every other character is built against them. Checks green: `npm run validate`, **381 core tests**, no balance change.

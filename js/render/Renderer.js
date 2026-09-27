@@ -14,10 +14,14 @@ export const W = SW, H = SH, GROUND_Y = SGY;
 export const NATURE_COLORS = { Fire: '#ff5a36', Wind: '#5fd38a', Lightning: '#ffd43b', Earth: '#c08a52', Water: '#3fa9f5' };
 export const NEUTRAL_COLOR = '#d7dde5';
 export const TIER_COLORS = { genin: '#a3aebb', chunin: '#4dabf7', jonin: '#b388ff', kage: '#ffc53d' };
-// Phone portrait: the whole 1280-wide lane must stay visible, so it renders at ~0.3x. Units (and
-// their bars and numbers) are drawn bigger instead: a head stays about this many CSS px wide,
-// and each side alternates between two rows.
-const PHONE_HEAD_PX = 30, PHONE_MAX_CANVAS_PX = 700, MAX_UNIT_SCALE = 2.6, HEAD_D = 34;
+// Fighters are drawn 40% bigger than the lane's own scale, and each side alternates between two
+// rows so a 4-person team does not pile up (the lane spacing, which is gameplay, is unchanged).
+// Phone portrait: the whole 1280-wide lane must stay visible, so it renders at ~0.3x; units (and
+// their bars and numbers) grow further there, so a head stays about PHONE_HEAD_PX CSS px wide, up
+// to MAX_UNIT_SCALE (a 40% boost on top of the phone's own 2.6 put a boss's head off the stage).
+// MAX_BIG keeps the tallest figure (a giant) inside the stage.
+const UNIT_BOOST = 1.4;
+const PHONE_HEAD_PX = 35, PHONE_MAX_CANVAS_PX = 700, MAX_UNIT_SCALE = 3.0, HEAD_D = 34, MAX_BIG = 5.4;
 const TAU = Math.PI * 2;
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -44,7 +48,7 @@ export class Renderer {
     this.vis = new Map();   // uid -> visual state
     this.looks = new Map(); // unit key -> look
     this.t = 0;
-    this.unitScale = 1;     // > 1 only on phone portrait (see resize)
+    this.unitScale = 1;     // UNIT_BOOST, more on phone portrait (see resize)
     this.statures = new Map();   // unit key|era → its canon height (statureOf)
     this.cam = { x: 0, zoom: 1 }; this.camTarget = { x: 0, zoom: 1 }; this.camX = 0;
     this.dim = 0;
@@ -73,12 +77,12 @@ export class Renderer {
     this.scale = pw / W;
     this.cssScale = s;
     const phonePortrait = window.innerHeight > window.innerWidth && cssW < PHONE_MAX_CANVAS_PX;
-    this.unitScale = phonePortrait ? clamp(PHONE_HEAD_PX / (HEAD_D * s), 1, MAX_UNIT_SCALE) : 1;
+    this.unitScale = phonePortrait ? clamp(PHONE_HEAD_PX / (HEAD_D * s), UNIT_BOOST, MAX_UNIT_SCALE) : UNIT_BOOST;
   }
 
   // ---------------------------------------------------------------- unit geometry (for Effects)
-  /** Vertical offset of a unit from the ground line. Phone portrait: each side alternates
-   *  between two rows, and each side's front unit starts on a different row. */
+  /** Vertical offset of a unit from the ground line: each side alternates between two rows,
+   *  and each side's front unit starts on a different row. */
   depthOf(u) {
     const v = this._vis(u);
     if (this.unitScale <= 1) return v.depth;
@@ -86,7 +90,7 @@ export class Renderer {
     return (front ? 1 : -1) * 22 * this.unitScale;
   }
   unitY(u) { return GROUND_Y + this.depthOf(u); }
-  big(u) { return this.unitScale * this.statureOf(u).scale; }
+  big(u) { return Math.min(MAX_BIG, this.unitScale * this.statureOf(u).scale); }
   /** The unit's canon height (js/core/stature.js): its own row, the art it reuses, or the ninja it is based on. */
   statureOf(u) {
     const k = u.key + '|' + this.era;
@@ -237,7 +241,7 @@ export class Renderer {
   _drawHud(u, sim) {
     const g = this.ctx;
     const us = this.unitScale, big = this.big(u), y = this.unitY(u), v = this._vis(u);
-    // Phone portrait: the front row's bars go under its feet so they don't cover the back row.
+    // The front row's bars go under its feet so they don't cover the back row.
     const frontRow = us > 1 && this.depthOf(u) > 0;
     const top = frontRow ? y + 12 * us : y - 34 * big - 50 * big - 20 * us;
     // Bars grow with the unit, but not past the gap to the next ally on the same row.

@@ -359,8 +359,15 @@ a { color: var(--accent2); }
   .ult .ultname { display: none; }
   #battle .bhud { padding: 3px 8px; }
 }
-@media (max-width: 520px) {
-  .ultbar { grid-template-columns: repeat(2, 1fr); }
+/* Four cards across on every screen: on a narrow one each card is a compact tile (portrait over its bars). */
+@media (max-width: 640px) {
+  .ultbar { gap: 6px; padding: 6px; padding-bottom: max(6px, var(--safe-b)); }
+  .ult { flex-direction: column; align-items: stretch; gap: 4px; min-height: 0; padding: 6px 5px; text-align: center; }
+  .ult .avatar { width: 40px; height: 40px; margin: 0 auto; }
+  .ult .nm { font-size: .7rem; }
+  .ult .ultname { display: none; }
+  .ult .hp, .ult .ck { height: 5px; }
+  .ult .clash { right: 3px; top: 3px; font-size: .55rem; padding: 1px 4px; }
 }
 .onboard { position: absolute; z-index: 5; max-width: min(360px, 86vw); background: #fff8e7; color: #2a1d08; border-radius: 14px; padding: 12px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.45); font-weight: 650; font-size: .92rem; line-height: 1.4; animation: popIn .25s ease-out; }
 .onboard b { color: #b34a00; }
@@ -442,25 +449,19 @@ input.vol::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; bac
   .reveal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Battle layout: fixed column so the canvas never forces overflow */
-#battle { grid-template-columns: minmax(0, 1fr); }
-.stage { min-width: 0; }
-.binfo { display: none; }
-.binfo .wheel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 10px; font-weight: 800; font-size: .8rem; }
-.binfo .wheel .gt { color: var(--dim); }
-.binfo .foe { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: .85rem; }
-@media (orientation: portrait) {
-  #battle { grid-template-rows: auto auto minmax(0, 1fr) auto; }
-  .stage { aspect-ratio: 16 / 9; width: 100%; }
-  .binfo { display: block; overflow-y: auto; padding: 12px 14px; border-top: 1px solid #1a2330; background: #080c11; }
-}
-/* The canvas never drives layout: the stage's size decides, the canvas letterboxes inside it. */
-#battle { grid-template-rows: auto minmax(0, 1fr) auto; }
-.stage { position: relative; min-height: 0; }
+/* Battle layout, the same on every screen (js/ui/BattleScreen.js _layout): the top bar, the stage
+   (16:9 at the full width, or shorter when the screen is wide, --stage-h), the message panel under it
+   (dialogue while someone talks, the Nature Wheel otherwise; it takes the rest, at least --panel-min),
+   the portrait cards. The canvas never drives layout: it letterboxes inside the stage. */
+#battle { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto var(--stage-h, 56vw) minmax(var(--panel-min, 110px), 1fr) auto; }
+.stage { position: relative; min-width: 0; min-height: 0; }
 .stage canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-@media (orientation: portrait) {
-  #battle { grid-template-rows: auto auto minmax(0, 1fr) auto; }
-}
+.binfo { position: relative; display: block; min-height: 0; overflow: hidden; border-top: 1px solid #1a2330; background: #080c11; }
+.binfo-body { height: 100%; overflow-y: auto; padding: 10px 14px; }
+.binfo .wheel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px; font-weight: 800; font-size: .8rem; }
+.binfo .wheel .gt { color: var(--dim); }
+.binfo .foes { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 8px; }
+.binfo .foe { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
 
 /* Summon banner picker: current banners in one row, the rest in a grouped archive */
 .banner-picker { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -976,6 +977,16 @@ html[data-era="p2"] .dlg .name { background: var(--accent); color: #fff; border-
 .scene .dlg .avatar { flex: 0 0 auto; }
 .scene .dlg .avatar.lg { width: 22%; max-width: 128px; height: auto; }
 .scene .hidden { display: none; }
+/* A battle's scene plays in the message panel under the stage (js/ui/BattleScreen.js), not over the fight:
+   the caption across the top, the speaker and the box, Auto and Skip at the side. */
+.binfo .scene { position: absolute; inset: 0; z-index: 6; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); align-content: start; gap: 6px 8px; padding: 16px 10px 8px; background: var(--bg2); }
+.binfo .scene .caption { position: static; grid-column: 1; grid-row: 1; background: none; padding: 0 0 2px; text-align: left; }
+.binfo .scene .caption.hidden { display: none; }
+.binfo .scene .dlg { position: static; grid-column: 1; grid-row: 2; min-height: 0; align-items: flex-start; }
+.binfo .scene .dlg .avatar, .binfo .scene .dlg .avatar.lg { width: clamp(60px, min(18vw, calc(var(--panel-min, 110px) - 28px)), 112px); height: auto; max-width: none; aspect-ratio: 1; }
+.binfo .scene .dlg .box { min-height: 72px; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+.binfo .scene .dlg-ctl { position: static; grid-column: 2; grid-row: 1 / -1; flex-direction: column; align-self: start; }
+.binfo .scene .dlg-ctl .btn { min-height: 40px; }
 /* A coach tip with a teacher: the portrait and the name over the text (js/ui/BattleScreen.js, TeamBuilderScreen.js). */
 .onboard .who, .coach .who { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-family: var(--font-display); font-weight: 400; letter-spacing: .06em; text-transform: uppercase; font-size: .8rem; }
 .onboard .who .avatar, .coach .who .avatar { width: 32px; height: 32px; }

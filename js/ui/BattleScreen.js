@@ -88,7 +88,8 @@ export class BattleScreen {
     this.stage = h('div.stage', this.canvas, this.overlay);
     this.stage.addEventListener('pointerdown', (e) => { if (this.introPause && !e.target.closest('button')) this._skipIntro(); });
     this.ultbar = h('div.ultbar');
-    this.info = h('div.binfo');
+    // The message panel: the Nature Wheel and the foes (infoBody), with a story scene laid over it while one plays.
+    this.info = h('div.binfo', this.infoBody = h('div.binfo-body'));
     this.root.replaceChildren(hud, this.stage, this.info, this.ultbar);
     this.root.classList.remove('hidden');
     this._syncAuto();
@@ -98,6 +99,11 @@ export class BattleScreen {
     this.effects = new Effects(this.renderer, { level: this.level, reduced: this.reduced });
     this.ro = new ResizeObserver(() => this._resize());
     this.ro.observe(this.stage);
+    // One layout on every screen: the top bar, the stage (16:9, as wide as it can be), the message
+    // panel under it (dialogue while someone talks, the Nature Wheel otherwise), the portrait cards.
+    this.lro = new ResizeObserver(() => this._layout());
+    for (const el of [this.root, hud, this.ultbar]) this.lro.observe(el);
+    this._layout();
     this._resize();
 
     this._buildSim();
@@ -131,6 +137,17 @@ export class BattleScreen {
     this.autoBtn.title = label; this.autoBtn.setAttribute('aria-label', label);
     this.autoBtn.setAttribute('aria-pressed', String(on));
     this.autoBtn.style.borderColor = on ? 'var(--accent)' : '';
+  }
+
+  /** The stage's height: 16:9 at the full width, unless that would squeeze the message panel under its minimum. */
+  _layout() {
+    const H = this.root.clientHeight, W = this.root.clientWidth;
+    if (!H || !W) return;
+    const hud = this.root.querySelector('.bhud')?.offsetHeight || 0, cards = this.ultbar.offsetHeight || 0;
+    const panelMin = Math.round(Math.min(150, Math.max(96, H * 0.16)));
+    const stageH = Math.max(120, Math.min(W * 9 / 16, H - hud - cards - panelMin));
+    this.root.style.setProperty('--stage-h', Math.floor(stageH) + 'px');
+    this.root.style.setProperty('--panel-min', panelMin + 'px');
   }
 
   _resize() {
@@ -296,13 +313,13 @@ export class BattleScreen {
   /** True when this battle's scenes count as a replay: Hard mode, a replayed lesson, or a story battle already won. */
   _replay() { return this.hard || (this.tutorial ? !!this.tutorial.replay : !!(this.node && !this.daily && !this.isRush && isNodeCleared(this.game.state, this.node.id))); }
   _cancelScene() { if (this.scene) { this.scene.cancel(); this.scene = null; } }
-  /** Scenes over the stage, one after another (each only if it is due), then `then`. */
+  /** Scenes in the message panel under the stage, one after another (each only if it is due), then `then`. */
   _playSteps(steps, then, replay = this._replay()) {
     const next = () => {
       this.scene = null;
       const s = steps.shift();
       if (!s) { then(); return; }
-      const handle = this.ui.scene(s[0], s[1], { host: this.stage, era: this.era, replay, onDone: next });
+      const handle = this.ui.scene(s[0], s[1], { host: this.info, era: this.era, replay, onDone: next });
       if (handle) this.scene = handle;
     };
     next();
@@ -352,15 +369,15 @@ export class BattleScreen {
     if (won) { this.effects.flash('#fff6d8', 0.4, 0.3); if (!this.reduced) this.renderer.camPush(1.06, 0); }
   }
 
-  /** Portrait-only panel between the canvas and the ult bar: wheel + foes. */
+  /** The message panel under the stage, when nobody is talking: the wheel and the foes. */
   _buildInfo() {
     const { C } = this.game;
     const wheel = h('div.wheel', ...this.game.B.natureWheel.cycle.flatMap((n, i, a) => [h('span.nat.' + n, n), h('span.gt', '›')]).concat([h('span.nat.' + this.game.B.natureWheel.cycle[0], this.game.B.natureWheel.cycle[0])]));
     const foes = this.sim.units.filter(u => u.side === 'enemy');
-    this.info.replaceChildren(
+    this.infoBody.replaceChildren(
       h('div.small', h('b', 'Nature Wheel'), h('span.muted', ' — each beats the next')), wheel,
       h('div.small.muted', 'Tap a glowing portrait to fire its Ultimate. When an enemy shows a ⚠ wind-up bar, fire into it to Jutsu Clash — the badge predicts the result.'),
-      h('div', { style: { marginTop: '10px' } }, ...foes.map(u => h('div.foe', h('b', u.name + (u.isBoss ? ' 👑' : '')), u.activeNature ? h('span.nat.' + u.activeNature, u.activeNature) : h('span.nat.none', 'No nature'), u.jutsu ? h('span.tiny.muted', u.jutsu.name) : null))),
+      h('div.foes', ...foes.map(u => h('div.foe', h('b', u.name + (u.isBoss ? ' 👑' : '')), u.activeNature ? h('span.nat.' + u.activeNature, u.activeNature) : h('span.nat.none', 'No nature'), u.jutsu ? h('span.tiny.muted', u.jutsu.name) : null))),
     );
   }
 
@@ -864,7 +881,7 @@ export class BattleScreen {
     this._releaseDucks();
     document.removeEventListener('visibilitychange', this._onVis);
     document.removeEventListener('keydown', this._onKey);
-    try { this.ro.disconnect(); } catch { /* ignore */ }
+    try { this.ro.disconnect(); this.lro?.disconnect(); } catch { /* ignore */ }
     this.root.classList.add('hidden');
     this.root.replaceChildren();
     if (!silent) this.ui.battleClosed(goTo);

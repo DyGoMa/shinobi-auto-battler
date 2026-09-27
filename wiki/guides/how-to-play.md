@@ -21,7 +21,7 @@ The game opens on a **start menu**. **Continue as guest** starts (or continues) 
 
 ## The story scenes
 
-Before a battle its characters say a few lines over the stage, a boss gets the last word on its intro card, and a win has a short aftermath; each arc opens and ends with a scene of its own. Tap the stage (or press Space) to finish a line and move on, **Skip ⏭** to skip the scene, and **Auto** to let the lines run by themselves. A battle you replay (or ⏭ Skip) plays no scenes. **Settings → Story** chooses First time, Always or Never, and the Wiki's [Story log](wiki:story) keeps every scene you have reached.
+Before a battle its characters say a few lines in the panel under the stage, a boss gets the last word on its intro card, and a win has a short aftermath; each arc opens and ends with a scene of its own. Tap the dialogue (or press Space) to finish a line and move on, **Skip ⏭** to skip the scene, and **Auto** to let the lines run by themselves. A battle you replay (or ⏭ Skip) plays no scenes. **Settings → Story** chooses First time, Always or Never, and the Wiki's [Story log](wiki:story) keeps every scene you have reached.
 
 The first visit to each screen brings a character to explain it: Jiraiya on summoning, Tsunade on Ryo and levelling, Shikamaru on the map and the Team Builder, and so on. With the scenes set to Never, the one-time tip cards take their place.
 
