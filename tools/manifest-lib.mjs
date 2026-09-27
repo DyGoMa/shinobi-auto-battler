@@ -73,6 +73,9 @@ export function buildManifest(C, { now = new Date().toISOString(), overrides = n
       push({ id: d.id, key: d.id, name: d.name, era, desc });
     }
   }
+  // ---- forms (Nine-Tails Naruto, Sage Mode…): until a form has its own picture it wears its base character's
+  // (the game uses an own file first, so the form's own entries above take over as soon as they exist)
+  for (const d of chars) if (d.formOf && C.char[d.formOf]) reuse.push({ id: d.id, uses: d.formOf, note: 'the base character\'s art until the form has its own' });
   // ---- enemies: one picture per distinct name; a character who is also in the roster reuses that portrait (mirrored by the game)
   const rosterByName = new Map(chars.map(d => [d.name, d.id]));
   const seenNames = new Map();   // name -> portrait id

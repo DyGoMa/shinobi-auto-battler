@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-27T07:35:54.971Z",
+  "generated": "2026-09-27T17:55:15.416Z",
   "version": 2,
   "portraits": [
     {
@@ -11427,6 +11427,56 @@
     }
   ],
   "reuse": [
+    {
+      "id": "naruto_ninetails",
+      "uses": "naruto",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "sasuke_cursemark",
+      "uses": "sasuke",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "sakura_hundred",
+      "uses": "sakura",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "gaara_kazekage",
+      "uses": "gaara",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "kakashi_mangekyo",
+      "uses": "kakashi",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "naruto_sage",
+      "uses": "naruto",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "sasuke_ems",
+      "uses": "sasuke",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "guy_eightgates",
+      "uses": "guy",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "naruto_sixpaths",
+      "uses": "naruto",
+      "note": "the base character's art until the form has its own"
+    },
+    {
+      "id": "naruto_chakramode",
+      "uses": "naruto",
+      "note": "the base character's art until the form has its own"
+    },
     {
       "id": "e_mizuki_clash",
       "uses": "e_mizuki"

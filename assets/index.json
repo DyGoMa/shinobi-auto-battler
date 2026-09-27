@@ -98,7 +98,7 @@
     "e_raiga_boss": "e_raiga",
     "e_sakon": "sakon",
     "e_sasori_boss": "sasori",
-    "e_sasuke_boss": "sasuke_cursemark",
+    "e_sasuke_boss": "sasuke",
     "e_sasuke_final": "sasuke",
     "e_sasuke_final_boss": "sasuke",
     "e_sasuke_summit": "sasuke",
@@ -113,7 +113,17 @@
     "e_yamato_sim": "yamato",
     "e_zabuza_1": "zabuza",
     "e_zabuza_boss": "zabuza",
-    "e_zabuza_re": "zabuza"
+    "e_zabuza_re": "zabuza",
+    "gaara_kazekage": "gaara",
+    "guy_eightgates": "guy",
+    "kakashi_mangekyo": "kakashi",
+    "naruto_chakramode": "naruto",
+    "naruto_ninetails": "naruto",
+    "naruto_sage": "naruto",
+    "naruto_sixpaths": "naruto",
+    "sakura_hundred": "sakura",
+    "sasuke_cursemark": "sasuke",
+    "sasuke_ems": "sasuke"
   },
   "figures": {
     "assets/sprites/e_mizuki.webp": {

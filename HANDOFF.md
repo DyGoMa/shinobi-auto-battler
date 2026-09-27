@@ -23,6 +23,8 @@ All four Naruto pictures are saved and live: Part I sprite and portrait (Gemini)
 * **Proportion fix without a generator.** Part I Naruto's head was 10 % bigger than Shippuden's in real size; his body below the chin was stretched 6 % (seamless, anchored at the chin row), which brought them level.
 * **Small studio fixes this session:** the leftover check on a saved file looks only for the entry's key colour (it used to flag Naruto's white fur collar); the Gemini checklist warns that Gemini cannot zoom out; the portrait framing wording gives positions (medium close-up, hair ~6 % from the top, chin ~58 %); the portrait of Part I Naruto attaches his current portrait for framing plus his sprite for the face; a doubled article in headband descriptions is gone.
 
+**Forms borrow their base art:** `buildManifest` adds every roster form (`formOf`) to `reuse`, so Nine-Tails Naruto, Sage Mode, Six Paths, Chakra Mode and Curse Mark Sasuke wear the base ninja's picture until their own exists (the user saw Nine-Tails Naruto code-drawn in Orochimaru vs. Jinchuriki). An own file still wins, and the forms keep their own manifest entries.
+
 **Next:** the rest of the cast, in story order. Sprite: attach Naruto's sprite of the era, generate (ChatGPT follows proportions better; Gemini gives crisper lines), check the head count in the studio, fix details with cut-outs. Portrait: build it from the character's own sprite as above.
 
 ## The art pass, session of 2026-09-26 (superseded where the section above differs)
