@@ -154,6 +154,9 @@ export class BattleScreen {
     const r = this.stage.getBoundingClientRect();
     if (r.width < 10 || r.height < 10) return;
     this.renderer.resize(r.width, r.height);
+    // The overlays (the Ultimate banner, the boss card, the end card) sit on the canvas, not the black bars beside it.
+    const cw = parseFloat(this.canvas.style.width) || r.width, ch = parseFloat(this.canvas.style.height) || r.height;
+    Object.assign(this.overlay.style, { inset: 'auto', left: `${(r.width - cw) / 2}px`, top: `${(r.height - ch) / 2}px`, width: `${cw}px`, height: `${ch}px` });
   }
 
   _seed() { return (hashString(this.node?.id || 'rush') ^ Date.now()) >>> 0; }

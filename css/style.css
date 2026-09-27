@@ -905,11 +905,11 @@ html[data-era="p2"] .ult.ready { animation-name: readyGlowRed; }
 /* The stage overlays (js/ui/BattleScreen.js): each is positioned over the canvas and never takes taps. */
 .stage .overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 /* Ultimate cut-in: the name card slides across the top of the stage. */
-.namecard { position: absolute; left: -12%; top: 8%; width: 78%; height: 24%; min-height: 44px; max-height: 120px; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 0; transform: skewX(-12deg); background: linear-gradient(90deg, var(--paper) 0 70%, transparent); border-top: 3px solid var(--wood); border-bottom: 3px solid var(--wood); opacity: 0; pointer-events: none; z-index: 3; }
-html[data-era="p2"] .namecard { background: linear-gradient(90deg, #0c0f15 0 68%, transparent); border-color: var(--accent); }
+.namecard { position: absolute; left: -28px; top: 8%; width: max-content; max-width: calc(100% + 12px); height: 24%; min-height: 44px; max-height: 120px; display: flex; align-items: center; gap: 8px; padding: 0 64px 0 40px; transform: skewX(-12deg); background: linear-gradient(90deg, var(--paper) calc(100% - 64px), transparent); border-top: 3px solid var(--wood); border-bottom: 3px solid var(--wood); opacity: 0; pointer-events: none; z-index: 3; }
+html[data-era="p2"] .namecard { background: linear-gradient(90deg, #0c0f15 calc(100% - 64px), transparent); border-color: var(--accent); }
 .namecard.show { animation: cutin 1.1s cubic-bezier(.2,.9,.25,1) both; }
 @keyframes cutin { 0% { opacity: 0; transform: skewX(-12deg) translateX(-40px); } 12% { opacity: 1; transform: skewX(-12deg) translateX(0); } 80% { opacity: 1; transform: skewX(-12deg) translateX(6px); } 100% { opacity: 0; transform: skewX(-12deg) translateX(30px); } }
-.namecard .avatar { width: auto; height: 78%; aspect-ratio: 1; margin-left: 14%; transform: skewX(12deg); border-radius: 6px; box-shadow: 0 0 0 2px var(--wood); }
+.namecard .avatar { width: auto; height: 78%; aspect-ratio: 1; flex: 0 0 auto; transform: skewX(12deg); border-radius: 6px; box-shadow: 0 0 0 2px var(--wood); }
 .namecard .avatar img, .namecard .avatar canvas { border-radius: 4px; }
 .namecard .txt { transform: skewX(12deg); min-width: 0; }
 .namecard .who { font-family: var(--font-display); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--paper-ink); opacity: .8; }
@@ -940,10 +940,17 @@ html[data-era="p2"] .namecard .who, html[data-era="p2"] .namecard .what { color:
 @keyframes bosscard { 0% { opacity: 0; transform: translateX(40px); } 15% { opacity: 1; transform: translateX(0); } 85% { opacity: 1; } 100% { opacity: 0; } }
 .bosscard .avatar { width: 26%; max-width: 150px; height: auto; aspect-ratio: 1; border-radius: 6px; box-shadow: 0 0 0 3px var(--accent), 0 10px 30px rgba(0,0,0,.7); background: #000; }
 .bosscard .avatar img, .bosscard .avatar canvas { border-radius: 4px; }
-.bosscard .txt { flex: 1; min-width: 0; padding: 6px 12px 8px 14px; background: linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.4) 80%, transparent); border-left: 5px solid var(--accent); }
+.bosscard .txt { flex: 0 1 auto; min-width: 0; padding: 6px 56px 8px 14px; background: linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.6) calc(100% - 56px), transparent); border-left: 5px solid var(--accent); }
 .bosscard .name { font-family: var(--font-display); font-size: clamp(1.3rem, 6.4vw, 2rem); letter-spacing: .04em; text-transform: uppercase; color: #fff; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bosscard .title { font-family: var(--font-brush); font-size: clamp(.85rem, 3.6vw, 1.05rem); color: var(--accent2); margin-top: 3px; }
 .bosscard .tag { font-family: var(--font-display); font-size: .62rem; letter-spacing: .14em; color: #fff; opacity: .7; }
+/* On a phone a long Ultimate or boss name wraps onto a second line instead of being cut short. */
+@media (max-width: 640px) {
+  .namecard { height: auto; max-height: none; padding-top: 5px; padding-bottom: 5px; max-width: calc(100% + 20px); }
+  .namecard .avatar { height: 40px; }
+  .namecard .what { white-space: normal; text-overflow: clip; }
+  .bosscard .name { white-space: normal; text-overflow: clip; }
+}
 /* Victory / defeat beat over the stage */
 .endcard { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; opacity: 0; z-index: 4; }
 .endcard.show { animation: endcard 1.3s ease-out both; }
@@ -979,13 +986,14 @@ html[data-era="p2"] .dlg .name { background: var(--accent); color: #fff; border-
 .scene .hidden { display: none; }
 /* A battle's scene plays in the message panel under the stage (js/ui/BattleScreen.js), not over the fight:
    the caption across the top, the speaker and the box, Auto and Skip at the side. */
-.binfo .scene { position: absolute; inset: 0; z-index: 6; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); align-content: start; gap: 6px 8px; padding: 16px 10px 8px; background: var(--bg2); }
+.binfo .scene { position: absolute; inset: 0; z-index: 6; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-content: start; gap: 6px 8px; padding: 16px max(10px, calc((100% - 960px) / 2)) 8px; background: var(--bg2); }
 .binfo .scene .caption { position: static; grid-column: 1; grid-row: 1; background: none; padding: 0 0 2px; text-align: left; }
 .binfo .scene .caption.hidden { display: none; }
 .binfo .scene .dlg { position: static; grid-column: 1; grid-row: 2; min-height: 0; align-items: flex-start; }
 .binfo .scene .dlg .avatar, .binfo .scene .dlg .avatar.lg { width: clamp(60px, min(18vw, calc(var(--panel-min, 110px) - 28px)), 112px); height: auto; max-width: none; aspect-ratio: 1; }
 .binfo .scene .dlg .box { min-height: 72px; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
-.binfo .scene .dlg-ctl { position: static; grid-column: 2; grid-row: 1 / -1; flex-direction: column; align-self: start; }
+.binfo .scene .dlg-ctl { position: static; grid-column: 2; grid-row: 2; flex-direction: column; align-self: end; }
+.binfo .scene .caption:not(.hidden) ~ .dlg-ctl { grid-row: 1; align-self: center; flex-direction: row; }
 .binfo .scene .dlg-ctl .btn { min-height: 40px; }
 /* A coach tip with a teacher: the portrait and the name over the text (js/ui/BattleScreen.js, TeamBuilderScreen.js). */
 .onboard .who, .coach .who { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-family: var(--font-display); font-weight: 400; letter-spacing: .06em; text-transform: uppercase; font-size: .8rem; }
