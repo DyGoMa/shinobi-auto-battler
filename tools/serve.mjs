@@ -10,6 +10,7 @@
 //                         assets/art-overrides.json (prompt null = back to the generated one) and
 //                         regenerates assets/manifest.json through tools/manifest.mjs.
 //   GET  /api/art/originals   the files in /incoming and /incoming/done (to reprocess an original).
+//   GET  /api/art/references  the anime reference pictures in /references, per studio entry id
 import { createServer } from 'node:http';
 import { readFile, stat, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -38,6 +39,12 @@ async function api(req, res, path) {
   if (req.method === 'GET' && path === '/api/art/originals') {
     const out = {};
     for (const dir of ['incoming', 'incoming/done']) { try { for (const f of await readdir(join(ROOT, dir))) if (/\.(png|jpe?g|webp)$/i.test(f)) out[f.replace(/\.[^.]+$/, '')] = `${dir}/${f}`; } catch { /* no folder yet */ } }
+    return json(res, 200, { ok: true, files: out });
+  }
+  // the anime reference pictures (references/<entry id>_<n>.png, kept out of git): { files: { entryId: [paths] } }
+  if (req.method === 'GET' && path === '/api/art/references') {
+    const out = {};
+    try { for (const f of (await readdir(join(ROOT, 'references'))).sort()) { const m = f.match(/^(.+)_(\d+)\.(png|jpe?g|webp)$/i); if (m) (out[m[1]] ||= []).push(`references/${f}`); } } catch { /* no folder yet */ }
     return json(res, 200, { ok: true, files: out });
   }
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'POST only' });

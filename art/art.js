@@ -41,6 +41,7 @@ async function loadAll() {
   state.overrides = await getJSON('assets/art-overrides.json', { prompts: {}, status: {} });
   state.overrides.prompts = state.overrides.prompts || {}; state.overrides.status = state.overrides.status || {};
   state.originals = (await getJSON('/api/art/originals', { files: {} })).files || {};
+  state.animeRefs = (await getJSON('/api/art/references', { files: {} })).files || {};
   const reuse = new Map(); for (const r of state.manifest.reuse || []) { if (!reuse.has(r.uses)) reuse.set(r.uses, []); reuse.get(r.uses).push(r.id); }
   state.entries = [];
   for (const kind of ['portrait', 'sprite']) for (const e of state.manifest[kind === 'portrait' ? 'portraits' : 'sprites']) {
@@ -177,8 +178,23 @@ const hasOwnPrompt = (e) => !!(state.overrides.prompts[e.key] || state.overrides
 /** The generated prompt for a tab (ChatGPT: by the background switch). */
 const generatedOf = (e, tab = state.tab) => {
   const P = e.prompts || { gemini: e.prompt, chatgpt: e.prompt, chatgptTransparent: e.prompt };
-  return tab === 'gemini' ? P.gemini : (state.bgMode === 'transparent' ? P.chatgptTransparent : P.chatgpt);
+  const text = tab === 'gemini' ? P.gemini : (state.bgMode === 'transparent' ? P.chatgptTransparent : P.chatgpt);
+  return usesAnimeRef(e) ? withAnimeRef(text, (e.refs || []).length + 1) : text;
 };
+// ---- the anime reference (references/<entry id>_<n>.png, found by the local server): official art or an
+// anime frame of the character, attached after the Naruto references, for the design only (a generator copies
+// whatever it is shown, so the prompt limits it to face, hair, outfit and colours). Sprites only: a portrait is
+// built from the character's own sprite.
+state.animeRefOn = store.get('art.animeRef', '1') === '1';
+const animeRefsOf = (e) => (state.animeRefs || {})[e.id] || [];
+const usesAnimeRef = (e) => e.kind === 'sprite' && state.animeRefOn && animeRefsOf(e).length > 0;
+const ANIME_REF_ROLE = 'the character design reference ONLY, from the anime: match the face, hair, outfit, accessories and colours exactly. Do NOT copy its pose, framing, camera angle, art style, line weight or proportions';
+function withAnimeRef(text, n) {
+  const line = `Image ${n} (the anime reference of this character): ${ANIME_REF_ROLE}.`;
+  const at = text.indexOf('\n\nSTYLE:');
+  if (text.includes('REFERENCES:\n')) return text.slice(0, at) + '\n' + line + text.slice(at);
+  return text.slice(0, at) + '\n\nREFERENCES:\n' + line + text.slice(at);
+}
 const KEY_LABEL = { magenta: 'magenta', green: 'green', cyan: 'cyan', yellow: 'yellow' };
 
 const CHECKLIST = {
@@ -253,7 +269,15 @@ function promptCard(e) {
 /** The files to attach, numbered, each with what it controls and a download button (the hd copy when there is one). */
 function attachments(e) {
   const refs = e.refs || [];
-  if (!refs.length) return h('p.small', h('b', 'Attach: nothing. '), 'This is the first picture of the reference set; it is made from the prompt alone.');
+  const anime = e.kind === 'sprite' ? animeRefsOf(e) : [];
+  const redraw = () => { const card = $('#promptCard'); if (card) card.replaceWith(promptCard(e)); };
+  const tick = h('input', { type: 'checkbox', checked: state.animeRefOn });
+  tick.addEventListener('change', () => { state.animeRefOn = tick.checked; store.set('art.animeRef', tick.checked ? '1' : '0'); redraw(); });
+  const animeBlock = e.kind !== 'sprite' ? null : anime.length
+    ? h('div.art-anime', h('label.small', tick, h('b', ` Attach an anime reference as Image ${refs.length + 1}`), h('span.muted', ' (adds the "design only" line to the prompt; pick one, a full-body one is best for the outfit)')),
+      h('div.art-anime-row', ...anime.map((src) => h('div.art-anime-pick', h('img', { src, alt: '' }), h('a.dl.tiny', { href: src, download: src.split('/').pop() }, '⬇ ' + src.split('/').pop())))))
+    : h('p.tiny.muted', `No anime reference for this character yet (put one in references/ as ${e.id}_1.png).`);
+  if (!refs.length && !usesAnimeRef(e)) return h('div', h('p.small', h('b', 'Attach: nothing. '), 'This is the first picture of the reference set; it is made from the prompt alone.'), animeBlock);
   return h('div.art-attach', h('b.small', 'Attach, in this order:'),
     h('ol', ...refs.map((r) => {
       const have = state.index.has(r.file) || state.index.has(Assets.hdOf(r.file));
@@ -263,7 +287,7 @@ function attachments(e) {
         have ? h('img', { src, alt: '' }) : h('span.art-attach-missing', '?'),
         h('div', h('b', r.label), h('div.tiny.muted', r.role.split(':')[0])),
         have ? h('a.dl.small', { href: src, download: `ref_${name}.webp` }, '⬇ Download') : h('span.tiny.muted', 'not made yet: make it first')));
-    })));
+    })), animeBlock);
 }
 
 /** Word-level differences from a to b: [spans]; ins = only in b (green), del = only in a (red). */
@@ -709,6 +733,7 @@ async function save(e, check) {
   await loadIndex(); for (const f of [e.file, Assets.hdOf(e.file)]) Assets._registry.images.delete(f);
   state.overrides.status[e.key] = { savedAt: new Date().toISOString(), leftover: check.pixels };
   state.originals = (await getJSON('/api/art/originals', { files: {} })).files || {};
+  state.animeRefs = (await getJSON('/api/art/references', { files: {} })).files || {};
   if (log) log.replaceChildren(h('div.art-warn.good', `✓ Saved: ${r.file}. The previews now show the file the game will load.`), h('pre.art-log', r.log));
   renderList();
   // show the ingested file (the truth) in the previews, keeping the work canvas for further edits

@@ -8,3 +8,4 @@ test-results/
 version.json
 # Gemini drops for tools/ingest.mjs (Phase 3); never committed.
 incoming/
+references/
