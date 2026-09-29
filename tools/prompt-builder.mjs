@@ -97,7 +97,9 @@ export function buildPrompts({ kind, id, era, name, desc, reuse = null }) {
     ? (id === 'naruto_p1' ? NARUTO_P1_BODY : id === 'naruto_p2' ? NARUTO_P2_BODY : 'Show the complete outfit exactly as the anime draws this character in this era, head to feet, including trousers or skirt and footwear. Expression: their typical expression in the anime, as described above.')
     : 'Expression: their typical expression in the anime, as described above, the same as in their sprite.';
   // the descriptions join the headband phrase after a colour ('a blue ' + 'a cloth forehead protector'): drop the doubled article
-  const clean = String(desc).replace(/\b(a|an) ([A-Za-z-]+) a cloth forehead protector/gi, (m, art, colour) => `${art} ${colour} cloth forehead protector`);
+  // (and "a a forehead protector" where a description puts its own article before a phrase that has one)
+  const clean = String(desc).replace(/\b(a|an) ([A-Za-z-]+) a cloth forehead protector/gi, (m, art, colour) => `${art} ${colour} cloth forehead protector`)
+    .replace(/\b(a|an) (a|an) /gi, '$2 ');
   const character = `CHARACTER: ${clean}\n${body}`;
   const prop = kind === 'sprite' ? proportions(name, id, era, { reuse }) : '';
   const framing = kind === 'sprite' ? SPRITE_FRAMING : PORTRAIT_FRAMING;
