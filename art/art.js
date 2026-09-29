@@ -96,11 +96,35 @@ function arcOf(id, def, reuse) {
   if (C.tutorial?.nodes?.some(n => (n.enemies || []).some(e => ids.has(e.id)))) return { order: -2, name: 'The Academy', id: 'tutorial' };
   return { order: 9998, name: 'Other', id: 'other' };
 }
+// The first group: everyone who teaches a system or a mechanic (the tutorial, the coach tips, the first-visit
+// scenes in js/content/story/teach.js), in the order a new player meets them, so their art is made first.
+// A priority entry leaves its arc's group, so each picture is listed once.
+const PRIORITY = [
+  ['naruto_p1', 'the reference, the tutorial'],
+  ['iruka_p1', 'teaches the tutorial and the Team Builder'],
+  ['e_mizuki', 'the tutorial fights'],
+  ['kakashi_p1', 'teaches Ultimates, the Nature Wheel, Jutsu Clash, Hard mode'],
+  ['sasuke_p1', 'the tutorial team'],
+  ['sakura_p1', 'the tutorial team'],
+  ['shikamaru_p1', 'teaches the Story map, Skip, teams, Auto-ult'],
+  ['jiraiya_p1', 'teaches Summon, banners, the Boss Rush'],
+  ['tsunade_p1', 'teaches the Roster, duplicate summons'],
+  ['guy_p1', 'teaches the Daily challenge'],
+  ['lee_p1', 'teaches the Daily challenge'],
+  ['konohamaru', 'teaches Achievements'],
+];
+const PRIORITY_WHY = new Map(PRIORITY);
 function groupEntries() {
   const map = new Map();
-  for (const e of state.entries) { if (!map.has(e.arc.id)) map.set(e.arc.id, { ...e.arc, entries: [] }); map.get(e.arc.id).entries.push(e); }
-  state.groups = [...map.values()].sort((a, b) => a.order - b.order);
-  for (const g of state.groups) g.entries.sort((a, b) => a.name.localeCompare(b.name) || a.kind.localeCompare(b.kind));
+  const prio = { order: -100, name: 'Priority: teaches a system or mechanic', id: 'priority', entries: [] };
+  for (const e of state.entries) {
+    if (PRIORITY_WHY.has(e.id)) { prio.entries.push(e); continue; }
+    if (!map.has(e.arc.id)) map.set(e.arc.id, { ...e.arc, entries: [] }); map.get(e.arc.id).entries.push(e);
+  }
+  state.groups = [prio, ...[...map.values()].sort((a, b) => a.order - b.order)];
+  for (const g of state.groups.slice(1)) g.entries.sort((a, b) => a.name.localeCompare(b.name) || a.kind.localeCompare(b.kind));
+  const rank = new Map(PRIORITY.map(([id], i) => [id, i]));
+  prio.entries.sort((a, b) => rank.get(a.id) - rank.get(b.id) || b.kind.localeCompare(a.kind));
 }
 const isDone = (e) => state.index.has(e.file);
 const statusOf = (e) => state.overrides.status[e.key] || null;
@@ -121,7 +145,7 @@ function renderList() {
       shown++;
       const dot = h('span.dot' + (isDone(e) ? (isFlagged(e) ? '.flag' : '.done') : '') + (hasOwnPrompt(e) ? '.own' : ''), { title: isDone(e) ? (isFlagged(e) ? 'done, saved with leftovers' : 'done') : 'missing' });
       const thumb = h('div.thumb', isDone(e) ? h('img', { src: e.file + '?t=' + Date.now(), alt: '' }) : h('span', e.kind === 'portrait' ? 'P' : 'S'));
-      const row = h('button.row' + (state.key === e.key ? '.active' : ''), { type: 'button', onclick: () => select(e.key) }, thumb, h('div.who', e.name.replace(/ — .*/, ''), h('small', `${e.kind === 'portrait' ? 'Portrait' : 'Sprite'} · ${e.era === 'p1' ? 'Part I' : 'Shippuden'}${e.facing === 'left' ? ' · faces left' : ''}`)), dot);
+      const row = h('button.row' + (state.key === e.key ? '.active' : ''), { type: 'button', onclick: () => select(e.key) }, thumb, h('div.who', e.name.replace(/ — .*/, ''), h('small', `${e.kind === 'portrait' ? 'Portrait' : 'Sprite'} · ${e.era === 'p1' ? 'Part I' : 'Shippuden'}${e.facing === 'left' ? ' · faces left' : ''}${g.id === 'priority' ? ' · ' + PRIORITY_WHY.get(e.id) : ''}`)), dot);
       list.appendChild(row);
     }
   }
