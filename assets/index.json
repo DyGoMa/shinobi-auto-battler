@@ -1,29 +1,109 @@
 {
   "files": [
+    "assets/portraits/asuma_p1.webp",
+    "assets/portraits/asuma_p2.webp",
+    "assets/portraits/e_c2_dragon.webp",
+    "assets/portraits/e_gato_thug.webp",
+    "assets/portraits/e_gozu.webp",
+    "assets/portraits/e_meizu.webp",
     "assets/portraits/e_mizuki.webp",
+    "assets/portraits/e_waraji.webp",
+    "assets/portraits/e_zori.webp",
+    "assets/portraits/guy_p1.webp",
+    "assets/portraits/haku.webp",
+    "assets/portraits/hd/asuma_p1.webp",
+    "assets/portraits/hd/asuma_p2.webp",
+    "assets/portraits/hd/e_c2_dragon.webp",
+    "assets/portraits/hd/e_gato_thug.webp",
+    "assets/portraits/hd/e_gozu.webp",
+    "assets/portraits/hd/e_meizu.webp",
+    "assets/portraits/hd/e_mizuki.webp",
+    "assets/portraits/hd/e_waraji.webp",
+    "assets/portraits/hd/e_zori.webp",
+    "assets/portraits/hd/guy_p1.webp",
+    "assets/portraits/hd/haku.webp",
+    "assets/portraits/hd/jiraiya_p1.webp",
+    "assets/portraits/hd/kakashi_p1.webp",
+    "assets/portraits/hd/kakashi_p2.webp",
+    "assets/portraits/hd/madara.webp",
+    "assets/portraits/hd/naruto_chakramode.webp",
     "assets/portraits/hd/naruto_p1.webp",
     "assets/portraits/hd/naruto_p2.webp",
     "assets/portraits/hd/sakura_p1.webp",
+    "assets/portraits/hd/sakura_p2.webp",
+    "assets/portraits/hd/sasuke_p1.webp",
+    "assets/portraits/hd/sasuke_p2.webp",
+    "assets/portraits/hd/shikamaru_p1.webp",
+    "assets/portraits/hd/tsunade_p1.webp",
+    "assets/portraits/hd/tsunade_p2.webp",
+    "assets/portraits/hd/zabuza.webp",
+    "assets/portraits/jiraiya_p1.webp",
     "assets/portraits/kakashi_p1.webp",
     "assets/portraits/kakashi_p2.webp",
+    "assets/portraits/madara.webp",
+    "assets/portraits/naruto_chakramode.webp",
     "assets/portraits/naruto_p1.webp",
     "assets/portraits/naruto_p2.webp",
     "assets/portraits/sakura_p1.webp",
     "assets/portraits/sakura_p2.webp",
     "assets/portraits/sasuke_p1.webp",
     "assets/portraits/sasuke_p2.webp",
+    "assets/portraits/shikamaru_p1.webp",
+    "assets/portraits/tsunade_p1.webp",
+    "assets/portraits/tsunade_p2.webp",
     "assets/portraits/zabuza.webp",
+    "assets/sprites/asuma_p1.webp",
+    "assets/sprites/asuma_p2.webp",
+    "assets/sprites/e_c2_dragon.webp",
+    "assets/sprites/e_gato_thug.webp",
+    "assets/sprites/e_gozu.webp",
+    "assets/sprites/e_meizu.webp",
     "assets/sprites/e_mizuki.webp",
+    "assets/sprites/e_waraji.webp",
+    "assets/sprites/e_zori.webp",
+    "assets/sprites/guy_p1.webp",
+    "assets/sprites/haku.webp",
+    "assets/sprites/hd/asuma_p1.webp",
+    "assets/sprites/hd/asuma_p2.webp",
+    "assets/sprites/hd/e_c2_dragon.webp",
+    "assets/sprites/hd/e_gato_thug.webp",
+    "assets/sprites/hd/e_gozu.webp",
+    "assets/sprites/hd/e_meizu.webp",
+    "assets/sprites/hd/e_mizuki.webp",
+    "assets/sprites/hd/e_waraji.webp",
+    "assets/sprites/hd/e_zori.webp",
+    "assets/sprites/hd/guy_p1.webp",
+    "assets/sprites/hd/haku.webp",
+    "assets/sprites/hd/jiraiya_p1.webp",
+    "assets/sprites/hd/kakashi_p1.webp",
+    "assets/sprites/hd/kakashi_p2.webp",
+    "assets/sprites/hd/madara.webp",
+    "assets/sprites/hd/naruto_chakramode.webp",
     "assets/sprites/hd/naruto_p1.webp",
     "assets/sprites/hd/naruto_p2.webp",
+    "assets/sprites/hd/sakura_p1.webp",
+    "assets/sprites/hd/sakura_p2.webp",
+    "assets/sprites/hd/sasuke_p1.webp",
+    "assets/sprites/hd/sasuke_p2.webp",
+    "assets/sprites/hd/shikamaru_p1.webp",
+    "assets/sprites/hd/tsunade_p1.webp",
+    "assets/sprites/hd/tsunade_p2.webp",
+    "assets/sprites/hd/zabuza.webp",
+    "assets/sprites/jiraiya_p1.webp",
     "assets/sprites/kakashi_p1.webp",
     "assets/sprites/kakashi_p2.webp",
+    "assets/sprites/madara.webp",
+    "assets/sprites/naruto_chakramode.webp",
     "assets/sprites/naruto_p1.webp",
     "assets/sprites/naruto_p2.webp",
     "assets/sprites/sakura_p1.webp",
     "assets/sprites/sakura_p2.webp",
     "assets/sprites/sasuke_p1.webp",
-    "assets/sprites/sasuke_p2.webp"
+    "assets/sprites/sasuke_p2.webp",
+    "assets/sprites/shikamaru_p1.webp",
+    "assets/sprites/tsunade_p1.webp",
+    "assets/sprites/tsunade_p2.webp",
+    "assets/sprites/zabuza.webp"
   ],
   "reuse": {
     "e_aoi_boss": "e_aoi",
@@ -126,20 +206,101 @@
     "sasuke_ems": "sasuke"
   },
   "figures": {
+    "assets/sprites/asuma_p1.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/asuma_p2.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/e_c2_dragon.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/e_gato_thug.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/e_gozu.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/e_meizu.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
     "assets/sprites/e_mizuki.webp": {
-      "top": 0.199,
-      "chin": 0.518,
-      "feet": 0.98
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/e_waraji.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/e_zori.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/guy_p1.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/haku.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/jiraiya_p1.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
     },
     "assets/sprites/kakashi_p1.webp": {
-      "top": 0.285,
-      "chin": 0.543,
-      "feet": 0.98
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
     },
     "assets/sprites/kakashi_p2.webp": {
-      "top": 0.221,
-      "chin": 0.553,
-      "feet": 0.98
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/madara.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/naruto_chakramode.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
     },
     "assets/sprites/naruto_p1.webp": {
       "top": 0.08,
@@ -152,24 +313,52 @@
       "feet": 0.98
     },
     "assets/sprites/sakura_p1.webp": {
-      "top": 0.117,
-      "chin": 0.512,
-      "feet": 0.98
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
     },
     "assets/sprites/sakura_p2.webp": {
-      "top": 0.121,
-      "chin": 0.518,
-      "feet": 0.98
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
     },
     "assets/sprites/sasuke_p1.webp": {
-      "top": 0.141,
-      "chin": 0.586,
-      "feet": 0.98
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
     },
     "assets/sprites/sasuke_p2.webp": {
-      "top": 0.176,
-      "chin": 0.41,
-      "feet": 0.98
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/shikamaru_p1.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/tsunade_p1.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/tsunade_p2.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/zabuza.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
     }
   }
 }
