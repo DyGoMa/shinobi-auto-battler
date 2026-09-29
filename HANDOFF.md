@@ -31,7 +31,7 @@ All four Naruto pictures are saved and live: Part I sprite and portrait (Gemini)
 
 ## The art pass, session of 2026-09-26 (superseded where the section above differs)
 
-Everything below is committed. Checks green: `npm run validate`, syntax, **381 core tests**, sim and campaign unchanged (no balance change). The user makes the pictures in Gemini (Google AI Pro) and ChatGPT (Plus); the art studio (`npm run serve`, then `/art.html`; hard-refresh or add `?v=N` when a page looks stale, the browser caches the modules) does the rest. The user's standing art direction is in the memory note `sprite-proportions-and-portrait-framing`.
+Everything below is committed. Checks green: `npm run validate`, syntax, **381 core tests**, sim and campaign unchanged (no balance change). The user makes the pictures in Gemini (Google AI Pro) and ChatGPT (Plus); the art studio (double-click `Start Art Studio.bat`, or `npm run serve` then `/art.html`; hard-refresh or add `?v=N` when a page looks stale, the browser caches the modules) does the rest. The user's standing art direction is in the memory note `sprite-proportions-and-portrait-framing`.
 
 **Next, in this order (the reference set, then everyone):**
 1. Part I Naruto's sprite (no attachment), made in both apps and compared; the user picks one generator for the whole cast.
