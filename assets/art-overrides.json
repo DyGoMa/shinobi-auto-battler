@@ -264,6 +264,36 @@
       "savedAt": "2026-09-29T09:24:21.871Z",
       "leftover": 0,
       "flip": false
+    },
+    "sprite:iruka_p1": {
+      "savedAt": "2026-09-29T09:49:49.781Z",
+      "leftover": 0,
+      "flip": false
+    },
+    "portrait:iruka_p1": {
+      "savedAt": "2026-09-29T09:50:39.782Z",
+      "leftover": 0,
+      "flip": false
+    },
+    "sprite:lee_p1": {
+      "savedAt": "2026-09-29T09:54:19.933Z",
+      "leftover": 0,
+      "flip": false
+    },
+    "portrait:lee_p1": {
+      "savedAt": "2026-09-29T09:58:36.269Z",
+      "leftover": 0,
+      "flip": false
+    },
+    "sprite:konohamaru": {
+      "savedAt": "2026-09-29T09:59:44.997Z",
+      "leftover": 0,
+      "flip": false
+    },
+    "portrait:konohamaru": {
+      "savedAt": "2026-09-29T10:04:37.895Z",
+      "leftover": 0,
+      "flip": false
     }
   },
   "meta": {

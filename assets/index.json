@@ -22,9 +22,12 @@
     "assets/portraits/hd/e_zori.webp",
     "assets/portraits/hd/guy_p1.webp",
     "assets/portraits/hd/haku.webp",
+    "assets/portraits/hd/iruka_p1.webp",
     "assets/portraits/hd/jiraiya_p1.webp",
     "assets/portraits/hd/kakashi_p1.webp",
     "assets/portraits/hd/kakashi_p2.webp",
+    "assets/portraits/hd/konohamaru.webp",
+    "assets/portraits/hd/lee_p1.webp",
     "assets/portraits/hd/madara.webp",
     "assets/portraits/hd/naruto_chakramode.webp",
     "assets/portraits/hd/naruto_p1.webp",
@@ -37,9 +40,12 @@
     "assets/portraits/hd/tsunade_p1.webp",
     "assets/portraits/hd/tsunade_p2.webp",
     "assets/portraits/hd/zabuza.webp",
+    "assets/portraits/iruka_p1.webp",
     "assets/portraits/jiraiya_p1.webp",
     "assets/portraits/kakashi_p1.webp",
     "assets/portraits/kakashi_p2.webp",
+    "assets/portraits/konohamaru.webp",
+    "assets/portraits/lee_p1.webp",
     "assets/portraits/madara.webp",
     "assets/portraits/naruto_chakramode.webp",
     "assets/portraits/naruto_p1.webp",
@@ -74,9 +80,12 @@
     "assets/sprites/hd/e_zori.webp",
     "assets/sprites/hd/guy_p1.webp",
     "assets/sprites/hd/haku.webp",
+    "assets/sprites/hd/iruka_p1.webp",
     "assets/sprites/hd/jiraiya_p1.webp",
     "assets/sprites/hd/kakashi_p1.webp",
     "assets/sprites/hd/kakashi_p2.webp",
+    "assets/sprites/hd/konohamaru.webp",
+    "assets/sprites/hd/lee_p1.webp",
     "assets/sprites/hd/madara.webp",
     "assets/sprites/hd/naruto_chakramode.webp",
     "assets/sprites/hd/naruto_p1.webp",
@@ -89,9 +98,12 @@
     "assets/sprites/hd/tsunade_p1.webp",
     "assets/sprites/hd/tsunade_p2.webp",
     "assets/sprites/hd/zabuza.webp",
+    "assets/sprites/iruka_p1.webp",
     "assets/sprites/jiraiya_p1.webp",
     "assets/sprites/kakashi_p1.webp",
     "assets/sprites/kakashi_p2.webp",
+    "assets/sprites/konohamaru.webp",
+    "assets/sprites/lee_p1.webp",
     "assets/sprites/madara.webp",
     "assets/sprites/naruto_chakramode.webp",
     "assets/sprites/naruto_p1.webp",
@@ -272,6 +284,12 @@
       "feet": 0.98,
       "auto": true
     },
+    "assets/sprites/iruka_p1.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
     "assets/sprites/jiraiya_p1.webp": {
       "top": 0.196,
       "chin": null,
@@ -285,6 +303,18 @@
       "auto": true
     },
     "assets/sprites/kakashi_p2.webp": {
+      "top": 0.197,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/konohamaru.webp": {
+      "top": 0.196,
+      "chin": null,
+      "feet": 0.98,
+      "auto": true
+    },
+    "assets/sprites/lee_p1.webp": {
       "top": 0.197,
       "chin": null,
       "feet": 0.98,
